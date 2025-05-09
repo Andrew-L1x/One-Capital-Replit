@@ -178,14 +178,16 @@ export default function ContractTester() {
   };
   
   // Get provider for gas estimator
-  const [ethersProvider, setEthersProvider] = useState(null);
+  const [ethersProvider, setEthersProvider] = useState<ethers.Provider | null>(null);
   
   useEffect(() => {
     const fetchProvider = async () => {
       if (isConnected) {
         try {
           const provider = await getProvider();
-          setEthersProvider(provider);
+          if (provider) {
+            setEthersProvider(provider);
+          }
         } catch (error) {
           console.error("Error getting provider:", error);
         }

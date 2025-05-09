@@ -1164,7 +1164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (asset && prices[asset.symbol]) {
           // In a real app, you'd get the actual token amount from the blockchain
           // For now, we'll mock the token amount based on the percentage allocation
-          const tokenAmount = allocation.percentage; // Using percentage as mock token amount
+          const tokenAmount = parseInt(allocation.targetPercentage); // Using targetPercentage as mock token amount
           const assetValue = tokenAmount * prices[asset.symbol];
           
           totalValue += assetValue;

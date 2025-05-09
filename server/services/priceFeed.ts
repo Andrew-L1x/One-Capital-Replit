@@ -92,8 +92,7 @@ export async function getPrice(symbol: string): Promise<number | null> {
       if (asset) {
         const priceFeed: InsertPriceFeed = {
           assetId: asset.id,
-          price,
-          timestamp: new Date()
+          price: price.toString() // Convert to string as per schema
         };
         await storage.createPriceFeed(priceFeed);
       }

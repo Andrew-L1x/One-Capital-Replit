@@ -1,45 +1,61 @@
-//! One Capital Auto-Investing smart contracts for L1X blockchain
-//! 
-//! This library provides the core functionality for automated investment
-//! portfolio management on the L1X blockchain, including:
-//! - Vault management (custodial and non-custodial)
-//! - Portfolio allocation and rebalancing
-//! - Take profit strategies
-//! - Integration with L1X's X-Talk protocol for bridgeless swaps
+use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
+use l1x_sdk::contract;
 
-mod allocation;
-mod custodial_vault;
-mod non_custodial_vault;
-mod portfolio;
-mod wallet;
-mod xtalk;
-mod rebalance;
-mod take_profit;
+use l1x_sdk::types::U64;
 
-#[cfg(test)]
-mod tests;
+const STORAGE_CONTRACT_KEY: &[u8] = b"STATE";
 
-use wasm_bindgen::prelude::*;
+#[derive(BorshSerialize)]
+struct Event {
+    name: String,
+}
 
-// Export main modules to be accessible from WebAssembly
-pub use allocation::*;
-pub use custodial_vault::*;
-pub use non_custodial_vault::*;
-pub use portfolio::*;
-pub use wallet::*;
-pub use xtalk::*;
-pub use rebalance::*;
-pub use take_profit::*;
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct Contract {
+    counter: U64,
+}
 
-/// Initialize the One Capital Auto-Investing library
-/// 
-/// This function is exported to WebAssembly and serves as the entry point
-/// for the One Capital Auto-Investing smart contracts on the L1X blockchain.
-#[wasm_bindgen]
-pub fn init() -> Result<(), JsValue> {
-    // Initialize logging for better debugging
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
-    
-    Ok(())
+#[contract]
+impl Contract {
+    fn load() -> Self {
+        match l1x_sdk::storage_read(STORAGE_CONTRACT_KEY) {
+            Some(bytes) => Self::try_from_slice(&bytes).unwrap(),
+            None => panic!("The contract isn't initialized"),
+        }
+    }
+
+    fn save(&mut self) {
+        l1x_sdk::storage_write(STORAGE_CONTRACT_KEY, &self.try_to_vec().unwrap());
+    }
+
+    pub fn new() {
+        let mut state = Self {
+            counter: 0u64.into(),
+        };
+
+        state.save()
+    }
+
+    pub fn set_counter(value: U64) -> U64 {
+        let mut state = Self::load();
+        let old = state.counter;
+        state.counter = value;
+        state.save();
+
+        old
+    }
+
+    pub fn inc_counter() -> U64 {
+        let mut state = Self::load();
+        let old = state.counter;
+        state.counter.0 += 1;
+        state.save();
+
+        old
+    }
+
+    pub fn get_counter() -> U64 {
+        Self::load().counter
+    }
 }

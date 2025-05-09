@@ -1,10 +1,8 @@
-//! Asset allocation module for portfolio management
-//! 
-//! This module defines the core data structures and functions for managing
-//! asset allocations within investment portfolios.
+use borsh::BorshDeserialize;
+use borsh::BorshSerialize;
+use l1x_sdk::contract;
 
-use serde::{Deserialize, Serialize};
-use l1x_sdk::prelude::*;
+use l1x_sdk::types::U64;
 
 /// Represents an asset allocation within a portfolio
 #[derive(Debug, Clone, Serialize, Deserialize)]

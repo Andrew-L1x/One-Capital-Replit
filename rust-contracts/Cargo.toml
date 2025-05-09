@@ -17,11 +17,4 @@ crate-type = ["cdylib"]
 borsh = "=0.9.3"
 l1x-sdk = "=0.3.1"
 serde = { version = "1", features = ["derive"] }
-
-[profile.release]
-codegen-units = 1
-opt-level = "z"
-lto = true
-debug = false
-panic = "abort"
-overflow-checks = true
+serde_json = "1"

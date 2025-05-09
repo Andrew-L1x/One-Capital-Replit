@@ -10,3 +10,12 @@ version = "0.1.0"
 edition = "2021"
 authors = ["The L1X Project Developers"]
 license = "Apache-2.0"
+
+# Profile for WASM optimization
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true

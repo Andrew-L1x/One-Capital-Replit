@@ -1,0 +1,55 @@
+Create a React-based dashboard page for a decentralized application (dApp) named 'One Capital Auto-Investing' on the Layer One X (L1X) blockchain, styled with Tailwind CSS. The dashboard enables users to manage cryptocurrency portfolio allocations and visualize performance, with the following features and layout:
+
+**Dashboard Requirements**:
+- **Cryptocurrency Allocations**:
+  - Support modifiable and weighted percentage allocations for the following cryptocurrencies: BTC, ETH, ADA, BNB, USDT, USDC, L1X, DOGE, XRP, SOL, TRX, SUI, LINK.
+  - Display each allocation as: '[Asset] - [Price in USD] - [Amount in USD or coin] - [Modifiable percentage]'.
+  - Use dropdown lists to select the percentage for each asset (e.g., 0% to 100% in 5% increments).
+  - Include an 'Add Asset' button with a dropdown to select one of the listed cryptocurrencies, adding it to the allocation list.
+  - Ensure the total percentage across all assets sums to 100% (validate and display an error if not).
+- **Dynamic Pie Chart**:
+  - Create a dynamic pie chart using `recharts` to visualize the user’s allocation percentages, updating in real-time as allocations change.
+  - Assign distinct colors to each cryptocurrency and include a legend.
+- **Performance Metrics**:
+  - Display performance metrics for the allocation, including:
+    - Total portfolio value (USD).
+    - Historical performance (e.g., percentage growth/decline over 1D, 7D, 30D).
+    - Mock data for now (e.g., assume 5% growth over 7 days), with placeholders for future API integration.
+- **Layout**:
+  - Structure the dashboard from top to bottom and left to right:
+    1. **Header Section**:
+       - Display: User name, wallet address (mock L1X address, e.g., '0x123...'), total balance (USD), and percentage growth/decline (e.g., '+5.2%').
+    2. **Active Allocation Section**:
+       - Show the list of allocated cryptocurrencies with dropdowns for percentage, price, and amount.
+       - Include the 'Add Asset' button and dropdown.
+    3. **Pie Chart Section**:
+       - Display the dynamic pie chart with allocations.
+    4. **Performance Metrics Section**:
+       - Show total portfolio value and historical performance metrics.
+- **Integration**:
+  - Use `formik` for handling allocation form inputs and validation.
+  - Mock cryptocurrency prices (e.g., BTC: $60,000, ETH: $2,500, L1X: $0.50, etc.) and portfolio data for now, with placeholders for future L1X SDK or X-Talk oracle integration.
+  - Connect to a Web3 wallet (adapt `web3.js` for L1X) to display the user’s wallet address and balance.
+- **Styling**:
+  - Use Tailwind CSS for responsive, modern styling (e.g., clean cards, grid layout, hover effects).
+  - Ensure the dashboard is mobile-friendly and visually clear.
+
+**Technical Requirements**:
+- Set up a React project with Tailwind CSS and necessary dependencies (`recharts`, `formik`, `web3.js`).
+- Generate components for:
+  - Header (user info, balance, growth).
+  - AllocationForm (dropdowns, Add Asset button).
+  - PieChart (dynamic visualization).
+  - PerformanceMetrics (portfolio value, history).
+- Include mock data for cryptocurrencies, prices, and performance metrics.
+- Add placeholder code for L1X Web3 wallet integration (e.g., fetching wallet address and balance).
+- Ensure the project runs in Replit with `npm start` and includes a README with setup and run instructions.
+
+**Output**:
+- Create all necessary files (`src/App.js`, `src/components/Dashboard.js`, etc.).
+- Configure `tailwind.config.js` and `index.css` for Tailwind CSS.
+- Include a `mockData.js` file with cryptocurrency prices and portfolio data.
+- Provide a script to run the app and test the dashboard functionality.
+- Add comments in the code for future L1X SDK/X-Talk oracle integration.
+
+Please scaffold the dashboard with all components, dependencies, and mock data, ensuring it’s functional in Replit and ready for further L1X integration.

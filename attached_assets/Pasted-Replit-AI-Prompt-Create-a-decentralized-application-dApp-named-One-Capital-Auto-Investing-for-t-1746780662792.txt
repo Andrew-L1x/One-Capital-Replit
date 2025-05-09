@@ -1,0 +1,51 @@
+Replit AI Prompt
+"Create a decentralized application (dApp) named 'One Capital Auto-Investing' for the Layer One X (L1X) blockchain, using Rust for smart contracts and a React frontend with Tailwind CSS. The dApp automates investment portfolio management with the following functionality and requirements, structured in a phased approach:
+
+Phase 1: Environment Setup
+
+Set up a Rust project with WebAssembly support for L1X smart contracts.
+Install Node.js for frontend development.
+Configure a GitHub repository integration for Andrew-L1x/one-capital-autoinvesting.
+Include tools: Rust, wasm-pack, Node.js, and npm.
+Phase 2: L1X Smart Contract Framework
+
+Initialize a Rust library project named one-capital-l1x with cargo new one-capital-l1x --lib.
+Create a project structure with folders for smart contracts: allocation, custodial_vault, non_custodial_vault, portfolio, and wallet.
+Add dependencies to Cargo.toml: l1x-sdk = '0.3.0', serde = { version = '1.0', features = ['derive'] }, wasm-bindgen = '0.2'.
+Generate a basic lib.rs for each contract with placeholder functions.
+Phase 3: Core Contract Modules
+
+Implement Rust smart contracts for:
+Vault: Store asset allocations, handle deposits/withdrawals, execute bridgeless swaps using L1X’s X-Talk protocol, and rebalance portfolios.
+Rebalance: Trigger swaps based on mock price feeds to align allocations.
+Take Profit: Support manual, time-based, or percentage-gain triggers (e.g., 10% gain).
+Include unit tests for each contract using Rust’s #[test] module.
+Add placeholder X-Talk swap logic compatible with l1x-sdk.
+Phase 4: Web2/Web3 Login System
+
+Set up a Node.js backend with PostgreSQL for user data storage.
+Integrate Web3 wallet support for L1X using web3.js or equivalent (adapt for L1X SDK if needed).
+Add Web2 authentication with Firebase for email/password login.
+Generate code for dynamic wallet creation (e.g., using ethers.js or L1X SDK).
+Phase 5: Frontend Development
+
+Create a React app with Tailwind CSS for styling.
+Build core pages:
+Landing Page: Web2/Web3 login interface.
+Dashboard: Display portfolio performance with a dynamic pie chart using recharts and modifiable allocations.
+Vault Management: Forms for creating/editing vaults, depositing/withdrawing funds, rebalancing, and setting take-profit options (manual, time-based, percentage-gain).
+Use formik for form handling and connect to the backend.
+Phase 6: Pricing, Swaps, Scheduling
+
+Add mock oracle logic in Rust contracts for price feeds (placeholder for X-Talk oracle integration).
+Implement X-Talk bridgeless swap logic in the vault contract.
+Create a Node.js script with node-schedule for time-based rebalancing (every 24 hours).
+Specific Requirements:
+
+Use Rust for L1X smart contracts, targeting WebAssembly for the L1X Virtual Machine.
+Integrate L1X’s X-Talk protocol for bridgeless cross-chain swaps, referencing L1X GitBook for APIs.
+Use PostgreSQL for backend data storage, connected via node-postgres.
+Ensure the frontend uses React with Tailwind CSS and supports Web3 wallet interactions.
+Set up the project to compile and test locally, with instructions for deploying to the L1X testnet using l1x-cli-beta.
+Include a README with setup, build, and test instructions.
+Please scaffold the project with all necessary files, dependencies, and placeholder code for each phase. Configure the environment to run Rust and Node.js in Replit, and provide a script to test smart contracts with cargo test. If any L1X-specific dependencies (e.g., l1x-sdk) are unavailable, include placeholders and instructions to add them manually."

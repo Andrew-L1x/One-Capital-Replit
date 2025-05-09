@@ -109,9 +109,9 @@ export default function Dashboard() {
           </div>
           
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => setLocation("/dashboard/history")}>
-              <History className="h-4 w-4 mr-2" />
-              History
+            <Button variant="outline" onClick={() => setLocation("/contract-test")}>
+              <ArrowUpRight className="h-4 w-4 mr-2" />
+              Contract Testing
             </Button>
             <Button onClick={handleCreateVault}>
               <PlusCircle className="h-4 w-4 mr-2" />

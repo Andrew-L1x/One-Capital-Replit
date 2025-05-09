@@ -1,8 +1,13 @@
+import { useState } from "react";
 import ContractTester from "../components/contracts/ContractTester";
+import ContractDeployer from "../components/contracts/ContractDeployer";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ContractTestPage() {
+  const [activeTab, setActiveTab] = useState<string>("deploy");
+  
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center">
@@ -14,12 +19,32 @@ export default function ContractTestPage() {
       </div>
       
       <p className="text-muted-foreground">
-        This page allows you to test the connection to your deployed L1X smart contracts.
-        Enter your contract address and interact with its functions directly from this interface.
+        This page allows you to deploy and test your L1X smart contracts on the testnet.
+        Upload your compiled WASM file, deploy it, and then interact with its functions.
       </p>
       
       <div className="py-4">
-        <ContractTester />
+        <Tabs defaultValue="deploy" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="deploy">Deploy Contract</TabsTrigger>
+            <TabsTrigger value="test">Test Contract</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="deploy" className="pt-4">
+            <ContractDeployer />
+          </TabsContent>
+          
+          <TabsContent value="test" className="pt-4">
+            <div className="mb-4">
+              <p className="text-muted-foreground">
+                {activeTab === "test" 
+                  ? "Enter your contract address below or deploy a contract first."
+                  : "First deploy your contract, then switch to this tab to test it."}
+              </p>
+            </div>
+            <ContractTester />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

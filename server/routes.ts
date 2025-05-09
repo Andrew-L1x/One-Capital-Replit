@@ -10,6 +10,7 @@ import {
   insertPriceFeedSchema,
   insertRebalanceHistorySchema
 } from "@shared/schema";
+import { getAllAssetPrices, getPrice, getPrices } from "./services/priceFeed";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import session from "express-session";
@@ -1089,6 +1090,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: fromZodError(error).message });
       }
       return res.status(500).json({ message: "Error creating price feed" });
+    }
+  });
+
+  // API route to get real-time prices for all assets
+  api.get("/prices", async (_req: Request, res: Response) => {
+    try {
+      const prices = await getAllAssetPrices();
+      return res.json(prices);
+    } catch (error) {
+      console.error("Error fetching all asset prices:", error);
+      return res.status(500).json({ message: "Error fetching prices" });
+    }
+  });
+
+  // API route to get real-time price for a specific asset by symbol
+  api.get("/prices/:symbol", async (req: Request, res: Response) => {
+    try {
+      const symbol = req.params.symbol;
+      if (!symbol) {
+        return res.status(400).json({ message: "Symbol is required" });
+      }
+      
+      const price = await getPrice(symbol);
+      if (price === null) {
+        return res.status(404).json({ message: `Price not found for symbol: ${symbol}` });
+      }
+      
+      return res.json({ symbol, price });
+    } catch (error) {
+      console.error(`Error fetching price for ${req.params.symbol}:`, error);
+      return res.status(500).json({ message: "Error fetching price" });
+    }
+  });
+
+  // API route to get vault values with current prices
+  api.get("/vaults/:vaultId/value", async (req: Request, res: Response) => {
+    try {
+      const vaultId = parseInt(req.params.vaultId);
+      
+      if (isNaN(vaultId)) {
+        return res.status(400).json({ message: "Invalid vault ID" });
+      }
+      
+      const vault = await storage.getVault(vaultId);
+      if (!vault) {
+        return res.status(404).json({ message: "Vault not found" });
+      }
+      
+      const allocations = await storage.getAllocationsByVaultId(vaultId);
+      if (allocations.length === 0) {
+        return res.json({ vaultValue: 0, assetValues: [] });
+      }
+      
+      // Get assets for each allocation
+      const assetIds = allocations.map(allocation => allocation.assetId);
+      const assets = await Promise.all(
+        assetIds.map(assetId => storage.getAsset(assetId))
+      );
+      
+      // Get real-time prices for all assets
+      const symbols = assets.filter(Boolean).map(asset => asset!.symbol);
+      const prices = await getPrices(symbols);
+      
+      // Calculate values
+      let totalValue = 0;
+      const assetValues = [];
+      
+      for (let i = 0; i < allocations.length; i++) {
+        const allocation = allocations[i];
+        const asset = assets[i];
+        
+        if (asset && prices[asset.symbol]) {
+          // In a real app, you'd get the actual token amount from the blockchain
+          // For now, we'll mock the token amount based on the percentage allocation
+          const tokenAmount = allocation.percentage; // Using percentage as mock token amount
+          const assetValue = tokenAmount * prices[asset.symbol];
+          
+          totalValue += assetValue;
+          assetValues.push({
+            assetId: asset.id,
+            symbol: asset.symbol,
+            tokenAmount,
+            price: prices[asset.symbol],
+            value: assetValue
+          });
+        }
+      }
+      
+      return res.json({
+        vaultId,
+        vaultValue: totalValue,
+        assetValues,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error(`Error calculating vault value:`, error);
+      return res.status(500).json({ message: "Error calculating vault value" });
     }
   });
 

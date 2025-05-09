@@ -1,0 +1,79 @@
+Replit AI Agent Prompt — One Capital: Price Feeds, Oracle Services, and Cross-Chain Swap Integration
+I'm expanding my One Capital dApp and need the following features implemented. The backend and frontend for contract deployment, vaults, and portfolio management are already working. Please make sure the new features integrate with our existing assets.
+
+📈 PRICE FEEDS (Backend & Frontend Integration)
+Fetch real-time token prices from CoinGecko or an equivalent API.
+
+Cache prices for a short period (e.g., 1 minute) to minimize API calls.
+
+Connect the fetched prices to the existing assets stored in the backend (i.e., vault tokens).
+
+Create a new /api/prices endpoint in the backend that returns current token prices.
+
+The API should return prices in USD for each asset in the backend portfolio (matching assets in your vaults).
+
+Use these prices to calculate the USD value of assets for frontend display.
+
+In the frontend:
+
+Dynamically update the portfolio value in USD in the vault interface.
+
+Update pie chart values based on token prices (from the /api/prices endpoint).
+
+Example calculation: vault.tokenAmount * price for each token in the portfolio.
+
+🔮 ORACLE SERVICES (On-Chain Integration)
+Update the vault smart contract to store prices for each token:
+
+Add a prices map: asset => price (u128)
+
+Implement a update_price(token: String, price: u128) method to allow trusted admins to update the price.
+
+Emit a PriceUpdated event after each price update.
+
+In the backend:
+
+Use the update_price method to update prices on-chain based on the API’s current values (from CoinGecko or similar).
+
+Ensure only trusted users (admin or multisig wallet) can trigger price updates.
+
+Optional: Implement a scheduled job to auto-update prices periodically or trigger based on significant price change.
+
+🔁 X-TALK BRIDGELESS CROSS-CHAIN SWAPS
+Enable bridgeless cross-chain swaps using L1X’s X-Talk SDK for portfolio rebalancing.
+
+Update the smart contract to include the function:
+
+rust
+Copy
+Edit
+fn cross_chain_swap(from_asset: String, to_asset: String, amount: u128, target_chain_id: u64)
+This should trigger a swap request across chains.
+
+Emit a SwapRequested event when a swap is initiated.
+
+On successful completion, update the vault with the swapped assets via the SwapCompleted event.
+
+In the frontend:
+
+Add a modal for users to select assets and target chains for cross-chain rebalance.
+
+Show estimated slippage and confirmation after the transaction.
+
+In the backend:
+
+Listen for SwapCompleted events from the X-Talk protocol.
+
+Trigger updates to vault balances after a cross-chain swap completes.
+
+✅ Please:
+
+Update smart contracts to include price storage and cross-chain swap functionality.
+
+Add backend logic to handle price fetching, updating prices on-chain, and cross-chain swap listening.
+
+Extend frontend to integrate the price feed (USD value), portfolio updates, and cross-chain swap UI.
+
+Write unit tests for each new feature (price update, cross-chain swaps).
+
+Ensure integration with current vault assets and their prices.

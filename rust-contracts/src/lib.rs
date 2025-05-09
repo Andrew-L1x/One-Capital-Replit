@@ -1,5 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use l1x_sdk::{contract, types::U64, log};
+use l1x_sdk::{contract, types::U64};
 
 // Storage key for the contract state
 const COUNTER_KEY: &[u8] = b"counter";
@@ -15,7 +15,6 @@ impl Contract {
     pub fn new() {
         let counter: U64 = 0.into();
         l1x_sdk::storage_write(COUNTER_KEY, &counter.try_to_vec().unwrap());
-        log!("Contract initialized with counter = 0");
     }
 
     // Get the current counter value
@@ -23,7 +22,6 @@ impl Contract {
         match l1x_sdk::storage_read(COUNTER_KEY) {
             Some(bytes) => U64::try_from_slice(&bytes).unwrap(),
             None => {
-                log!("Counter not initialized");
                 0.into()
             }
         }
@@ -34,7 +32,6 @@ impl Contract {
         let mut counter = Self::get_counter();
         counter.0 += 1;
         l1x_sdk::storage_write(COUNTER_KEY, &counter.try_to_vec().unwrap());
-        log!("Counter incremented to {}", counter.0);
         counter
     }
 
@@ -42,7 +39,6 @@ impl Contract {
     pub fn set_counter(value: U64) -> U64 {
         let old_counter = Self::get_counter();
         l1x_sdk::storage_write(COUNTER_KEY, &value.try_to_vec().unwrap());
-        log!("Counter set from {} to {}", old_counter.0, value.0);
         old_counter
     }
 }

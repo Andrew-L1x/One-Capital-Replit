@@ -2,6 +2,7 @@
 members = [
     "rust-contracts",
 ]
+resolver = "2"
 
 # Root workspace config
 [workspace.package]

@@ -84,4 +84,46 @@ The Rust smart contracts are organized into the following modules:
 
 To build and test the smart contracts:
 
-# One-Capital-Replit
+```bash
+cd rust-contracts
+cargo build --target wasm32-unknown-unknown --release
+```
+
+## L1X Contract Development Notes
+
+When working with L1X contracts, please be aware of the following:
+
+### Current L1X Toolchain Limitation
+
+There's a known issue with the L1X WASM LLVMIR toolchain (v0.2.2) that causes the following error:
+```
+thread 'main' panicked at '.../l1x-wasm-llvmir-0.2.2/src/environment_impl.rs:2559:21:
+not implemented: MemoryCopy { dst_mem: 0, src_mem: 0 }
+```
+
+This appears to be a limitation in the current L1X toolchain and not an issue with our contract code. While this is being addressed, you can:
+
+1. Use the simplified contract in `rust-contracts/src/lib.rs` which follows the standard L1X contract pattern
+2. Check for updates to the L1X toolchain
+3. Run `./rust-contracts/deploy.sh` which will build the contract and prepare it for deployment when possible
+
+### Testing with L1X V2 Testnet
+
+To test your contract with the L1X V2 Testnet:
+
+1. Use the Testnet RPC endpoint: `https://v2.testnet.l1x.foundation`
+2. Request testnet tokens from the L1X faucet
+3. Deploy your contract using the L1X CLI when available
+
+## Running the Application
+
+To run the One Capital Auto-Investing application:
+
+1. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+2. Access the application:
+   - Backend API: http://localhost:5000
+   - Frontend UI: http://localhost:5173

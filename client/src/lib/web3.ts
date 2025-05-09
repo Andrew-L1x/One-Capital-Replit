@@ -1,5 +1,8 @@
 import { ethers } from "ethers";
 
+// Constants
+export const L1X_TESTNET_URL = "https://v2.testnet.l1x.foundation";
+
 // interface for Web3 provider
 interface Web3Provider {
   request: (args: { method: string; params?: any[] }) => Promise<any>;
@@ -10,12 +13,41 @@ const isMetaMaskInstalled = (): boolean => {
   return typeof window !== "undefined" && window.ethereum !== undefined;
 };
 
-// Get the L1X provider
+// Create a direct L1X provider using the testnet URL
+export const getL1XDirectProvider = (): ethers.JsonRpcProvider => {
+  return new ethers.JsonRpcProvider(L1X_TESTNET_URL);
+};
+
+// Get the L1X provider from browser wallet
 export const getL1XProvider = async (): Promise<Web3Provider | null> => {
-  // For now, we use MetaMask as the provider
-  // In production, this would be replaced with an L1X-specific provider
+  // First try L1X native wallet if available
+  if (typeof window !== "undefined" && window.l1x !== undefined) {
+    return window.l1x;
+  }
+  
+  // Fall back to MetaMask as the provider
   if (!isMetaMaskInstalled()) {
     return null;
+  }
+  
+  // Configure MetaMask to use L1X network if possible
+  try {
+    await window.ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params: [{
+        chainId: '0x3939', // Chain ID for L1X testnet
+        chainName: 'L1X V2 Testnet',
+        nativeCurrency: {
+          name: 'L1X',
+          symbol: 'L1X',
+          decimals: 18
+        },
+        rpcUrls: [L1X_TESTNET_URL],
+        blockExplorerUrls: ['https://explorer.testnet.l1x.foundation/']
+      }]
+    });
+  } catch (error) {
+    console.warn('Failed to add L1X network to MetaMask:', error);
   }
   
   return window.ethereum;
@@ -136,3 +168,88 @@ export const authenticateWithWallet = async (): Promise<any> => {
     throw new Error(error.message || "Failed to authenticate with wallet");
   }
 };
+
+// Contract interaction functions
+interface ContractCallOptions {
+  contractAddress: string;
+  method: string;
+  params?: any[];
+  value?: string;
+}
+
+// Call a read-only contract method
+export const callContractMethod = async ({ 
+  contractAddress, 
+  method, 
+  params = [] 
+}: ContractCallOptions): Promise<any> => {
+  try {
+    // First try with direct provider
+    const provider = getL1XDirectProvider();
+    
+    // Use JSON-RPC to call the contract method
+    const result = await provider.send("eth_call", [
+      {
+        to: contractAddress,
+        data: encodeMethodCall(method, params),
+      },
+      "latest"
+    ]);
+    
+    return result;
+  } catch (error: any) {
+    console.error(`Error calling contract method ${method}:`, error);
+    throw new Error(error.message || `Failed to call contract method ${method}`);
+  }
+};
+
+// Send a transaction to the contract
+export const sendContractTransaction = async ({
+  contractAddress,
+  method,
+  params = [],
+  value = "0x0"
+}: ContractCallOptions): Promise<string> => {
+  try {
+    const provider = await getL1XProvider();
+    
+    if (!provider) {
+      throw new Error("No provider found. Please install MetaMask or an L1X wallet.");
+    }
+    
+    const from = await getCurrentAccount();
+    
+    if (!from) {
+      throw new Error("No account connected. Please connect your wallet first.");
+    }
+    
+    // Send the transaction
+    const txHash = await provider.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from,
+        to: contractAddress,
+        data: encodeMethodCall(method, params),
+        value,
+        gas: "0x100000", // Adjust gas as needed
+      }],
+    });
+    
+    return txHash;
+  } catch (error: any) {
+    console.error(`Error sending contract transaction ${method}:`, error);
+    throw new Error(error.message || `Failed to send contract transaction ${method}`);
+  }
+};
+
+// Basic ABI encoding (This is a simplified version - a real implementation would use ethers.js ABI encoding)
+function encodeMethodCall(method: string, params: any[]): string {
+  // This is a placeholder for actual ABI encoding
+  // In a real implementation, you would use ethers.js or a similar library
+  // to properly encode the method call based on the contract ABI
+  console.warn("Using simplified method encoding - replace with proper ABI encoding in production");
+  
+  // Return a placeholder encoding for now
+  const methodId = ethers.keccak256(ethers.toUtf8Bytes(`${method}()`)).substring(0, 10);
+  return methodId;
+}

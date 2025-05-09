@@ -8,6 +8,14 @@ interface Web3Provider {
   request: (args: { method: string; params?: any[] }) => Promise<any>;
 }
 
+// Declare ethereum and l1x properties on the window object
+declare global {
+  interface Window {
+    ethereum?: Web3Provider;
+    l1x?: Web3Provider;
+  }
+}
+
 // Check if window.ethereum exists
 const isMetaMaskInstalled = (): boolean => {
   return typeof window !== "undefined" && window.ethereum !== undefined;
@@ -32,7 +40,7 @@ export const getL1XProvider = async (): Promise<Web3Provider | null> => {
   
   // Configure MetaMask to use L1X network if possible
   try {
-    await window.ethereum.request({
+    await window.ethereum?.request({
       method: 'wallet_addEthereumChain',
       params: [{
         chainId: '0x3939', // Chain ID for L1X testnet
@@ -50,7 +58,7 @@ export const getL1XProvider = async (): Promise<Web3Provider | null> => {
     console.warn('Failed to add L1X network to MetaMask:', error);
   }
   
-  return window.ethereum;
+  return window.ethereum || null;
 };
 
 // Get Ethereum provider

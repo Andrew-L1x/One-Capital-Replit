@@ -1,142 +1,113 @@
-# One Capital Auto-Investing Testing Checklist
+# One Capital dApp Testing Checklist
 
-## Smart Contract Testing (L1X Blockchain)
+This document outlines the test coverage for the One Capital Auto-Investing dApp and serves as a guide for ensuring comprehensive testing.
 
-- [ ] **Contract Deployment**
-  - [ ] Compile Rust contract to WASM using `cargo build --target wasm32-unknown-unknown --release`
-  - [ ] Deploy contract to L1X V2 testnet (https://v2.testnet.l1x.foundation)
-  - [ ] Verify contract address is accessible
+## Functional Testing
 
-- [ ] **Vault Creation**
-  - [ ] Create an investment vault with a name and description
-  - [ ] Set vault rebalancing parameters (drift threshold, rebalance frequency)
-  - [ ] Verify vault creation event is emitted
-  - [ ] Query vault by ID to confirm data integrity
+### Wallet Connection
+- [ ] Connect with WalletConnect
+- [ ] Connect with MetaMask
+- [ ] Handle connection failures gracefully
+- [ ] Persist wallet sessions
+- [ ] Switch between networks
+- [ ] Sign authentication messages
 
-- [ ] **Asset Allocation**
-  - [ ] Add assets to a vault with specific allocation percentages
-  - [ ] Verify total allocations equal 100%
-  - [ ] Update asset allocations and confirm changes
-  - [ ] Remove assets from allocation and verify removal
+### Portfolio/Vault Creation
+- [ ] Create new vault through UI
+- [ ] Set vault parameters (name, description, rebalance threshold)
+- [ ] Add asset allocations
+- [ ] Validate total allocation equals 100%
+- [ ] Handle contract interactions
+- [ ] Verify vault created on-chain
 
-- [ ] **Deposit/Withdrawal**
-  - [ ] Deposit funds into a vault
-  - [ ] Verify balance increases correctly
-  - [ ] Withdraw funds from a vault
-  - [ ] Verify balance decreases correctly
+### Vault Operations
+- [ ] Deposit funds into vault
+- [ ] Withdraw funds from vault
+- [ ] Trigger manual rebalance
+- [ ] View rebalance history
+- [ ] Setup take-profit rules
+- [ ] View asset allocation in UI matches blockchain state
 
-- [ ] **Rebalancing**
-  - [ ] Trigger manual rebalance
-  - [ ] Verify portfolio is rebalanced according to target allocations
-  - [ ] Check rebalance history is recorded
+### Contract Testing
+- [ ] Upload WASM contract file
+- [ ] Deploy contract to testnet
+- [ ] Test contract methods
+- [ ] Verify deployment parameters
+- [ ] Handle contract errors gracefully
 
-## Backend API Testing
+## E2E Testing
 
-- [ ] **Authentication Endpoints**
-  - [ ] Test user registration
-  - [ ] Test login/logout
-  - [ ] Test JWT token validation
-  - [ ] Test web3 wallet authentication
-  - [ ] Test firebase authentication
+### Dashboard
+- [ ] Verify responsive design
+- [ ] Test tab navigation
+- [ ] Check portfolio balance display
+- [ ] Verify chart rendering
+- [ ] Test navigation to other pages
 
-- [ ] **Asset Management**
-  - [ ] Get list of supported assets
-  - [ ] Get asset details by ID
-  - [ ] Get current asset prices
-  - [ ] Add support for new assets (admin only)
+### Contract Test Page
+- [ ] Test deployment interface
+- [ ] Test contract method interface
+- [ ] Verify wallet connection status
+- [ ] Test form validation
+- [ ] Verify transaction feedback
 
-- [ ] **Vault Management**
-  - [ ] Create new vault
-  - [ ] Get user's vaults
-  - [ ] Get vault details by ID
-  - [ ] Update vault settings
-  - [ ] Delete vault
+### Vault Creation Page
+- [ ] Test form validation
+- [ ] Test allocation sliders
+- [ ] Verify creation feedback
+- [ ] Test navigation back to dashboard
 
-- [ ] **Allocation Management**
-  - [ ] Add asset allocation to vault
-  - [ ] Update asset allocation
-  - [ ] Remove asset allocation
-  - [ ] Get all allocations for a vault
+## Unit Testing
 
-- [ ] **Take Profit Settings**
-  - [ ] Configure take profit settings
-  - [ ] Update take profit settings
-  - [ ] Get take profit settings for a vault
+### Frontend Components
+- [ ] Test React components
+- [ ] Test form validation
+- [ ] Test async state management
+- [ ] Test error handling
 
-- [ ] **Rebalancing**
-  - [ ] Trigger manual rebalance
-  - [ ] Get rebalance history
-  - [ ] Get rebalance status
+### Backend APIs
+- [ ] Test auth endpoints
+- [ ] Test vault CRUD operations
+- [ ] Test allocation management
+- [ ] Test price feed integration
 
-## Frontend Testing
-
-- [ ] **Authentication**
-  - [ ] Register new user
-  - [ ] Login with email/password
-  - [ ] Connect wallet (MetaMask/L1X wallet)
-  - [ ] Display user profile information
-  - [ ] Logout functionality
-
-- [ ] **Dashboard**
-  - [ ] Correctly display portfolio balance
-  - [ ] Show portfolio performance metrics
-  - [ ] Display asset allocation pie chart
-  - [ ] Show performance over different time periods (1d, 1w, 1m, 1y)
-  - [ ] Navigate between different dashboard tabs
-
-- [ ] **Vault Management**
-  - [ ] Create new vault form
-  - [ ] Display list of user's vaults
-  - [ ] View vault details
-  - [ ] Edit vault settings
-  - [ ] Delete vault confirmation
-
-- [ ] **Asset Allocation**
-  - [ ] Add assets to portfolio with percentage allocation
-  - [ ] Validate total allocation equals 100%
-  - [ ] Update allocation percentages
-  - [ ] Remove assets from allocation
-  - [ ] Display allocation visualization
-
-- [ ] **Take Profit**
-  - [ ] Configure take profit triggers
-  - [ ] Update take profit settings
-  - [ ] View take profit history
-
-- [ ] **Mobile Responsiveness**
-  - [ ] Test dashboard on mobile viewport
-  - [ ] Test forms and inputs on mobile
-  - [ ] Verify charts and visualizations are responsive
-
-## Integration Testing
-
-- [ ] **Blockchain <> Backend Integration**
-  - [ ] Backend correctly queries on-chain vault data
-  - [ ] Backend submits transactions to blockchain
-  - [ ] Event listeners capture on-chain events
-
-- [ ] **Backend <> Frontend Integration**
-  - [ ] API requests are properly formatted
-  - [ ] Response handling and error states
-  - [ ] Real-time updates of data
-  - [ ] Authentication flow works end-to-end
+### Smart Contracts
+- [ ] Test vault creation
+- [ ] Test deposit/withdraw
+- [ ] Test rebalancing logic
+- [ ] Test permission checks
+- [ ] Test edge cases
 
 ## Performance Testing
 
-- [ ] **Backend Performance**
-  - [ ] API response times under load
-  - [ ] Database query performance
-  - [ ] Connection handling
+- [ ] Load testing for concurrent users
+- [ ] Response time for critical operations
+- [ ] Contract gas optimization
+- [ ] UI rendering performance
 
-- [ ] **Frontend Performance**
-  - [ ] Page load time
-  - [ ] Component rendering performance
-  - [ ] State management efficiency
+## Security Testing
 
-## Notes for L1X V2 Testnet Testing
+- [ ] Authorization checks
+- [ ] Input validation
+- [ ] Smart contract audit
+- [ ] Transaction signing verification
+- [ ] API security
+- [ ] Data validation
 
-- Use the L1X V2 Testnet RPC endpoint: https://v2.testnet.l1x.foundation
-- Request testnet tokens from the L1X faucet before testing
-- Document any issues with the L1X toolchain for reporting
+## Documentation
 
-This checklist serves as a comprehensive guide for testing all aspects of the One Capital Auto-Investing platform. Each item should be tested thoroughly before deployment to production.
+- [ ] API documentation
+- [ ] User guide
+- [ ] Developer guide
+- [ ] Deployment guide
+- [ ] Testing guide
+
+## CI/CD Pipeline
+
+- [ ] Build validation
+- [ ] TypeScript type checking
+- [ ] ESLint validation
+- [ ] WASM contract compilation
+- [ ] Unit test execution
+- [ ] E2E test execution
+- [ ] Deployment process

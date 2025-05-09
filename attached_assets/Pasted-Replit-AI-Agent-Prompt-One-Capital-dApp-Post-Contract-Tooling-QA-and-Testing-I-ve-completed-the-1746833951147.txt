@@ -1,0 +1,81 @@
+Replit AI Agent Prompt — One Capital dApp: Post-Contract Tooling, QA, and Testing
+I've completed the following phases of my Layer One X decentralized finance dApp (One Capital), and I now need help with testing and preparing it for production.
+
+✅ CURRENT STATE (Completed)
+I’ve built and connected:
+
+A contract deployment interface (WASM upload)
+
+A contract testing UI to call functions on deployed L1X contracts
+
+A new Contract Testing page in the frontend
+
+Navigation from the dashboard to contract tools
+
+TypeScript and dependency fixes across the stack
+
+Contracts compile via wasm32-unknown-unknown and are deployable via UI
+
+Users can now test smart contract methods directly from the browser
+
+🔜 NEXT PHASES I NEED YOU TO HELP ME WITH:
+🧪 PHASE 4: Simulated User Workflows (Functional Testing)
+Help me test and simulate full user flows:
+
+Wallet connection (via WalletConnect)
+
+Portfolio creation (calls deployed contract)
+
+Vault deposit / withdraw / rebalance interactions
+
+Data flow from contract → backend → frontend (check sync)
+
+Handle UI errors and transaction feedback (success/fail)
+Tools to use:
+
+L1X testnet faucet
+
+Burner/test wallets
+
+🧪 PHASE 5: QA Automation & CI Setup
+Help me implement automated testing and continuous integration:
+
+UI tests (Playwright or Cypress)
+
+API route tests (Jest or Supertest for backend)
+
+Smart contract unit tests (Rust-based)
+
+GitHub Actions:
+
+Build WASM contract
+
+Lint + Typecheck
+
+Run tests
+
+🚀 PHASE 6: Production Readiness
+I want to prep for launch/demo:
+
+Add user feedback logging (console, Sentry, or bug report form)
+
+Host frontend (Vercel, Replit Deployment, or Netlify)
+
+Secure backend API (CORS, HTTPS, keys if public)
+
+Audit smart contracts (upgradeable? permission safety?)
+
+Create onboarding guide or in-app tutorial for first-time users
+
+OPTIONAL DEV ENHANCEMENTS
+If possible, help me add:
+
+A gas cost estimator in the contract testing tool
+
+Function selector + prefill templates in contract testing UI
+
+A contract state viewer (vault balances, asset allocations)
+
+Multi-user simulation mode (for testing group portfolios or DAO strategies)
+
+Please help implement the next logical step or recommend how to organize this in Replit’s environment (scripts, testing files, workflows, or deployments).

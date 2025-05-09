@@ -75,6 +75,23 @@ export const getEthersProvider = async (): Promise<ethers.BrowserProvider | null
   return new ethers.BrowserProvider(window.ethereum);
 };
 
+// Simplified provider getter for the Gas Estimator component
+export const getProvider = async (): Promise<ethers.Provider | null> => {
+  try {
+    // First try to get browser provider
+    const browserProvider = await getEthersProvider();
+    if (browserProvider) {
+      return browserProvider;
+    }
+    
+    // Fallback to direct provider
+    return getL1XDirectProvider();
+  } catch (error) {
+    console.error("Error getting provider:", error);
+    return null;
+  }
+};
+
 // Connect wallet and get accounts
 export const connectWallet = async (): Promise<string | null> => {
   try {

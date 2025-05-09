@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { connectWallet, getCurrentAccount } from "@/lib/web3";
+import { connectWallet, getCurrentAccount, getProvider } from "@/lib/web3";
 import {
   getContractAddress,
   setContractAddress,
@@ -24,6 +24,8 @@ import {
   setCounter,
   incrementCounter
 } from "@/lib/contract";
+import { GasCostEstimator } from "./GasCostEstimator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ContractTester() {
   // State variables
@@ -175,6 +177,24 @@ export default function ContractTester() {
     }
   };
   
+  // Get provider for gas estimator
+  const [ethersProvider, setEthersProvider] = useState(null);
+  
+  useEffect(() => {
+    const fetchProvider = async () => {
+      if (isConnected) {
+        try {
+          const provider = await getProvider();
+          setEthersProvider(provider);
+        } catch (error) {
+          console.error("Error getting provider:", error);
+        }
+      }
+    };
+    
+    fetchProvider();
+  }, [isConnected]);
+  
   return (
     <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
@@ -244,55 +264,69 @@ export default function ContractTester() {
         
         <Separator />
         
-        {/* Contract Interaction Section */}
+        {/* Contract Interaction Tabs */}
         {isContractConnected ? (
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Contract Interaction</h3>
+          <Tabs defaultValue="interact" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="interact">Interact</TabsTrigger>
+              <TabsTrigger value="gas">Gas Estimator</TabsTrigger>
+            </TabsList>
             
-            <div className="p-4 border rounded-md bg-muted/50">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">Counter Value:</span>
-                <span className="text-xl font-bold">{counterValue !== null ? counterValue : "..."}</span>
+            <TabsContent value="interact" className="space-y-4 pt-4">
+              <h3 className="text-lg font-medium">Contract Interaction</h3>
+              
+              <div className="p-4 border rounded-md bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Counter Value:</span>
+                  <span className="text-xl font-bold">{counterValue !== null ? counterValue : "..."}</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              <Button 
-                onClick={handleIncrementCounter} 
-                disabled={isLoading || !isConnected}
-                className="flex-1"
-              >
-                Increment Counter
-              </Button>
-            </div>
-            
-            <div className="flex space-x-2">
-              <div className="grid flex-1 gap-2">
-                <Label htmlFor="newCounter">New Counter Value</Label>
-                <Input
-                  id="newCounter"
-                  type="number"
-                  min="0"
-                  value={newCounterValue}
-                  onChange={(e) => setNewCounterValue(parseInt(e.target.value))}
-                />
+              
+              <div className="flex space-x-2">
+                <Button 
+                  onClick={handleIncrementCounter} 
+                  disabled={isLoading || !isConnected}
+                  className="flex-1"
+                >
+                  Increment Counter
+                </Button>
               </div>
-              <Button 
-                className="mt-8" 
-                onClick={handleSetCounter}
-                disabled={isLoading || !isConnected}
-              >
-                Set Value
-              </Button>
-            </div>
-            
-            {txHash && (
-              <div className="mt-4 p-2 border rounded-md bg-muted/50">
-                <p className="text-sm font-semibold">Last Transaction:</p>
-                <p className="text-sm font-mono break-all">{txHash}</p>
+              
+              <div className="flex space-x-2">
+                <div className="grid flex-1 gap-2">
+                  <Label htmlFor="newCounter">New Counter Value</Label>
+                  <Input
+                    id="newCounter"
+                    type="number"
+                    min="0"
+                    value={newCounterValue}
+                    onChange={(e) => setNewCounterValue(parseInt(e.target.value))}
+                  />
+                </div>
+                <Button 
+                  className="mt-8" 
+                  onClick={handleSetCounter}
+                  disabled={isLoading || !isConnected}
+                >
+                  Set Value
+                </Button>
               </div>
-            )}
-          </div>
+              
+              {txHash && (
+                <div className="mt-4 p-2 border rounded-md bg-muted/50">
+                  <p className="text-sm font-semibold">Last Transaction:</p>
+                  <p className="text-sm font-mono break-all">{txHash}</p>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="gas" className="pt-4">
+              <GasCostEstimator 
+                contractAddress={contractAddress} 
+                provider={ethersProvider} 
+              />
+            </TabsContent>
+          </Tabs>
         ) : (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />

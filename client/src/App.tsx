@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import Vault from "@/pages/vault";
 import VaultCreation from "@/pages/vault-creation";
+import ContractTest from "@/pages/contract-test";
 import MainLayout from "@/components/layout/main-layout";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/vaults/new" component={VaultCreation} />
       <Route path="/vaults/:id" component={Vault} />
+      <Route path="/contract-test" component={ContractTest} />
       <Route component={NotFound} />
     </Switch>
   );

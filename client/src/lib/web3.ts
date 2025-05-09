@@ -3,18 +3,23 @@ import { ethers } from "ethers";
 // Constants
 export const L1X_TESTNET_URL = "https://v2.testnet.l1x.foundation";
 
-// interface for Web3 provider
+// Interface for Web3 provider
 interface Web3Provider {
   request: (args: { method: string; params?: any[] }) => Promise<any>;
 }
 
-// Declare ethereum and l1x properties on the window object
+// Define window interfaces for web3 providers
 declare global {
   interface Window {
     ethereum?: Web3Provider;
     l1x?: Web3Provider;
   }
 }
+
+// Define ethers-compatible provider type
+type Eip1193CompatibleProvider = {
+  request: (args: { method: string; params?: any[] }) => Promise<any>;
+};
 
 // Check if window.ethereum exists
 const isMetaMaskInstalled = (): boolean => {
@@ -63,7 +68,7 @@ export const getL1XProvider = async (): Promise<Web3Provider | null> => {
 
 // Get Ethereum provider
 export const getEthersProvider = async (): Promise<ethers.BrowserProvider | null> => {
-  if (!isMetaMaskInstalled()) {
+  if (!isMetaMaskInstalled() || !window.ethereum) {
     return null;
   }
   

@@ -1,61 +1,48 @@
-use borsh::BorshDeserialize;
-use borsh::BorshSerialize;
-use l1x_sdk::contract;
+use borsh::{BorshDeserialize, BorshSerialize};
+use l1x_sdk::{contract, types::U64, log};
 
-use l1x_sdk::types::U64;
+// Storage key for the contract state
+const COUNTER_KEY: &[u8] = b"counter";
 
-const STORAGE_CONTRACT_KEY: &[u8] = b"STATE";
-
-#[derive(BorshSerialize)]
-struct Event {
-    name: String,
-}
-
+// Main contract struct
 #[derive(BorshSerialize, BorshDeserialize)]
-pub struct Contract {
-    counter: U64,
-}
+pub struct Contract;
 
+// Contract implementation with L1X-compatible methods
 #[contract]
 impl Contract {
-    fn load() -> Self {
-        match l1x_sdk::storage_read(STORAGE_CONTRACT_KEY) {
-            Some(bytes) => Self::try_from_slice(&bytes).unwrap(),
-            None => panic!("The contract isn't initialized"),
+    // Initialize the contract
+    pub fn new() {
+        let counter: U64 = 0.into();
+        l1x_sdk::storage_write(COUNTER_KEY, &counter.try_to_vec().unwrap());
+        log!("Contract initialized with counter = 0");
+    }
+
+    // Get the current counter value
+    pub fn get_counter() -> U64 {
+        match l1x_sdk::storage_read(COUNTER_KEY) {
+            Some(bytes) => U64::try_from_slice(&bytes).unwrap(),
+            None => {
+                log!("Counter not initialized");
+                0.into()
+            }
         }
     }
 
-    fn save(&mut self) {
-        l1x_sdk::storage_write(STORAGE_CONTRACT_KEY, &self.try_to_vec().unwrap());
+    // Increment the counter
+    pub fn increment_counter() -> U64 {
+        let mut counter = Self::get_counter();
+        counter.0 += 1;
+        l1x_sdk::storage_write(COUNTER_KEY, &counter.try_to_vec().unwrap());
+        log!("Counter incremented to {}", counter.0);
+        counter
     }
 
-    pub fn new() {
-        let mut state = Self {
-            counter: 0u64.into(),
-        };
-
-        state.save()
-    }
-
+    // Set the counter to a specific value
     pub fn set_counter(value: U64) -> U64 {
-        let mut state = Self::load();
-        let old = state.counter;
-        state.counter = value;
-        state.save();
-
-        old
-    }
-
-    pub fn inc_counter() -> U64 {
-        let mut state = Self::load();
-        let old = state.counter;
-        state.counter.0 += 1;
-        state.save();
-
-        old
-    }
-
-    pub fn get_counter() -> U64 {
-        Self::load().counter
+        let old_counter = Self::get_counter();
+        l1x_sdk::storage_write(COUNTER_KEY, &value.try_to_vec().unwrap());
+        log!("Counter set from {} to {}", old_counter.0, value.0);
+        old_counter
     }
 }

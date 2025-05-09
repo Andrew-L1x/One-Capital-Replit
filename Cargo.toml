@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "rust-contracts",
+]
+
+# Root workspace config
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["The L1X Project Developers"]
+license = "Apache-2.0"

@@ -1190,6 +1190,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cross-Chain Swap routes
+  api.post("/vaults/:vaultId/cross-chain-swap", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const userId = (req.user as any).id;
+      const vaultId = parseInt(req.params.vaultId);
+      
+      if (isNaN(vaultId)) {
+        return res.status(400).json({ message: "Invalid vault ID" });
+      }
+      
+      const vault = await storage.getVault(vaultId);
+      
+      if (!vault) {
+        return res.status(404).json({ message: "Vault not found" });
+      }
+      
+      if (vault.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Validate swap parameters
+      const { fromAsset, toAsset, amount, targetChain } = req.body;
+      
+      if (!fromAsset || !toAsset || !amount || !targetChain) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+      
+      if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+      
+      // Get asset IDs
+      const fromAssetObj = await storage.getAssetBySymbol(fromAsset);
+      const toAssetObj = await storage.getAssetBySymbol(toAsset);
+      
+      if (!fromAssetObj || !toAssetObj) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+      
+      // Calculate expected received amount based on current prices
+      const fromPrice = await getPrice(fromAsset);
+      const toPrice = await getPrice(toAsset);
+      
+      if (fromPrice === null || toPrice === null) {
+        return res.status(400).json({ message: "Price information not available" });
+      }
+      
+      // Apply 0.5% swap fee
+      const amountInUSD = parseFloat(amount) * fromPrice * 0.995;
+      const receivedAmount = amountInUSD / toPrice;
+      
+      // In a real implementation, this would initiate a cross-chain swap
+      // via the L1X blockchain's bridge/X-Talk protocol
+      
+      // For demo purposes, return a successful response with a mock tx hash
+      // and expected completion time
+      const txHash = `xswap_${Date.now().toString(36)}`;
+      const completionTime = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // 3 mins
+      
+      return res.json({
+        success: true,
+        message: "Cross-chain swap initiated",
+        txHash,
+        details: {
+          fromAsset,
+          toAsset,
+          amount: parseFloat(amount),
+          targetChain,
+          estimatedReceivedAmount: receivedAmount,
+          estimatedCompletionTime: completionTime
+        }
+      });
+    } catch (error) {
+      console.error("Error initiating cross-chain swap:", error);
+      return res.status(500).json({ message: "Error initiating cross-chain swap" });
+    }
+  });
+
   // Register API routes
   app.use("/api", api);
 

@@ -102,13 +102,13 @@ export async function getPrice(symbol: string): Promise<number | null> {
     
     // Try to get latest price from database
     const latestPrice = await storage.getLatestPriceByAssetId(asset.id);
-    if (latestPrice && (now - Number(latestPrice.timestamp) < CACHE_TTL_MS)) {
+    if (latestPrice && (now - new Date(latestPrice.timestamp).getTime() < CACHE_TTL_MS)) {
       // Cache and return the price from database
       priceCache[normalizedSymbol] = {
-        price: latestPrice.price,
-        lastUpdated: Number(latestPrice.timestamp)
+        price: Number(latestPrice.price),
+        lastUpdated: new Date(latestPrice.timestamp).getTime()
       };
-      return latestPrice.price;
+      return Number(latestPrice.price);
     }
     
     // Fetch from external API
@@ -123,7 +123,7 @@ export async function getPrice(symbol: string): Promise<number | null> {
       // Store in database
       const priceFeed: InsertPriceFeed = {
         assetId: asset.id,
-        price,
+        price: price.toString(),
         source: 'coingecko',
         timestamp: new Date().toISOString()
       };

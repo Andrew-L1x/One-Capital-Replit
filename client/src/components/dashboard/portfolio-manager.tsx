@@ -63,7 +63,7 @@ const COLORS = [
   '#FF7F50', '#6A0572', '#AB83A1'
 ];
 
-// Mock prices for cryptocurrencies
+// Mock prices for digital assets
 const MOCK_PRICES: Record<string, number> = {
   BTC: 60000,
   ETH: 2500,

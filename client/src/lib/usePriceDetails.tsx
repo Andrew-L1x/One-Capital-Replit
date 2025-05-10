@@ -13,7 +13,7 @@ interface PriceDetailMap {
 }
 
 /**
- * Custom hook to get cryptocurrency price details including historical data
+ * Custom hook to get digital asset price details including historical data
  */
 export function usePriceDetails(refreshInterval = 30000): {
   priceDetails: PriceDetailMap;

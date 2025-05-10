@@ -110,7 +110,7 @@ export default function Dashboard() {
           <div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">Portfolio Dashboard</h2>
             <p className="text-muted-foreground">
-              Manage your cryptocurrency investments and allocations
+              Manage your digital asset investments and allocations
             </p>
           </div>
           

@@ -159,7 +159,7 @@ export function CurrentHoldings() {
       // Show success message
       toast({
         title: "Holdings Updated",
-        description: "Your cryptocurrency holdings have been successfully updated.",
+        description: "Your digital asset holdings have been successfully updated.",
         variant: "default",
       });
     } catch (error: any) {
@@ -180,7 +180,7 @@ export function CurrentHoldings() {
         <CardHeader>
           <CardTitle>Current Holdings</CardTitle>
           <CardDescription>
-            Adjust your cryptocurrency holdings
+            Adjust your digital asset holdings
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -201,7 +201,7 @@ export function CurrentHoldings() {
           Current Holdings
         </CardTitle>
         <CardDescription>
-          View and adjust your current cryptocurrency amounts
+          View and adjust your current digital asset amounts
         </CardDescription>
       </CardHeader>
       <CardContent>

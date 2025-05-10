@@ -72,10 +72,10 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   
   // Define a consistent mock portfolio that all components will use when no API data is available
   const mockPortfolio: MockAsset[] = [
-    { id: 1, name: "Bitcoin", symbol: "BTC", type: "crypto", amount: 0.5 },
-    { id: 2, name: "Ethereum", symbol: "ETH", type: "crypto", amount: 5.0 },
-    { id: 3, name: "Layer One X", symbol: "L1X", type: "crypto", amount: 500.0 },
-    { id: 4, name: "Solana", symbol: "SOL", type: "crypto", amount: 15.0 },
+    { id: 1, name: "Bitcoin", symbol: "BTC", type: "digital_asset", amount: 0.5 },
+    { id: 2, name: "Ethereum", symbol: "ETH", type: "digital_asset", amount: 5.0 },
+    { id: 3, name: "Layer One X", symbol: "L1X", type: "digital_asset", amount: 500.0 },
+    { id: 4, name: "Solana", symbol: "SOL", type: "digital_asset", amount: 15.0 },
     { id: 5, name: "USD Coin", symbol: "USDC", type: "stablecoin", amount: 1000.0 }
   ];
   

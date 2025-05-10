@@ -352,7 +352,6 @@ export function PerformanceMetrics() {
                     <th className="py-2 text-right font-medium text-muted-foreground">Amount</th>
                     <th className="py-2 text-right font-medium text-muted-foreground">Price</th>
                     <th className="py-2 text-right font-medium text-muted-foreground">24h Change</th>
-                    <th className="py-2 text-right font-medium text-muted-foreground">Value (USD)</th>
                     <th className="py-2 text-right font-medium text-muted-foreground">Allocation %</th>
                   </tr>
                 </thead>
@@ -376,9 +375,6 @@ export function PerformanceMetrics() {
                           {formatPercentage(asset.priceChangePercentage24h)}
                         </span>
                       </td>
-                      <td className="py-2 text-right font-medium">
-                        {formatPrice(asset.value)}
-                      </td>
                       <td className="py-2 text-right">
                         {asset.percentage.toFixed(2)}%
                       </td>
@@ -388,7 +384,6 @@ export function PerformanceMetrics() {
                 <tfoot>
                   <tr className="border-t">
                     <td colSpan={4} className="py-2 font-medium">Total</td>
-                    <td className="py-2 text-right font-bold">{formatPrice(metrics.totalValue)}</td>
                     <td className="py-2 text-right font-bold">100%</td>
                   </tr>
                 </tfoot>

@@ -305,214 +305,65 @@ export default function PortfolioManager({
         <CurrentHoldings />
       </div>
       
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Portfolio Form */}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+        {/* Pie Chart and Performance */}
         <Card>
           <CardHeader>
-            <CardTitle>Cryptocurrency Allocations</CardTitle>
+            <CardTitle>Portfolio Visualization</CardTitle>
             <CardDescription>
-              Allocate percentages to your desired cryptocurrencies
+              Visual representation of your asset allocation
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="space-y-4">
-                  {watchedAllocations?.map((allocation, index) => {
-                    const asset = assets.find(a => a.id === allocation.assetId);
-                    const price = MOCK_PRICES[asset?.symbol || ""] || 0;
-                    const amount = ((allocation.percentage || 0) / 100) * 10000; // Assuming $10,000 portfolio
-                    
-                    return (
-                      <div key={index} className="flex items-center space-x-3">
-                        <FormField
-                          control={form.control}
-                          name={`allocations.${index}.assetId`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <Select
-                                value={field.value?.toString() || "1"}
-                                onValueChange={(value) => field.onChange(parseInt(value))}
-                                disabled={isLoadingAssets}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue>
-                                    {isLoadingAssets ? "Loading..." : 
-                                     assets.find(a => a.id === field.value)?.symbol || "Select"}
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {assets.map((asset) => (
-                                    <SelectItem 
-                                      key={asset.id} 
-                                      value={asset.id.toString()}
-                                    >
-                                      {asset.symbol} - {asset.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={form.control}
-                          name={`allocations.${index}.percentage`}
-                          render={({ field }) => (
-                            <FormItem className="w-28">
-                              <Select
-                                value={field.value?.toString() || "0"}
-                                onValueChange={(value) => field.onChange(parseInt(value))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue>
-                                    {field.value ? `${field.value}%` : "0%"}
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {percentageOptions.map((percent) => (
-                                    <SelectItem 
-                                      key={percent} 
-                                      value={percent.toString()}
-                                      disabled={percent > remainingPercentage + (allocation.percentage || 0)}
-                                    >
-                                      {percent}%
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="flex items-center space-x-2 min-w-[120px]">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span>{amount.toFixed(2)}</span>
-                        </div>
-                        
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => remove(index)}
-                          disabled={watchedAllocations.length <= 1}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <div className="flex items-center space-x-2">
-                    <PercentIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      Total: {totalPercentage}% 
-                      {remainingPercentage > 0 
-                        ? ` (${remainingPercentage}% remaining)` 
-                        : " (adding will redistribute allocations)"}
-                    </span>
-                  </div>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddAllocation}
-                    disabled={isLoadingAssets}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    Add Asset
-                  </Button>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isSubmitting || totalPercentage !== 100}
+          <CardContent className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={getPieChartData()}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : "Save Allocation"}
-                </Button>
-              </form>
-            </Form>
+                  {getPieChartData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: any) => [`${value}%`, 'Allocation']} 
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
         
-        {/* Pie Chart and Performance */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Visualization</CardTitle>
-              <CardDescription>
-                Visual representation of your asset allocation
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={getPieChartData()}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={90}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {getPieChartData().map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: any) => [`${value}%`, 'Allocation']} 
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Allocation Preview</CardTitle>
-              <CardDescription>
-                Projected portfolio value based on your current allocation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center border-b pb-2">
-                  <span className="text-sm">Projected Portfolio Value</span>
-                  <span className="font-medium text-lg">
-                    ${calculateTotalValue().toFixed(2)}
-                  </span>
-                </div>
-                
-                <div className="text-xs text-muted-foreground mt-2">
-                  Note: This is a preview based on your current allocation settings.
-                  <br />
-                  For detailed performance metrics, use the <strong>Portfolio</strong> tab with live data.
-                </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Portfolio Allocation Preview</CardTitle>
+            <CardDescription>
+              Projected portfolio value based on your current allocation
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="text-sm">Projected Portfolio Value</span>
+                <span className="font-medium text-lg">
+                  ${calculateTotalValue().toFixed(2)}
+                </span>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              
+              <div className="text-xs text-muted-foreground mt-2">
+                Note: This is a preview based on your current allocation settings.
+                <br />
+                For detailed performance metrics, use the <strong>Portfolio</strong> tab with live data.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

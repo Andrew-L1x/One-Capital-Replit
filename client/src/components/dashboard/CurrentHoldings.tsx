@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Asset, Allocation, Vault } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCw, Plus, DollarSign, Wallet, ArrowUpDown } from "lucide-react";
+import { RefreshCw, Plus, DollarSign, Wallet, ArrowUpDown, Trash2 } from "lucide-react";
 import { usePortfolio } from "@/lib/portfolioContext";
 
 // Define the schema for holdings form
@@ -32,8 +32,16 @@ const holdingsSchema = z.object({
     z.object({
       assetId: z.number(),
       amount: z.number().min(0),
+      percentage: z.number().min(0).max(100),
     })
-  ),
+  ).refine(data => {
+    // Validate total percentage equals 100%
+    const total = data.reduce((sum, holding) => sum + holding.percentage, 0);
+    return total === 100;
+  }, {
+    message: "Total allocation must equal exactly 100%",
+    path: ["holdings"],
+  }),
 });
 
 type HoldingsFormValues = z.infer<typeof holdingsSchema>;
@@ -61,22 +69,25 @@ export function CurrentHoldings() {
   // Prepare initial form values based on current holdings
   const getInitialHoldings = () => {
     if (isLoadingAllocations || isLoadingAssets || !allocations.length) {
-      return assets.slice(0, 3).map(asset => ({
+      // Default to 3 assets with equal distribution (33/33/34)
+      return assets.slice(0, 3).map((asset, index) => ({
         assetId: asset.id,
         amount: 0,
+        percentage: index === 2 ? 34 : 33, // Give the last asset 34% to make it equal 100%
       }));
     }
 
     return allocations.map((allocation: Allocation) => {
       const asset = assets.find(a => a.id === allocation.assetId);
-      // Calculate the actual amount based on percentage of portfolio value
       // Convert targetPercentage string to number
       const percentage = parseFloat(allocation.targetPercentage.toString());
+      // Calculate the actual amount based on percentage of portfolio value
       const amount = (percentage / 100) * (portfolioValue || 10000);
       
       return {
         assetId: allocation.assetId,
         amount: parseFloat(amount.toFixed(6)),
+        percentage: percentage,
       };
     });
   };
@@ -100,8 +111,41 @@ export function CurrentHoldings() {
   const onSubmit = async (data: HoldingsFormValues) => {
     setIsSubmitting(true);
     try {
-      // In a real app, would save to API
+      // In a real app, we would make API calls to update each allocation
       console.log("Saving updated holdings:", data);
+      
+      // Ensure total allocation equals 100%
+      const totalPercentage = data.holdings.reduce((sum, holding) => sum + holding.percentage, 0);
+      if (Math.abs(totalPercentage - 100) > 0.01) {
+        throw new Error("Total allocation must equal 100%");
+      }
+      
+      // This is the beginning of what would be a real API integration
+      // Update allocations for the first vault
+      if (vaults.length > 0) {
+        const vaultId = vaults[0].id;
+        
+        for (const holding of data.holdings) {
+          // We would make API calls to update allocations
+          console.log(`Updating allocation for asset ${holding.assetId} to ${holding.percentage}%`);
+          // In a real implementation, we would call:
+          // await apiRequest(`/api/vaults/${vaultId}/allocations`, {
+          //   assetId: holding.assetId,
+          //   targetPercentage: holding.percentage
+          // });
+        }
+      }
+      
+      // Update portfolio chart data
+      const chartData = data.holdings.map(holding => {
+        const asset = assets.find(a => a.id === holding.assetId);
+        return {
+          id: holding.assetId,
+          symbol: asset?.symbol || "Unknown",
+          name: asset?.name || "Unknown Asset",
+          percentage: holding.percentage,
+        };
+      });
       
       // Show success message
       toast({
@@ -109,11 +153,11 @@ export function CurrentHoldings() {
         description: "Your cryptocurrency holdings have been successfully updated.",
         variant: "default",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving holdings:", error);
       toast({
         title: "Update Failed",
-        description: "There was an error updating your holdings. Please try again.",
+        description: error.message || "There was an error updating your holdings. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -159,11 +203,36 @@ export function CurrentHoldings() {
                 const asset = assets.find(a => a.id === holding.assetId);
 
                 return (
-                  <div key={index} className="flex items-center space-x-3">
+                  <div key={index} className="flex items-center space-x-3 mb-3 pb-3 border-b">
                     <div className="flex-1 font-medium">
                       {asset?.symbol || "Unknown"} 
                       <span className="text-xs text-muted-foreground ml-1">({asset?.name})</span>
                     </div>
+                    
+                    <FormField
+                      control={form.control}
+                      name={`holdings.${index}.percentage`}
+                      render={({ field }) => (
+                        <FormItem className="w-24">
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                className="pr-6 text-right"
+                                min="0"
+                                max="100"
+                                step="1"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              />
+                              <span className="absolute right-2 top-2.5 text-muted-foreground">%</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
                     <FormField
                       control={form.control}
@@ -179,7 +248,16 @@ export function CurrentHoldings() {
                                 className="pl-8"
                                 step="0.000001"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                onChange={(e) => {
+                                  const newAmount = parseFloat(e.target.value);
+                                  field.onChange(newAmount);
+                                  
+                                  // Auto-update percentage when amount changes
+                                  if (newAmount > 0 && portfolioValue > 0) {
+                                    const newPercentage = (newAmount / portfolioValue) * 100;
+                                    form.setValue(`holdings.${index}.percentage`, parseFloat(newPercentage.toFixed(2)));
+                                  }
+                                }}
                               />
                             </div>
                           </FormControl>
@@ -188,7 +266,7 @@ export function CurrentHoldings() {
                       )}
                     />
                     
-                    <div className="w-20 text-xs font-medium text-right">
+                    <div className="w-24 text-xs font-medium text-right">
                       {asset?.symbol && asset.symbol === "BTC" && (
                         <span>{holding.amount > 0 ? (holding.amount / 65000).toFixed(8) : "0"} BTC</span>
                       )}
@@ -199,6 +277,42 @@ export function CurrentHoldings() {
                         <span>{holding.amount > 0 ? holding.amount.toFixed(2) : "0"} USD</span>
                       )}
                     </div>
+                    
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        const currentHoldings = form.watch("holdings");
+                        // Don't allow removing if there's only one asset left
+                        if (currentHoldings.length <= 1) {
+                          toast({
+                            title: "Cannot Remove",
+                            description: "You must have at least one asset in your portfolio",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        
+                        // Remove the current holding
+                        const newHoldings = currentHoldings.filter((_, i) => i !== index);
+                        form.setValue("holdings", newHoldings);
+                        
+                        // Redistribute the percentage to other assets
+                        const removedPercentage = holding.percentage || 0;
+                        if (removedPercentage > 0 && newHoldings.length > 0) {
+                          // Distribute evenly among remaining assets
+                          const distribution = removedPercentage / newHoldings.length;
+                          newHoldings.forEach((_, i) => {
+                            const currentPercentage = newHoldings[i].percentage || 0;
+                            form.setValue(`holdings.${i}.percentage`, currentPercentage + distribution);
+                          });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 );
               })}
@@ -210,6 +324,53 @@ export function CurrentHoldings() {
                 <span className="text-sm">
                   Current Value: ${portfolioValue.toFixed(2)}
                 </span>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div>
+                  <span className="text-sm font-medium">
+                    Total: {form.watch("holdings")?.reduce((sum, h) => sum + (h.percentage || 0), 0)}%
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Find unused assets
+                    const usedAssetIds = new Set(form.watch("holdings")?.map(h => h.assetId));
+                    const unusedAssets = assets.filter(asset => !usedAssetIds.has(asset.id));
+                    
+                    if (unusedAssets.length === 0) {
+                      toast({
+                        title: "No more assets",
+                        description: "All available assets have been allocated",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    // Add new asset with 0% allocation initially
+                    form.setValue("holdings", [
+                      ...form.watch("holdings"),
+                      {
+                        assetId: unusedAssets[0].id,
+                        amount: 0,
+                        percentage: 0,
+                      }
+                    ]);
+                    
+                    toast({
+                      title: "Asset Added",
+                      description: `Added ${unusedAssets[0].symbol} to your portfolio`,
+                      variant: "default",
+                    });
+                  }}
+                  disabled={isLoadingAssets}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Asset
+                </Button>
               </div>
             </div>
             

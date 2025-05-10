@@ -11,33 +11,21 @@ import {
   User
 } from "firebase/auth";
 
-// Firebase configuration from environment variables
-// Fix for potential quoted values in environment variables
-const cleanEnvValue = (val: string): string => {
-  if (val && val.startsWith('"') && val.endsWith('"')) {
-    return val.slice(1, -1);
-  }
-  return val;
-};
-
-const projectId = cleanEnvValue(import.meta.env.VITE_FIREBASE_PROJECT_ID);
-const apiKey = cleanEnvValue(import.meta.env.VITE_FIREBASE_API_KEY);
-const appId = cleanEnvValue(import.meta.env.VITE_FIREBASE_APP_ID);
-
+// Firebase configuration
 const firebaseConfig = {
-  apiKey: apiKey,
-  authDomain: `${projectId}.firebaseapp.com`,
-  projectId: projectId,
-  storageBucket: `${projectId}.appspot.com`,
-  messagingSenderId: "123456789012", // Any valid format needed for initialization
-  appId: appId
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: "one-capital-2ee09.firebaseapp.com",
+  projectId: "one-capital-2ee09",
+  storageBucket: "one-capital-2ee09.appspot.com",
+  messagingSenderId: "336487017547",
+  appId: "1:336487017547:web:863f36022f4fe87b57b1ce",
+  measurementId: "G-R8KYRHPJX9"
 };
 
 // Log the configuration (without sensitive values)
-console.log("Initializing Firebase with project ID:", projectId);
+console.log("Initializing Firebase with project ID:", firebaseConfig.projectId);
 
 // Debugging authentication setup
-console.log("Auth domain:", `${projectId}.firebaseapp.com`);
 console.log("Firebase configuration ready");
 
 // Initialize Firebase

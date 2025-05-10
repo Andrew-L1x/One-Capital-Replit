@@ -3,9 +3,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { firebaseLogin, firebaseRegister, firebaseGoogleLogin, handleGoogleRedirect } from "@/lib/firebase";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  GoogleAuthProvider, 
+  signInWithRedirect, 
+  getRedirectResult,
+  User as FirebaseUser
+} from "firebase/auth";
+
+// Import the Firebase config
+import { firebaseApp } from "@/lib/firebase";
 
 import {
   Card,

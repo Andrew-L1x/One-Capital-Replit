@@ -84,9 +84,12 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
     try {
       // Send login directly with email - no need to lookup username first
       // Our updated backend now supports login with email
-      await apiRequest("POST", "/api/auth/login", {
-        username: data.email, // Backend strategy now accepts email as username field
-        password: data.password
+      await apiRequest("/api/auth/login", {
+        method: "POST",
+        data: {
+          username: data.email, // Backend strategy now accepts email as username field
+          password: data.password
+        }
       });
       
       // Update auth state

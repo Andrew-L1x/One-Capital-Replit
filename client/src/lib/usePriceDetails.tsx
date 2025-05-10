@@ -31,8 +31,7 @@ export function usePriceDetails(refreshInterval = 30000): {
       setError(null);
       
       // Direct API request to ensure fresh data
-      const response = await apiRequest('GET', '/api/prices');
-      const data = await response.json();
+      const data = await apiRequest('/api/prices');
       
       console.log("Fetched price details:", data);
       

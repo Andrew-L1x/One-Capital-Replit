@@ -1132,8 +1132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a rebalance history record for the event
       const rebalanceRecord = await storage.createRebalanceHistory({
         vaultId,
-        rebalancedAt: new Date().toISOString(),
-        rebalanceType: "manual", // This was triggered manually
+        status: result.success ? 'completed' : 'failed',
+        type: "manual", // This was triggered manually
         details: result.details || result.message
       });
       

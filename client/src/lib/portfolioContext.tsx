@@ -89,14 +89,28 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       return;
     }
     
-    // Check if we have API data or should use mock data
+    // Check if we have valid API data
     const hasApiData = allocationsData.length > 0 && assets.length > 0;
+    
+    // Check if we have vaults but no allocations - this means a new user with no portfolio
+    const isNewUser = vaults.length === 0 || (vaults.length > 0 && allocationsData.length === 0);
     
     // Create a calculation function to avoid issues with setState in useEffect
     const calculatePortfolio = () => {
       let totalValue = 0;
       let totalPreviousValue = 0;
       const allocations: AssetWithAllocation[] = [];
+      
+      // For new users, return empty portfolio with $0.00 value
+      if (isNewUser) {
+        console.log("New user detected - showing empty portfolio");
+        return {
+          allocations: [],
+          totalValue: 0,
+          totalPreviousValue: 0,
+          change: 0
+        };
+      }
       
       if (hasApiData) {
         // Use real data from API
@@ -131,8 +145,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             });
           }
         }
-      } else {
-        // Use mock data when API data isn't available
+      } else if (!isNewUser) {
+        // Only use mock data when API data isn't available AND it's not a new user
         mockPortfolio.forEach(asset => {
           if (priceDetails[asset.symbol]) {
             // Calculate current value

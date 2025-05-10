@@ -89,7 +89,6 @@ export function AssetAllocationTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Token</TableHead>
-              <TableHead className="text-right">Price (USD)</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead className="text-right">% of Portfolio</TableHead>
             </TableRow>
@@ -102,9 +101,6 @@ export function AssetAllocationTable() {
                     <span>{allocation.asset.name}</span>
                     <span className="text-xs text-muted-foreground">{allocation.asset.symbol}</span>
                   </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatPrice(allocation.price)}
                 </TableCell>
                 <TableCell className="text-right">
                   {allocation.amount.toLocaleString(undefined, { 

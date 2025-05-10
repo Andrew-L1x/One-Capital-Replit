@@ -324,8 +324,8 @@ export function CurrentHoldings() {
                       )}
                     />
                     
-                    <div className="flex items-center justify-end space-x-2">
-                      <div className="text-xs font-medium">
+                    <div className="text-xs font-medium text-right justify-self-end flex items-center space-x-2">
+                      <div>
                         {asset?.symbol && asset.symbol === "BTC" && (
                           <span>{holding.amount > 0 ? (holding.amount / 65000).toFixed(3) : "0"} BTC</span>
                         )}
@@ -341,34 +341,34 @@ export function CurrentHoldings() {
                         type="button" 
                         variant="ghost" 
                         size="icon"
-                        className="h-6 w-6 ml-2"
+                        className="h-6 w-6 ml-1" 
                         onClick={() => {
-                          const currentHoldings = form.watch("holdings");
-                          // Don't allow removing if there's only one asset left
-                          if (currentHoldings.length <= 1) {
-                            toast({
-                              title: "Cannot Remove",
-                              description: "You must have at least one asset in your portfolio",
-                              variant: "destructive"
-                            });
-                            return;
-                          }
+                        const currentHoldings = form.watch("holdings");
+                        // Don't allow removing if there's only one asset left
+                        if (currentHoldings.length <= 1) {
+                          toast({
+                            title: "Cannot Remove",
+                            description: "You must have at least one asset in your portfolio",
+                            variant: "destructive"
+                          });
+                          return;
+                        }
+                        
+                        // Remove the current holding
+                        const newHoldings = currentHoldings.filter((_, i) => i !== index);
+                        form.setValue("holdings", newHoldings);
+                        
+                        // Redistribute the percentage to the first asset
+                        if (newHoldings.length > 0) {
+                          const removedPercentage = holding.percentage;
+                          const firstHolding = newHoldings[0];
+                          const newPercentage = firstHolding.percentage + removedPercentage;
                           
-                          // Remove the current holding
-                          const newHoldings = currentHoldings.filter((_, i) => i !== index);
-                          form.setValue("holdings", newHoldings);
-                          
-                          // Redistribute the percentage to the first asset
-                          if (newHoldings.length > 0) {
-                            const removedPercentage = holding.percentage;
-                            const firstHolding = newHoldings[0];
-                            const newPercentage = firstHolding.percentage + removedPercentage;
-                            
-                            // Update the first holding with the additional percentage
-                            form.setValue(`holdings.0.percentage`, newPercentage);
-                            form.setValue(`holdings.0.amount`, (newPercentage / 100) * portfolioValue);
-                          }
-                        }}
+                          // Update the first holding with the additional percentage
+                          form.setValue(`holdings.0.percentage`, newPercentage);
+                          form.setValue(`holdings.0.amount`, (newPercentage / 100) * portfolioValue);
+                        }
+                      }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -501,61 +501,61 @@ export function CurrentHoldings() {
                         return;
                       }
                     
-                      // Find the highest allocation
-                      const sortedHoldings = [...currentHoldings]
-                        .map((h, i) => ({ ...h, originalIndex: i }))
-                        .sort((a, b) => b.percentage - a.percentage);
-                      
-                      const highestHolding = sortedHoldings[0];
-                      
-                      // Check if highest holding can be reduced by 10%
-                      if (highestHolding.percentage < newAssetPercentage + 1) {
-                        toast({
-                          title: "Cannot Add Asset",
-                          description: "Not enough allocation to add a new asset. The highest allocation must be at least 11%.",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      
-                      // Create a copy of the current holdings
-                      const adjustedHoldings = [...currentHoldings];
-                      
-                      // Reduce the highest allocation by 10%
-                      adjustedHoldings[highestHolding.originalIndex] = {
-                        ...adjustedHoldings[highestHolding.originalIndex],
-                        percentage: highestHolding.percentage - newAssetPercentage,
-                        amount: ((highestHolding.percentage - newAssetPercentage) / 100) * portfolioValue
-                      };
-                      
-                      // Amount for the new asset based on 10% of portfolio value
-                      const newAmount = (newAssetPercentage / 100) * portfolioValue;
-                      
-                      // Add the new asset with 10% allocation
-                      form.setValue("holdings", [
-                        ...adjustedHoldings,
-                        {
-                          assetId: selectedAssetId,
-                          amount: newAmount,
-                          percentage: newAssetPercentage,
-                        }
-                      ]);
-                      
-                      // Close the asset selector popup
-                      setShowAssetSelector(false);
-                      setSelectedAssetId(null);
-                      
+                    // Find the highest allocation
+                    const sortedHoldings = [...currentHoldings]
+                      .map((h, i) => ({ ...h, originalIndex: i }))
+                      .sort((a, b) => b.percentage - a.percentage);
+                    
+                    const highestHolding = sortedHoldings[0];
+                    
+                    // Check if highest holding can be reduced by 10%
+                    if (highestHolding.percentage < newAssetPercentage + 1) {
                       toast({
-                        title: "Asset Added",
-                        description: `Added new asset to your portfolio`,
-                        variant: "default",
+                        title: "Cannot Add Asset",
+                        description: "Not enough allocation to add a new asset. The highest allocation must be at least 11%.",
+                        variant: "destructive",
                       });
-                    }}
-                    disabled={isLoadingAssets}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Asset
-                  </Button>
+                      return;
+                    }
+                    
+                    // Create a copy of the current holdings
+                    const adjustedHoldings = [...currentHoldings];
+                    
+                    // Reduce the highest allocation by 10%
+                    adjustedHoldings[highestHolding.originalIndex] = {
+                      ...adjustedHoldings[highestHolding.originalIndex],
+                      percentage: highestHolding.percentage - newAssetPercentage,
+                      amount: ((highestHolding.percentage - newAssetPercentage) / 100) * portfolioValue
+                    };
+                    
+                    // Amount for the new asset based on 10% of portfolio value
+                    const newAmount = (newAssetPercentage / 100) * portfolioValue;
+                    
+                    // Add the new asset with 10% allocation
+                    form.setValue("holdings", [
+                      ...adjustedHoldings,
+                      {
+                        assetId: selectedAssetId,
+                        amount: newAmount,
+                        percentage: newAssetPercentage,
+                      }
+                    ]);
+                    
+                    // Close the asset selector popup
+                    setShowAssetSelector(false);
+                    setSelectedAssetId(null);
+                    
+                    toast({
+                      title: "Asset Added",
+                      description: `Added new asset to your portfolio`,
+                      variant: "default",
+                    });
+                  }}
+                  disabled={isLoadingAssets}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Asset
+                </Button>
                   </CardFooter>
                 </Card>
               </div>

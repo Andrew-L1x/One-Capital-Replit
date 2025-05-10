@@ -50,6 +50,10 @@ export const vaults = pgTable("vaults", {
   description: text("description"),
   isCustodial: boolean("is_custodial").notNull().default(true),
   contractAddress: text("contract_address"),
+  // Rebalance settings
+  driftThreshold: decimal("drift_threshold", { precision: 5, scale: 2 }).default("5.00").notNull(),
+  rebalanceFrequency: text("rebalance_frequency").default("manual").notNull(), // manual, weekly, monthly, quarterly, yearly
+  lastRebalanced: timestamp("last_rebalanced"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -60,6 +64,9 @@ export const insertVaultSchema = createInsertSchema(vaults).pick({
   description: true,
   isCustodial: true,
   contractAddress: true,
+  driftThreshold: true,
+  rebalanceFrequency: true,
+  lastRebalanced: true,
 });
 
 // Vault allocations table

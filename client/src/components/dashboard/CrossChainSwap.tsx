@@ -32,7 +32,8 @@ import { ArrowDown, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { usePrices, formatPrice } from "@/lib/priceService";
+import { formatPrice } from "@/lib/priceService";
+import useRealTimePrices from "@/hooks/useRealTimePrices";
 
 // Define form schema with zod
 const swapFormSchema = z.object({
@@ -108,7 +109,7 @@ export function CrossChainSwap() {
   });
   
   // Get prices using the hook
-  const { prices, loading: isPricesLoading } = usePrices();
+  const { prices, loading: isPricesLoading } = useRealTimePrices();
   
   // Update local prices when selected assets or prices change
   useEffect(() => {

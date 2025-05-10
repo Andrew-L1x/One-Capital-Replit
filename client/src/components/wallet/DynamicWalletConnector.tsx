@@ -34,8 +34,8 @@ export default function DynamicWalletConnector({
   const [status, setStatus] = useState<WalletStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
   
-  // L1X RPC endpoint as specified
-  const l1xEndpoint = 'https://v2-testnet-rpc.l1x.foundation/';
+  // L1X V2 Testnet RPC endpoint - ChainID 14649 (0x3929)
+  const l1xEndpoint = 'https://v2.testnet.l1x.foundation';
   
   // Update status when user or wallet changes
   useEffect(() => {
@@ -64,15 +64,15 @@ export default function DynamicWalletConnector({
       await windowWithEthereum.ethereum.request({
         method: 'wallet_addEthereumChain',
         params: [{
-          chainId: '0x42b', // 1067 in hex
-          chainName: 'L1X Testnet v2',
+          chainId: '0x3929', // 14649 in hex
+          chainName: 'L1X V2 Testnet',
           nativeCurrency: {
             name: 'L1X',
             symbol: 'L1X',
             decimals: 18
           },
-          rpcUrls: [l1xEndpoint],
-          blockExplorerUrls: ['https://l1xapp.com/testnet-explorer']
+          rpcUrls: ['https://v2.testnet.l1x.foundation'],
+          blockExplorerUrls: ['https://explorer.testnet.l1x.foundation/']
         }]
       });
       setStatus('connected');

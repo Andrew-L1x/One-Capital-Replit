@@ -26,10 +26,10 @@ import { BitcoinWalletConnectors } from "@dynamic-labs/bitcoin";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { SolanaWalletConnectors } from "@dynamic-labs/solana";
 
-// Define L1X chains - L1X Testnet v2 chain ID 1067 (0x42b)
+// Define L1X chains - L1X V2 Testnet chain ID 14649 (0x3929)
 const l1xTestnet = {
-  id: 1067,
-  name: 'L1X Testnet v2',
+  id: 14649,
+  name: 'L1X V2 Testnet',
   network: 'l1x-testnet-v2',
   nativeCurrency: {
     decimals: 18,
@@ -38,14 +38,14 @@ const l1xTestnet = {
   },
   rpcUrls: {
     public: { 
-      http: ['https://v2-testnet-rpc.l1x.foundation/']
+      http: ['https://v2.testnet.l1x.foundation']
     },
     default: { 
-      http: ['https://v2-testnet-rpc.l1x.foundation/']
+      http: ['https://v2.testnet.l1x.foundation']
     },
   },
   blockExplorers: {
-    default: { name: 'L1X Explorer', url: 'https://l1xapp.com/testnet-explorer' },
+    default: { name: 'L1X Explorer', url: 'https://explorer.testnet.l1x.foundation/' },
   },
 };
 

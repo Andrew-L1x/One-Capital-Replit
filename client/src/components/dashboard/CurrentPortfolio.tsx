@@ -3,10 +3,10 @@ import { useWallet } from '@/lib/walletContext';
 import { PortfolioValue } from './PortfolioValue';
 import { PortfolioChart } from './PortfolioChart';
 import { AssetAllocationTable } from './AssetAllocationTable';
-import { PerformanceMetrics } from './PerformanceMetrics';
+import { Button } from '@/components/ui/button';
 
 export function CurrentPortfolio() {
-  const { isConnected } = useWallet();
+  const { isConnected, connectL1X, connectMetaMask } = useWallet();
   
   if (!isConnected) {
     return (
@@ -18,10 +18,18 @@ export function CurrentPortfolio() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-6 space-y-2">
-            <p className="text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-6 space-y-4">
+            <p className="text-muted-foreground mb-2">
               Wallet not connected
             </p>
+            <div className="flex gap-4">
+              <Button onClick={connectL1X} variant="default">
+                Connect L1X Wallet
+              </Button>
+              <Button onClick={connectMetaMask} variant="outline">
+                Connect MetaMask
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -36,10 +44,6 @@ export function CurrentPortfolio() {
         </div>
         <PortfolioChart />
       </div>
-      
-      <Card>
-        <PerformanceMetrics />
-      </Card>
       
       <AssetAllocationTable />
     </div>

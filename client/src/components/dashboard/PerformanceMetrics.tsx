@@ -206,6 +206,13 @@ export function PerformanceMetrics() {
   
   // Show loading state if data is not loaded yet
   const isLoading = isLoadingVaults || isLoadingAssets || isLoadingPriceDetails || isLoadingAllocations || !metrics;
+
+  // If there's no price data available, manually connect a wallet
+  useEffect(() => {
+    if (Object.keys(priceDetails).length === 0 && !isLoadingPriceDetails) {
+      console.log("No price details available yet, metrics may not display properly");
+    }
+  }, [priceDetails, isLoadingPriceDetails]);
   
   return (
     <div>

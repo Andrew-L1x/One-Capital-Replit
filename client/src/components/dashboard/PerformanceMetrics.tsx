@@ -42,14 +42,6 @@ interface PortfolioMetrics {
   totalAssets: number;
 }
 
-// Format price with $ sign and 2 decimal places
-const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(price);
-};
-
 // Format percentage with % sign and 2 decimal places
 const formatPercentage = (percentage: number): string => {
   return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
@@ -68,11 +60,8 @@ export function PerformanceMetrics() {
     queryKey: ['/api/assets']
   });
   
-  // Get current prices and price changes
-  const { data: pricesData, isLoading: isLoadingPrices } = useQuery<any>({
-    queryKey: ['/api/prices'],
-    refetchInterval: 60000, // Refresh every 60 seconds
-  });
+  // Get detailed price information with 24h history
+  const { priceDetails, loading: isLoadingPriceDetails, error } = usePriceDetails(60000);
 
   // Prepare asset allocations for all vaults
   const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
@@ -85,9 +74,9 @@ export function PerformanceMetrics() {
     if (
       !isLoadingVaults && 
       !isLoadingAssets && 
-      !isLoadingPrices && 
+      !isLoadingPriceDetails && 
       !isLoadingAllocations && 
-      pricesData && 
+      Object.keys(priceDetails).length > 0 && 
       allocationsData.length > 0
     ) {
       const assetPerformance: AssetPerformance[] = [];
@@ -97,16 +86,19 @@ export function PerformanceMetrics() {
       // Calculate current values and 24h changes
       for (const allocation of allocationsData) {
         const asset = assets.find((a: any) => a.id === allocation.assetId);
-        if (asset && pricesData[asset.symbol]) {
-          const currentPrice = pricesData[asset.symbol];
-          // For demo, generate a previous price 
-          const previousPrice = currentPrice * (1 + (Math.random() * 0.2 - 0.1)); // ±10% change
+        if (asset && priceDetails[asset.symbol]) {
+          const priceDetail = priceDetails[asset.symbol];
+          const currentPrice = priceDetail.current;
+          const previousPrice = priceDetail.previous24h;
           
-          const priceChange = currentPrice - previousPrice;
-          const priceChangePercentage = (priceChange / previousPrice) * 100;
+          const priceChange = priceDetail.change24h;
+          const priceChangePercentage = priceDetail.changePercentage24h;
           
-          const value = allocation.amount * currentPrice;
-          const previousValue = allocation.amount * previousPrice;
+          // Get allocation amount (in a real app, this would be the actual token amount)
+          const amount = allocation.amount || parseInt(allocation.targetPercentage);
+          
+          const value = amount * currentPrice;
+          const previousValue = amount * previousPrice;
           
           totalValue += value;
           previousTotalValue += previousValue;
@@ -129,7 +121,9 @@ export function PerformanceMetrics() {
       
       // Calculate overall portfolio metrics
       const change24h = totalValue - previousTotalValue;
-      const changePercentage24h = ((totalValue - previousTotalValue) / previousTotalValue) * 100;
+      const changePercentage24h = previousTotalValue > 0 
+        ? ((totalValue - previousTotalValue) / previousTotalValue) * 100
+        : 0;
       const uniqueAssets = new Set(assetPerformance.map(a => a.symbol)).size;
       const totalAssets = allocationsData.length;
       
@@ -140,8 +134,9 @@ export function PerformanceMetrics() {
       if (totalValue > 0 && assetPerformance.length > 1) {
         const allocations = allocationsData.map((allocation: any) => {
           const asset = assets.find((a: any) => a.id === allocation.assetId);
-          if (asset && pricesData[asset.symbol]) {
-            const value = allocation.amount * pricesData[asset.symbol];
+          if (asset && priceDetails[asset.symbol]) {
+            const amount = allocation.amount || parseInt(allocation.targetPercentage);
+            const value = amount * priceDetails[asset.symbol].current;
             return value / totalValue;
           }
           return 0;
@@ -162,10 +157,10 @@ export function PerformanceMetrics() {
         totalAssets
       });
     }
-  }, [vaults, assets, pricesData, allocationsData, isLoadingVaults, isLoadingAssets, isLoadingPrices, isLoadingAllocations]);
+  }, [vaults, assets, priceDetails, allocationsData, isLoadingVaults, isLoadingAssets, isLoadingPriceDetails, isLoadingAllocations]);
   
   // Show loading state if data is not loaded yet
-  const isLoading = isLoadingVaults || isLoadingAssets || isLoadingPrices || isLoadingAllocations || !metrics;
+  const isLoading = isLoadingVaults || isLoadingAssets || isLoadingPriceDetails || isLoadingAllocations || !metrics;
   
   return (
     <div>

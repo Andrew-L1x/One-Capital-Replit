@@ -391,47 +391,24 @@ export default function PortfolioManager({
           
           <Card>
             <CardHeader>
-              <CardTitle>Performance Metrics</CardTitle>
+              <CardTitle>Portfolio Allocation Preview</CardTitle>
               <CardDescription>
-                Portfolio value and historical performance
+                Projected portfolio value based on your current allocation
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
-                  <span className="text-sm">Total Portfolio Value</span>
+                  <span className="text-sm">Projected Portfolio Value</span>
                   <span className="font-medium text-lg">
                     ${calculateTotalValue().toFixed(2)}
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-2 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">24h</div>
-                    <div className={`text-lg font-medium ${MOCK_PERFORMANCE.oneDayChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {MOCK_PERFORMANCE.oneDayChange >= 0 ? '+' : ''}{MOCK_PERFORMANCE.oneDayChange}%
-                    </div>
-                  </div>
-                  
-                  <div className="text-center p-2 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">7d</div>
-                    <div className={`text-lg font-medium ${MOCK_PERFORMANCE.sevenDayChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {MOCK_PERFORMANCE.sevenDayChange >= 0 ? '+' : ''}{MOCK_PERFORMANCE.sevenDayChange}%
-                    </div>
-                  </div>
-                  
-                  <div className="text-center p-2 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">30d</div>
-                    <div className={`text-lg font-medium ${MOCK_PERFORMANCE.thirtyDayChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {MOCK_PERFORMANCE.thirtyDayChange >= 0 ? '+' : ''}{MOCK_PERFORMANCE.thirtyDayChange}%
-                    </div>
-                  </div>
-                </div>
-                
                 <div className="text-xs text-muted-foreground mt-2">
-                  Note: Performance metrics are simulated for demonstration purposes.
+                  Note: This is a preview based on your current allocation settings.
                   <br />
-                  Future versions will integrate with L1X SDK for real-time data.
+                  For detailed performance metrics, use the <strong>Portfolio</strong> tab with live data.
                 </div>
               </div>
             </CardContent>

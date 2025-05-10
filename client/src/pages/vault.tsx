@@ -232,6 +232,7 @@ export default function VaultPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="allocations">Allocations</TabsTrigger>
           <TabsTrigger value="settings">Take Profit Settings</TabsTrigger>
+          <TabsTrigger value="rebalance">Rebalance Settings</TabsTrigger>
           <TabsTrigger value="history">Rebalance History</TabsTrigger>
         </TabsList>
         

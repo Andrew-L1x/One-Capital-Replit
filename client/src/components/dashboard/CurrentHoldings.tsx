@@ -224,7 +224,45 @@ export function CurrentHoldings() {
                                 max="100"
                                 step="1"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                onChange={(e) => {
+                                  const newPercentage = parseFloat(e.target.value);
+                                  const oldPercentage = field.value || 0;
+                                  const difference = newPercentage - oldPercentage;
+                                  
+                                  // If there's a change in percentage, update this holding and adjust others
+                                  if (difference !== 0) {
+                                    // Set the new percentage for this holding
+                                    field.onChange(newPercentage);
+                                    
+                                    // Get all current holdings
+                                    const currentHoldings = form.watch("holdings");
+                                    if (currentHoldings.length <= 1) return; // Nothing to adjust if only one asset
+                                    
+                                    // Calculate how much to adjust other holdings proportionally
+                                    const otherHoldings = currentHoldings.filter((_, i) => i !== index);
+                                    const totalOtherPercentage = otherHoldings.reduce((sum, h) => sum + h.percentage, 0);
+                                    
+                                    if (totalOtherPercentage <= 0) return; // Prevent division by zero
+                                    
+                                    // Adjust other holdings proportionally
+                                    currentHoldings.forEach((_, i) => {
+                                      if (i !== index) {
+                                        const currentPercentage = currentHoldings[i].percentage;
+                                        const adjustmentFactor = (totalOtherPercentage - difference) / totalOtherPercentage;
+                                        const newValue = currentPercentage * adjustmentFactor;
+                                        
+                                        // Update the percentage and corresponding amount
+                                        form.setValue(`holdings.${i}.percentage`, parseFloat(newValue.toFixed(2)));
+                                        const newAmount = (newValue / 100) * portfolioValue;
+                                        form.setValue(`holdings.${i}.amount`, parseFloat(newAmount.toFixed(2)));
+                                      }
+                                    });
+                                    
+                                    // Update this holding's amount
+                                    const newAmount = (newPercentage / 100) * portfolioValue;
+                                    form.setValue(`holdings.${index}.amount`, parseFloat(newAmount.toFixed(2)));
+                                  }
+                                }}
                               />
                               <span className="absolute right-2 top-2.5 text-muted-foreground">%</span>
                             </div>
@@ -350,13 +388,37 @@ export function CurrentHoldings() {
                       return;
                     }
                     
-                    // Add new asset with 0% allocation initially
+                    // Add new asset with 10% allocation initially and adjust others proportionally
+                    const currentHoldings = form.watch("holdings");
+                    const newAssetPercentage = 10; // New asset gets 10%
+                    
+                    // Calculate total current percentage
+                    const currentTotalPercentage = currentHoldings.reduce((sum, h) => sum + h.percentage, 0);
+                    
+                    // Create a copy of holdings with reduced percentages to make room for the new asset
+                    const adjustedHoldings = currentHoldings.map(holding => {
+                      // Reduce each holding proportionally
+                      const reductionFactor = (100 - newAssetPercentage) / currentTotalPercentage;
+                      const adjustedPercentage = parseFloat((holding.percentage * reductionFactor).toFixed(2));
+                      const adjustedAmount = parseFloat(((adjustedPercentage / 100) * portfolioValue).toFixed(2));
+                      
+                      return {
+                        ...holding,
+                        percentage: adjustedPercentage,
+                        amount: adjustedAmount
+                      };
+                    });
+                    
+                    // Amount for the new asset based on 10% of portfolio value
+                    const newAmount = parseFloat(((newAssetPercentage / 100) * portfolioValue).toFixed(2));
+                    
+                    // Add the new asset with 10% allocation
                     form.setValue("holdings", [
-                      ...form.watch("holdings"),
+                      ...adjustedHoldings,
                       {
                         assetId: unusedAssets[0].id,
-                        amount: 0,
-                        percentage: 0,
+                        amount: newAmount,
+                        percentage: newAssetPercentage,
                       }
                     ]);
                     

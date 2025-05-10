@@ -38,20 +38,10 @@ const l1xTestnet = {
   },
   rpcUrls: {
     public: { 
-      http: [
-        'https://rpc.testnet.l1x.foundation',
-        'https://v2.testnet.l1x.foundation',
-        'https://testnet.l1x.foundation',
-        'https://v2-testnet-rpc.l1x.foundation'
-      ] 
+      http: ['https://v2-testnet-rpc.l1x.foundation/']
     },
     default: { 
-      http: [
-        'https://rpc.testnet.l1x.foundation',
-        'https://v2.testnet.l1x.foundation',
-        'https://testnet.l1x.foundation',
-        'https://v2-testnet-rpc.l1x.foundation'
-      ] 
+      http: ['https://v2-testnet-rpc.l1x.foundation/']
     },
   },
   blockExplorers: {

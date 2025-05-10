@@ -33,15 +33,9 @@ export default function DynamicWalletConnector({
   const { user, primaryWallet } = useDynamicContext();
   const [status, setStatus] = useState<WalletStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
-  const [currentEndpointIndex, setCurrentEndpointIndex] = useState<number>(0);
   
-  // L1X RPC endpoints to try in sequence
-  const l1xEndpoints = [
-    'https://rpc.testnet.l1x.foundation',
-    'https://v2.testnet.l1x.foundation',
-    'https://testnet.l1x.foundation',
-    'https://v2-testnet-rpc.l1x.foundation'
-  ];
+  // L1X RPC endpoint as specified
+  const l1xEndpoint = 'https://v2-testnet-rpc.l1x.foundation/';
   
   // Update status when user or wallet changes
   useEffect(() => {
@@ -63,12 +57,9 @@ export default function DynamicWalletConnector({
       return;
     }
     
-    // Get the current endpoint to try
-    const currentEndpoint = l1xEndpoints[currentEndpointIndex];
-    
     try {
       setStatus('connecting');
-      setError(`Trying endpoint: ${currentEndpoint}`);
+      setError(`Connecting to L1X Testnet v2 using: ${l1xEndpoint}`);
       
       await windowWithEthereum.ethereum.request({
         method: 'wallet_addEthereumChain',
@@ -80,22 +71,18 @@ export default function DynamicWalletConnector({
             symbol: 'L1X',
             decimals: 18
           },
-          rpcUrls: [currentEndpoint],
+          rpcUrls: [l1xEndpoint],
           blockExplorerUrls: ['https://l1xapp.com/testnet-explorer']
         }]
       });
       setStatus('connected');
-      setError(`Successfully added L1X Testnet v2 using endpoint: ${currentEndpoint}`);
+      setError(`Successfully added L1X Testnet v2 using endpoint: ${l1xEndpoint}`);
     } catch (err) {
       console.error('Error adding L1X network:', err);
       setStatus('error');
       
-      // Try the next endpoint if available
-      const nextEndpointIndex = (currentEndpointIndex + 1) % l1xEndpoints.length;
-      setCurrentEndpointIndex(nextEndpointIndex);
-      
       const errMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Failed with endpoint ${currentEndpoint}: ${errMessage}. Click "Add L1X Testnet v2" again to try the next endpoint: ${l1xEndpoints[nextEndpointIndex]}`);
+      setError(`Failed to connect to L1X Testnet v2: ${errMessage}`);
     }
   };
 
@@ -160,9 +147,9 @@ export default function DynamicWalletConnector({
           </span>
         </div>
         
-        {/* Current endpoint info */}
+        {/* Endpoint info */}
         <div className="mt-2 text-xs text-gray-500">
-          Current RPC endpoint: {l1xEndpoints[currentEndpointIndex]} ({currentEndpointIndex + 1}/{l1xEndpoints.length})
+          L1X RPC endpoint: {l1xEndpoint}
         </div>
         
         {/* Error message */}

@@ -29,6 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ArrowDown, RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePrices, formatPrice } from "@/lib/priceService";
@@ -78,7 +79,6 @@ interface CrossChainSwapProps {
 }
 
 export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
-  const [assets, setAssets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [fromPrice, setFromPrice] = useState<number | null>(null);
   const [toPrice, setToPrice] = useState<number | null>(null);
@@ -101,30 +101,13 @@ export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
   const toAsset = form.watch("toAsset");
   const amount = form.watch("amount");
   
-  // Load assets for the vault
-  useEffect(() => {
-    const fetchAssets = async () => {
-      try {
-        const response = await apiRequest({
-          url: '/assets',
-          method: 'GET',
-        });
-        setAssets(response as any[]);
-      } catch (error) {
-        console.error('Error fetching assets:', error);
-        toast({
-          variant: "destructive",
-          title: "Failed to load assets",
-          description: "Please try again later.",
-        });
-      }
-    };
-    
-    fetchAssets();
-  }, [toast]);
+  // Load assets using React Query
+  const { data: assets = [], isLoading: isLoadingAssets } = useQuery<any[]>({
+    queryKey: ['/api/assets']
+  });
   
   // Get prices using the hook
-  const { prices, isLoading: isPricesLoading } = usePrices();
+  const { prices, loading: isPricesLoading } = usePrices();
   
   // Update local prices when selected assets or prices change
   useEffect(() => {
@@ -166,20 +149,22 @@ export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
     
     try {
       // This would call the backend to initiate the cross-chain swap
-      const response = await apiRequest({
-        url: `/vaults/${vaultId}/cross-chain-swap`,
-        method: 'POST',
-        data: {
+      const response = await apiRequest(
+        'POST',
+        `/api/vaults/${vaultId}/cross-chain-swap`,
+        {
           fromAsset: values.fromAsset,
           toAsset: values.toAsset,
           amount: parseFloat(values.amount),
           targetChainId: values.targetChain,
         },
-      });
+      );
+      
+      const result = await response.json();
       
       toast({
         title: "Swap Initiated",
-        description: `Your cross-chain swap has been initiated. Transaction ID: ${response.txHash?.substring(0, 10)}...`,
+        description: `Your cross-chain swap has been initiated. ${result.txHash ? `Transaction ID: ${result.txHash.substring(0, 10)}...` : ''}`,
       });
       
       // Reset form after successful submission
@@ -241,7 +226,7 @@ export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    {fromPrice ? `Current price: ${formatUSD(fromPrice)}` : 'Select an asset to see price'}
+                    {fromPrice ? `Current price: ${formatPrice(fromPrice)}` : 'Select an asset to see price'}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -287,7 +272,7 @@ export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    {toPrice ? `Current price: ${formatUSD(toPrice)}` : 'Select an asset to see price'}
+                    {toPrice ? `Current price: ${formatPrice(toPrice)}` : 'Select an asset to see price'}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

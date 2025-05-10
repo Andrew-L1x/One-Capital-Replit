@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import FirebaseLogin from "@/components/auth/firebase-login";
+import DirectLogin from "@/components/auth/direct-login";
 import Web3Login from "@/components/auth/web3-login";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronRight, ArrowRight, BarChart3, Shield, LineChart } from "lucide-react";
@@ -504,7 +504,7 @@ export default function Home() {
                       <TabsTrigger value="web3">Wallet Login</TabsTrigger>
                     </TabsList>
                     <TabsContent value="web2">
-                      <FirebaseLogin onSuccess={handleLoginSuccess} />
+                      <DirectLogin onSuccess={handleLoginSuccess} />
                     </TabsContent>
                     <TabsContent value="web3">
                       <Web3Login onSuccess={handleLoginSuccess} />

@@ -212,8 +212,8 @@ export function CurrentHoldings() {
                 const asset = assets.find(a => a.id === holding.assetId);
 
                 return (
-                  <div key={index} className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b">
-                    <div className="flex-1 min-w-[100px] font-medium">
+                  <div key={index} className="grid grid-cols-3 items-center mb-3 pb-3 border-b relative">
+                    <div className="font-medium">
                       {asset?.symbol || "Unknown"} 
                       <span className="text-xs text-muted-foreground ml-1">({asset?.name})</span>
                     </div>
@@ -222,7 +222,7 @@ export function CurrentHoldings() {
                       control={form.control}
                       name={`holdings.${index}.percentage`}
                       render={({ field }) => (
-                        <FormItem className="w-20">
+                        <FormItem className="w-20 justify-self-center">
                           <FormControl>
                             <div className="relative">
                               <Input
@@ -324,7 +324,7 @@ export function CurrentHoldings() {
                       )}
                     />
                     
-                    <div className="text-xs font-medium text-right">
+                    <div className="text-xs font-medium text-right justify-self-end">
                       {asset?.symbol && asset.symbol === "BTC" && (
                         <span>{holding.amount > 0 ? (holding.amount / 65000).toFixed(3) : "0"} BTC</span>
                       )}
@@ -340,7 +340,7 @@ export function CurrentHoldings() {
                       type="button" 
                       variant="ghost" 
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-8 w-8 absolute right-0 top-0"
                       onClick={() => {
                         const currentHoldings = form.watch("holdings");
                         // Don't allow removing if there's only one asset left
@@ -376,13 +376,13 @@ export function CurrentHoldings() {
               })}
             </div>
             
-            <div className="flex justify-between items-center pt-2 border-t">               
-              <div className="flex items-center gap-3">
-                <div>
-                  <span className="text-sm font-medium">
-                    Total: {Math.round(form.watch("holdings")?.reduce((sum, h) => sum + (h.percentage || 0), 0))}%
-                  </span>
-                </div>
+            <div className="grid grid-cols-3 items-center pt-2 border-t">               
+              <div>
+                <span className="text-sm font-medium">
+                  Total: {Math.round(form.watch("holdings")?.reduce((sum, h) => sum + (h.percentage || 0), 0))}%
+                </span>
+              </div>
+              <div className="justify-self-center">
                 <Button
                   type="button"
                   variant="outline"

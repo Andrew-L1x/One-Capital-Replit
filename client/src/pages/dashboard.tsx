@@ -220,57 +220,6 @@ export default function Dashboard() {
           {/* Rebalance Tab */}
           <TabsContent value="settings" className="space-y-8">
             <div className="grid gap-6 md:grid-cols-2">
-              <Card className="md:col-span-1">
-                <CardHeader>
-                  <CardTitle>Portfolio Settings</CardTitle>
-                  <CardDescription>
-                    Configure your portfolio and notification preferences
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <span className="text-sm">Default Currency</span>
-                      <span className="font-medium">USD</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Transaction Notifications</span>
-                      <span className="font-medium">Enabled</span>
-                    </div>
-                    
-                    <div className="pt-4 mt-4 border-t">
-                      <p className="text-sm text-muted-foreground">
-                        Note: These settings are simulated for demo purposes. 
-                        A future version will allow full customization of these options.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {vaults.length > 0 && (
-                <Card className="md:col-span-1">
-                  <CardHeader>
-                    <CardTitle>My Take Profit Strategy</CardTitle>
-                    <CardDescription>
-                      Configure when and how to take profits from your portfolio
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {vaults[0]?.id && (
-                        <TakeProfitForm 
-                          vaultId={vaults[0].id}
-                          initialData={undefined}
-                          onSubmitSuccess={() => {
-                            // Success handling
-                          }}
-                        />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
               
               {vaults.length > 0 && (
                 <Card className="md:col-span-1">
@@ -349,6 +298,61 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               )}
+              
+              {vaults.length > 0 && (
+                <Card className="md:col-span-1">
+                  <CardHeader>
+                    <CardTitle>My Take Profit Strategy</CardTitle>
+                    <CardDescription>
+                      Configure when and how to take profits from your portfolio
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {vaults[0]?.id && (
+                        <TakeProfitForm 
+                          vaultId={vaults[0].id}
+                          initialData={undefined}
+                          onSubmitSuccess={() => {
+                            // Success handling
+                          }}
+                        />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+            
+            {/* Portfolio Settings at the bottom */}
+            <div className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Portfolio Settings</CardTitle>
+                  <CardDescription>
+                    Configure your portfolio and notification preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <span className="text-sm">Default Currency</span>
+                      <span className="font-medium">USD</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Transaction Notifications</span>
+                      <span className="font-medium">Enabled</span>
+                    </div>
+                    
+                    <div className="pt-4 mt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Note: These settings are simulated for demo purposes. 
+                        A future version will allow full customization of these options.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>

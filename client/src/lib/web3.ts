@@ -2,8 +2,9 @@ import { ethers } from "ethers";
 
 // Constants
 export const L1X_TESTNET_URL = "https://v2.testnet.l1x.foundation";
-export const ETHEREUM_MAINNET_URL = "https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161";
-export const ETHEREUM_GOERLI_URL = "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161";
+export const L1X_MAINNET_URL = "https://v2.mainnet.l1x.foundation";
+export const ETHEREUM_MAINNET_URL = "https://mainnet.infura.io/v3/your-infura-key";
+export const ETHEREUM_GOERLI_URL = "https://goerli.infura.io/v3/your-infura-key";
 
 // Chain IDs
 export enum ChainId {
@@ -13,9 +14,27 @@ export enum ChainId {
   L1X_TESTNET = 1777,
 }
 
+// Get chain name
+export const getChainName = (chainId: ChainId): string => {
+  switch (chainId) {
+    case ChainId.ETHEREUM_MAINNET:
+      return "Ethereum Mainnet";
+    case ChainId.ETHEREUM_GOERLI:
+      return "Ethereum Goerli";
+    case ChainId.L1X_MAINNET:
+      return "L1X Mainnet";
+    case ChainId.L1X_TESTNET:
+      return "L1X Testnet";
+    default:
+      return "Unknown Chain";
+  }
+};
+
 // Interface for Web3 provider
-interface Web3Provider {
+export interface Web3Provider {
   request: (args: { method: string; params?: any[] }) => Promise<any>;
+  on?: (event: string, callback: (...args: any[]) => void) => void;
+  removeListener?: (event: string, callback: (...args: any[]) => void) => void;
 }
 
 // Define window interfaces for web3 providers
@@ -26,18 +45,13 @@ declare global {
   }
 }
 
-// Define ethers-compatible provider type
-type Eip1193CompatibleProvider = {
-  request: (args: { method: string; params?: any[] }) => Promise<any>;
-};
-
 // Check if window.ethereum exists
-const isMetaMaskInstalled = (): boolean => {
+export const isMetaMaskInstalled = (): boolean => {
   return typeof window !== "undefined" && window.ethereum !== undefined;
 };
 
 // Check if window.l1x exists
-const isL1XWalletInstalled = (): boolean => {
+export const isL1XWalletInstalled = (): boolean => {
   return typeof window !== "undefined" && window.l1x !== undefined;
 };
 
@@ -64,7 +78,6 @@ export const getL1XProvider = async (): Promise<Web3Provider | null> => {
       throw new Error("No wallet provider detected");
     }
     
-    // Configure MetaMask to use L1X network if possible
     try {
       await window.ethereum.request({
         method: 'wallet_addEthereumChain',
@@ -110,7 +123,6 @@ export const getChainProvider = async (chainId: ChainId): Promise<ethers.Provide
       if (provider) {
         const network = await provider.getNetwork();
         if (network.chainId === BigInt(chainId)) {
-          // Already on the right network
           return provider;
         }
         
@@ -146,28 +158,6 @@ export const getChainProvider = async (chainId: ChainId): Promise<ethers.Provide
   }
 };
 
-// Simplified provider getter for contract interactions
-export const getProvider = async (): Promise<ethers.Provider | null> => {
-  try {
-    // First try to get browser provider
-    const browserProvider = await getEthersProvider();
-    if (browserProvider) {
-      return browserProvider;
-    }
-    
-    // Fallback to direct provider via RPC
-    try {
-      return getL1XDirectProvider();
-    } catch (directError) {
-      console.log("Direct provider also failed, operating in fallback mode");
-      return null;
-    }
-  } catch (error) {
-    console.log("Error getting provider, operating in fallback mode");
-    return null;
-  }
-};
-
 // Connect wallet and get accounts
 export const connectWallet = async (): Promise<string | null> => {
   try {
@@ -197,37 +187,8 @@ export const connectWallet = async (): Promise<string | null> => {
   }
 };
 
-// Get current connected account
-export const getCurrentAccount = async (): Promise<string | null> => {
-  try {
-    // Try L1X wallet first
-    if (isL1XWalletInstalled()) {
-      const accounts = await window.l1x!.request({
-        method: "eth_accounts",
-      });
-      return accounts[0] || null;
-    }
-    
-    // Fall back to MetaMask
-    const provider = await getL1XProvider();
-    
-    if (!provider) {
-      return null;
-    }
-    
-    const accounts = await provider.request({
-      method: "eth_accounts",
-    });
-    
-    return accounts[0] || null;
-  } catch (error) {
-    console.error("Error getting current account:", error);
-    return null;
-  }
-};
-
-// Sign message to authenticate
-export const signMessage = async (message: string): Promise<{ address: string; signature: string } | null> => {
+// Sign message with wallet
+export const signMessage = async (message: string): Promise<{ address: string; signature: string }> => {
   try {
     // Try L1X wallet first
     if (isL1XWalletInstalled()) {
@@ -270,7 +231,7 @@ export const signMessage = async (message: string): Promise<{ address: string; s
 export const authenticateWithWallet = async (): Promise<any> => {
   try {
     // Get current connected account
-    const address = await getCurrentAccount();
+    const address = await connectWallet();
     
     if (!address) {
       throw new Error("No connected account found");
@@ -361,7 +322,7 @@ export const sendContractTransaction = async ({
       throw new Error("No provider found. Please install MetaMask or an L1X wallet.");
     }
     
-    const from = await getCurrentAccount();
+    const from = await connectWallet();
     
     if (!from) {
       throw new Error("No account connected. Please connect your wallet first.");
@@ -451,22 +412,6 @@ export const initiateCrossChainTransaction = async (params: CrossChainTxParams):
   } catch (error: any) {
     console.error("Error initiating cross-chain transaction:", error);
     throw new Error(error.message || "Failed to initiate cross-chain transaction");
-  }
-};
-
-// Get chain name from chain ID
-export const getChainName = (chainId: ChainId): string => {
-  switch (chainId) {
-    case ChainId.ETHEREUM_MAINNET:
-      return "ethereum";
-    case ChainId.ETHEREUM_GOERLI:
-      return "ethereum-goerli";
-    case ChainId.L1X_MAINNET:
-      return "l1x";
-    case ChainId.L1X_TESTNET:
-      return "l1x-testnet";
-    default:
-      throw new Error(`Unsupported chain ID: ${chainId}`);
   }
 };
 

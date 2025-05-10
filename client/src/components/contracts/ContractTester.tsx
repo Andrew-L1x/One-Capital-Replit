@@ -239,7 +239,7 @@ export default function ContractTester() {
       <CardHeader>
         <CardTitle>Smart Contract Tester</CardTitle>
         <CardDescription>
-          Test and interact with the One Capital smart contracts
+          Test and interact with the One Capital smart contracts. Functions work in fallback simulation mode even without a blockchain connection.
         </CardDescription>
       </CardHeader>
       <CardContent>

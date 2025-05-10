@@ -144,7 +144,7 @@ export default function ContractDeployer() {
       <CardHeader>
         <CardTitle>Contract Deployer</CardTitle>
         <CardDescription>
-          Set contract addresses for the One Capital smart contracts
+          Set contract addresses for the One Capital smart contracts. Contract configuration is stored locally and will work in fallback simulation mode.
         </CardDescription>
       </CardHeader>
       <CardContent>

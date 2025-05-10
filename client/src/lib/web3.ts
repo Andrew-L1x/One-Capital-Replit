@@ -146,7 +146,7 @@ export const getChainProvider = async (chainId: ChainId): Promise<ethers.Provide
   }
 };
 
-// Simplified provider getter for the Gas Estimator component
+// Simplified provider getter for contract interactions
 export const getProvider = async (): Promise<ethers.Provider | null> => {
   try {
     // First try to get browser provider
@@ -155,10 +155,15 @@ export const getProvider = async (): Promise<ethers.Provider | null> => {
       return browserProvider;
     }
     
-    // Fallback to direct provider
-    return getL1XDirectProvider();
+    // Fallback to direct provider via RPC
+    try {
+      return getL1XDirectProvider();
+    } catch (directError) {
+      console.log("Direct provider also failed, operating in fallback mode");
+      return null;
+    }
   } catch (error) {
-    console.error("Error getting provider:", error);
+    console.log("Error getting provider, operating in fallback mode");
     return null;
   }
 };

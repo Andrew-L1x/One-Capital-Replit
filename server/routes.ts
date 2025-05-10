@@ -1502,6 +1502,282 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wallet Integration API endpoints
+  api.post("/wallet/connect", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { address, walletType, chainId } = req.body;
+      
+      if (!address || !walletType) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters (address, walletType)" 
+        });
+      }
+      
+      // Import the wallet integration service
+      const { connectWallet, WalletType, ConnectionStatus } = await import('./services/walletIntegration');
+      
+      // Validate wallet type
+      if (!Object.values(WalletType).includes(walletType)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Unsupported wallet type. Supported types: ${Object.values(WalletType).join(', ')}` 
+        });
+      }
+      
+      // Connect to the wallet
+      const connection = await connectWallet(address, walletType, chainId);
+      
+      if (connection.status === ConnectionStatus.ERROR) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to connect to wallet",
+          error: connection.error
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: "Wallet connected successfully",
+        connection
+      });
+    } catch (error) {
+      console.error("Error connecting to wallet:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error connecting to wallet", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  api.post("/wallet/sign-message", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { address, walletType, message } = req.body;
+      
+      if (!address || !walletType || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters (address, walletType, message)" 
+        });
+      }
+      
+      // Import the wallet integration service
+      const { signMessage, WalletType } = await import('./services/walletIntegration');
+      
+      // Validate wallet type
+      if (!Object.values(WalletType).includes(walletType)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Unsupported wallet type. Supported types: ${Object.values(WalletType).join(', ')}` 
+        });
+      }
+      
+      // Sign the message
+      const result = await signMessage(address, walletType, message);
+      
+      if ('error' in result) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to sign message",
+          error: result.error
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: "Message signed successfully",
+        signature: result.signature
+      });
+    } catch (error) {
+      console.error("Error signing message:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error signing message", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  api.post("/wallet/transaction", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { walletAddress, walletType, chainId, to, value, data, gasLimit } = req.body;
+      
+      if (!walletAddress || !walletType || !chainId || !to || !value) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters (walletAddress, walletType, chainId, to, value)" 
+        });
+      }
+      
+      // Import the wallet integration service
+      const { sendTransaction, WalletType } = await import('./services/walletIntegration');
+      
+      // Validate wallet type
+      if (!Object.values(WalletType).includes(walletType)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Unsupported wallet type. Supported types: ${Object.values(WalletType).join(', ')}` 
+        });
+      }
+      
+      // Send the transaction
+      const txResponse = await sendTransaction({
+        walletAddress,
+        walletType,
+        chainId,
+        to,
+        value,
+        data,
+        gasLimit
+      });
+      
+      if (txResponse.status === 'failed') {
+        return res.status(400).json({
+          success: false,
+          message: "Transaction failed",
+          error: txResponse.error
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: txResponse.status === 'confirmed' ? "Transaction confirmed" : "Transaction submitted",
+        transaction: txResponse
+      });
+    } catch (error) {
+      console.error("Error sending transaction:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error sending transaction", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  api.get("/wallet/transaction/:chainId/:txHash", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { chainId, txHash } = req.params;
+      
+      if (!chainId || !txHash) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters (chainId, txHash)" 
+        });
+      }
+      
+      // Import the wallet integration service
+      const { getTransactionStatus } = await import('./services/walletIntegration');
+      
+      // Get transaction status
+      const txStatus = await getTransactionStatus(txHash, chainId);
+      
+      if (txStatus.status === 'failed') {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to get transaction status",
+          error: txStatus.error
+        });
+      }
+      
+      return res.json({
+        success: true,
+        transaction: txStatus
+      });
+    } catch (error) {
+      console.error("Error getting transaction status:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error getting transaction status", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  api.post("/wallet/swap", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const { 
+        fromAsset, 
+        toAsset, 
+        amount, 
+        fromChain, 
+        toChain, 
+        walletAddress, 
+        walletType 
+      } = req.body;
+      
+      if (!fromAsset || !toAsset || !amount || !fromChain || !toChain || !walletAddress || !walletType) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters" 
+        });
+      }
+      
+      // Import the wallet integration service
+      const { executeWalletSwap, WalletType } = await import('./services/walletIntegration');
+      
+      // Validate wallet type
+      if (!Object.values(WalletType).includes(walletType)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Unsupported wallet type. Supported types: ${Object.values(WalletType).join(', ')}` 
+        });
+      }
+      
+      // Execute the wallet swap
+      const result = await executeWalletSwap(
+        fromAsset,
+        toAsset,
+        amount,
+        fromChain,
+        toChain,
+        walletAddress,
+        walletType
+      );
+      
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Swap failed",
+          error: result.error
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: "Swap initiated successfully",
+        txHash: result.txHash
+      });
+    } catch (error) {
+      console.error("Error executing wallet swap:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error executing wallet swap", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Register API routes
   app.use("/api", api);
 

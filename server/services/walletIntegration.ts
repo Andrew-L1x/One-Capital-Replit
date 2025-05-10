@@ -49,27 +49,75 @@ export interface WalletConnection {
 }
 
 /**
- * Transaction request
+ * Transaction request based on L1XVMTransaction interface
+ * Reference: https://layeronex.github.io/l1x-wallet-sdk/interfaces/L1XVMTransaction.html
  */
 export interface TransactionRequest {
+  // Identity and chain parameters
   walletAddress: string;
   walletType: WalletType;
   chainId: string;
+  
+  // Transaction core parameters
   to: string;
   value: string;
   data?: string; // Hex-encoded contract call data
+  
+  // Gas parameters
   gasLimit?: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+  
+  // Transaction type parameters (EIP-1559 or legacy)
+  type?: number; // 0: legacy, 1: EIP-2930, 2: EIP-1559
+  
+  // L1X specific parameters
+  nonce?: number;
+  from?: string; // Usually derived from wallet address
+  accessList?: Array<{
+    address: string;
+    storageKeys: string[];
+  }>;
 }
 
 /**
- * Transaction response
+ * Transaction response based on L1X SDK
+ * Reference: https://layeronex.github.io/l1x-wallet-sdk/
  */
 export interface TransactionResponse {
+  // Core response information
   transactionHash: string;
   status: 'pending' | 'confirmed' | 'failed';
+  
+  // Receipt information (available after confirmation)
   blockNumber?: number;
+  blockHash?: string;
+  timestamp?: number;
+  
+  // Gas information
   gasUsed?: string;
+  effectiveGasPrice?: string;
+  cumulativeGasUsed?: string;
+  
+  // L1X specific response data
+  from?: string;
+  to?: string;
+  contractAddress?: string; // For contract creation transactions
+  logsBloom?: string;
+  logs?: Array<{
+    address: string;
+    topics: string[];
+    data: string;
+    blockNumber: number;
+    transactionHash: string;
+    logIndex: number;
+  }>;
+  
+  // Error information
   error?: string;
+  transactionIndex?: number;
+  type?: number;
 }
 
 /**
@@ -170,30 +218,75 @@ export async function signMessage(
 }
 
 /**
- * Send a transaction
+ * Send a transaction using the L1X SDK
+ * Reference: https://layeronex.github.io/l1x-wallet-sdk/interfaces/L1XVMTransaction.html
  */
 export async function sendTransaction(
   request: TransactionRequest
 ): Promise<TransactionResponse> {
   try {
     // In a real implementation, this would call the L1X SDK to send a transaction
-    // For now, simulate a successful transaction
+    // Following the L1X SDK documentation pattern
+    
+    // Validate required fields
+    if (!request.to || !request.value || !request.walletAddress) {
+      throw new Error('Missing required transaction parameters (to, value, walletAddress)');
+    }
+    
+    // Prepare transaction object according to L1X VM Transaction interface
+    const l1xTransaction = {
+      to: request.to,
+      value: request.value,
+      data: request.data || '0x',
+      from: request.from || request.walletAddress,
+      chainId: request.chainId,
+      
+      // Gas parameters with fallbacks
+      gasLimit: request.gasLimit || '21000', // Default gas limit
+      gasPrice: request.gasPrice,
+      maxFeePerGas: request.maxFeePerGas,
+      maxPriorityFeePerGas: request.maxPriorityFeePerGas,
+      
+      // Transaction type
+      type: request.type || 2, // Default to EIP-1559
+      
+      // Optional parameters
+      nonce: request.nonce,
+      accessList: request.accessList
+    };
     
     // Mock transaction hash
     const txHash = '0x' + Array.from({ length: 64 }, () => 
       Math.floor(Math.random() * 16).toString(16)).join('');
     
-    // Mock API call to L1X
-    // const response = await axios.post(
-    //   `${L1X_API_ENDPOINT}/${L1X_SDK_VERSION}/wallet/${request.walletType}/${request.walletAddress}/transaction`,
-    //   request
-    // );
+    // In production, the L1X SDK call would look something like:
+    // 
+    // import { L1XWalletSDK } from '@l1x/wallet-sdk';
+    // const sdk = new L1XWalletSDK({
+    //   chainId: request.chainId,
+    //   apiEndpoint: L1X_API_ENDPOINT
+    // });
+    // 
+    // const wallet = await sdk.connectWallet(request.walletType);
+    // const txResponse = await wallet.sendTransaction(l1xTransaction);
+    // return txResponse;
+    
+    // For now, simulate a successful response
+    console.log(`Preparing to send transaction on chain ${request.chainId}:`, {
+      from: l1xTransaction.from,
+      to: l1xTransaction.to,
+      value: l1xTransaction.value,
+      type: l1xTransaction.type
+    });
     
     return {
       transactionHash: txHash,
       status: 'pending',
+      from: l1xTransaction.from,
+      to: l1xTransaction.to,
       blockNumber: undefined,
-      gasUsed: undefined
+      gasUsed: undefined,
+      timestamp: Math.floor(Date.now() / 1000)
     };
   } catch (error) {
     console.error(`Error sending transaction from wallet ${request.walletAddress}:`, error);
@@ -241,7 +334,8 @@ export async function getTransactionStatus(
 }
 
 /**
- * Execute a cross-chain swap using a non-custodial wallet
+ * Execute a cross-chain swap using a non-custodial wallet with L1X SDK
+ * Reference: https://layeronex.github.io/l1x-wallet-sdk/
  */
 export async function executeWalletSwap(
   fromAsset: string,
@@ -254,11 +348,12 @@ export async function executeWalletSwap(
 ): Promise<{
   success: boolean;
   txHash?: string;
+  estimatedCompletion?: Date;
   error?: string;
 }> {
   try {
     // In a real implementation, this would call the L1X SDK to execute a swap
-    // For now, simulate a successful swap
+    // Following the L1X SDK documentation
     
     // 1. Verify the wallet connection
     const walletStatus = await getWalletStatus(walletAddress, walletType);
@@ -267,27 +362,81 @@ export async function executeWalletSwap(
       throw new Error(`Wallet not connected: ${walletAddress}`);
     }
     
-    // 2. Create the transaction request
+    // Reference to L1X swap contracts by chain
+    const SWAP_CONTRACTS = {
+      [Chain.L1X]: '0xL1XSwapRouterAddress',
+      [Chain.ETHEREUM]: '0xEthSwapBridgeAddress',
+      [Chain.SOLANA]: '0xSolanaSwapBridgeAddress',
+      [Chain.POLYGON]: '0xPolygonSwapBridgeAddress',
+      [Chain.AVALANCHE]: '0xAvalancheSwapBridgeAddress',
+      [Chain.BSC]: '0xBSCSwapBridgeAddress'
+    };
+    
+    // Get contract address for the source chain
+    const swapContractAddress = SWAP_CONTRACTS[fromChain as Chain] || SWAP_CONTRACTS[Chain.L1X];
+    
+    // 2. Encode the swap function call data
+    // In production, this would use actual ABI encoding:
+    // const swapInterface = new ethers.utils.Interface([
+    //   'function swapExactTokensForTokensCrossChain(uint amountIn, uint amountOutMin, address[] calldata path, string calldata destinationChain, address to, uint deadline)'
+    // ]);
+    
+    // const swapData = swapInterface.encodeFunctionData('swapExactTokensForTokensCrossChain', [
+    //   ethers.utils.parseUnits(amount, 18),
+    //   0, // No minimum output (would calculate this in production)
+    //   [fromAsset, toAsset],
+    //   toChain,
+    //   walletAddress,
+    //   Math.floor(Date.now() / 1000) + 60 * 20 // 20 minute deadline
+    // ]);
+    
+    // Simulated swap function encoded data
+    const swapData = `0x5e949ffa000000000000000000000000000000000000000000000${
+      Math.floor(parseFloat(amount) * 10**18).toString(16)
+    }0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000${
+      fromAsset.slice(2)
+    }000000000000000000000000${
+      toAsset.slice(2)
+    }000000000000000000000000${
+      walletAddress.slice(2)
+    }`;
+    
+    // 3. Create the transaction request with specific L1X VM parameters
     const swapTxRequest: TransactionRequest = {
       walletAddress,
       walletType,
       chainId: fromChain,
-      to: '0xSwapContractAddress', // This would be the actual swap contract address
-      value: amount,
-      data: '0x', // This would be the encoded swap function call
-      gasLimit: '200000'
+      to: swapContractAddress,
+      value: '0', // Value is 0 for token swaps, tokens are transferred via the contract
+      data: swapData,
+      
+      // Gas parameters
+      gasLimit: '300000', // Higher gas limit for cross-chain swaps
+      type: 2, // EIP-1559
+      
+      // Pass the destination chain as a metadata field for L1X protocol
+      from: walletAddress
     };
     
-    // 3. Send the transaction
+    // 4. Send the transaction
     const txResponse = await sendTransaction(swapTxRequest);
     
     if (txResponse.status === 'failed') {
       throw new Error(txResponse.error || 'Transaction failed');
     }
     
+    // Calculate estimated completion time (varies by chain pair)
+    const now = new Date();
+    // Different chain combinations have different finality times
+    const estimatedMinutes = fromChain === toChain ? 2 : 
+                             (fromChain === Chain.ETHEREUM || toChain === Chain.ETHEREUM) ? 30 : 15;
+                             
+    const estimatedCompletion = new Date(now.getTime() + estimatedMinutes * 60 * 1000);
+    
     return {
       success: true,
-      txHash: txResponse.transactionHash
+      txHash: txResponse.transactionHash,
+      estimatedCompletion
     };
   } catch (error) {
     console.error('Error executing wallet swap:', error);

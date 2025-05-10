@@ -86,97 +86,114 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       return;
     }
     
+    // Skip calculation if we're already calculating or if no data has changed
+    // This helps prevent the infinite update loop
+    if (isLoading && portfolioValue > 0 && assetAllocations.length > 0) {
+      return;
+    }
+    
+    // Set loading state
     setIsLoading(true);
     
-    // Check if we have API data or should use mock data
-    const useApiData = !isLoadingVaults && !isLoadingAssets && !isLoadingAllocations && 
-                     allocationsData.length > 0 && assets.length > 0;
-    
-    let totalValue = 0;
-    let totalPreviousValue = 0;
-    const allocations: AssetWithAllocation[] = [];
-    
-    if (useApiData) {
-      // Use real data from API
-      for (const allocation of allocationsData) {
-        const asset = assets.find((a: any) => a.id === allocation.assetId);
-        if (asset && priceDetails[asset.symbol]) {
-          const currentPrice = priceDetails[asset.symbol].current;
-          const previousPrice = priceDetails[asset.symbol].previous24h;
-          
-          // Get allocation amount (in a real app, this would be the actual token amount)
-          const amount = allocation.amount || parseInt(allocation.targetPercentage);
-          
-          const value = amount * currentPrice;
-          const previousValue = amount * previousPrice;
-          
-          totalValue += value;
-          totalPreviousValue += previousValue;
-          
-          // Store allocation data
-          allocations.push({
-            asset: {
-              id: asset.id,
-              name: asset.name,
-              symbol: asset.symbol,
-              type: asset.type,
-              amount
-            },
-            amount,
-            valueUSD: value,
-            price: currentPrice,
-            percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
-          });
+    try {
+      // Check if we have API data or should use mock data
+      const useApiData = !isLoadingVaults && !isLoadingAssets && !isLoadingAllocations && 
+                      allocationsData.length > 0 && assets.length > 0;
+      
+      let totalValue = 0;
+      let totalPreviousValue = 0;
+      const allocations: AssetWithAllocation[] = [];
+      
+      if (useApiData) {
+        // Use real data from API
+        for (const allocation of allocationsData) {
+          const asset = assets.find((a: any) => a.id === allocation.assetId);
+          if (asset && priceDetails[asset.symbol]) {
+            const currentPrice = priceDetails[asset.symbol].current;
+            const previousPrice = priceDetails[asset.symbol].previous24h;
+            
+            // Get allocation amount (in a real app, this would be the actual token amount)
+            const amount = allocation.amount || parseFloat(allocation.targetPercentage);
+            
+            const value = amount * currentPrice;
+            const previousValue = amount * previousPrice;
+            
+            totalValue += value;
+            totalPreviousValue += previousValue;
+            
+            // Store allocation data
+            allocations.push({
+              asset: {
+                id: asset.id,
+                name: asset.name,
+                symbol: asset.symbol,
+                type: asset.type,
+                amount
+              },
+              amount,
+              valueUSD: value,
+              price: currentPrice,
+              percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
+            });
+          }
         }
+      } else {
+        // Use mock data when API data isn't available
+        mockPortfolio.forEach(asset => {
+          if (priceDetails[asset.symbol]) {
+            // Calculate current value
+            const price = priceDetails[asset.symbol].current;
+            const assetValue = asset.amount * price;
+            totalValue += assetValue;
+            
+            // Calculate previous value (24h ago)
+            const assetPrevValue = asset.amount * priceDetails[asset.symbol].previous24h;
+            totalPreviousValue += assetPrevValue;
+            
+            // Store allocation data
+            allocations.push({
+              asset: asset,
+              amount: asset.amount,
+              valueUSD: assetValue,
+              price: price,
+              percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
+            });
+          }
+        });
       }
-    } else {
-      // Use mock data when API data isn't available
-      mockPortfolio.forEach(asset => {
-        if (priceDetails[asset.symbol]) {
-          // Calculate current value
-          const price = priceDetails[asset.symbol].current;
-          const assetValue = asset.amount * price;
-          totalValue += assetValue;
-          
-          // Calculate previous value (24h ago)
-          const assetPrevValue = asset.amount * priceDetails[asset.symbol].previous24h;
-          totalPreviousValue += assetPrevValue;
-          
-          // Store allocation data
-          allocations.push({
-            asset: asset,
-            amount: asset.amount,
-            valueUSD: assetValue,
-            price: price,
-            percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
-          });
-        }
-      });
+      
+      // If we don't have previous values, simulate one
+      if (totalPreviousValue === 0) {
+        totalPreviousValue = totalValue * 0.95; // Simulate 5% growth by default
+      }
+      
+      // Calculate percent change
+      const change = totalPreviousValue > 0 
+        ? ((totalValue - totalPreviousValue) / totalPreviousValue) * 100 
+        : 0;
+      
+      // Only continue with updates if we have actual data
+      if (allocations.length > 0 && totalValue > 0) {
+        // Update the percentages now that we know the total value
+        allocations.forEach(allocation => {
+          allocation.percentOfPortfolio = (allocation.valueUSD / totalValue) * 100;
+        });
+        
+        // Sort allocations by value
+        allocations.sort((a, b) => b.valueUSD - a.valueUSD);
+        
+        // Update state with new values
+        setAssetAllocations(allocations);
+        setPortfolioValue(totalValue);
+        setPreviousValue(totalPreviousValue);
+        setPercentChange(change);
+      }
+    } catch (error) {
+      console.error("Error calculating portfolio values:", error);
+    } finally {
+      // Always clear loading state when done
+      setIsLoading(false);
     }
-    
-    // If we don't have previous values, simulate one
-    if (totalPreviousValue === 0) {
-      totalPreviousValue = totalValue * 0.95; // Simulate 5% growth by default
-    }
-    
-    // Calculate percent change
-    const change = totalPreviousValue > 0 
-      ? ((totalValue - totalPreviousValue) / totalPreviousValue) * 100 
-      : 0;
-    
-    // Update the percentages now that we know the total value
-    allocations.forEach(allocation => {
-      allocation.percentOfPortfolio = (allocation.valueUSD / totalValue) * 100;
-    });
-    
-    // Sort allocations by value
-    allocations.sort((a, b) => b.valueUSD - a.valueUSD);
-    
-    setAssetAllocations(allocations);
-    setPortfolioValue(totalValue);
-    setPreviousValue(totalPreviousValue);
-    setPercentChange(change);
-    setIsLoading(false);
   }, [
     isConnected, 
     priceDetails, 

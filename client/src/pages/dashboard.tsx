@@ -250,9 +250,9 @@ export default function Dashboard() {
               {vaults.length > 0 && (
                 <Card className="md:col-span-1">
                   <CardHeader>
-                    <CardTitle>Rebalance Settings</CardTitle>
+                    <CardTitle>My Rebalance Strategy</CardTitle>
                     <CardDescription>
-                      Configure rebalancing options for your portfolio
+                      Configure your portfolio rebalancing strategy
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

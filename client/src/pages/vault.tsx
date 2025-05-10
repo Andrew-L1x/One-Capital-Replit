@@ -31,10 +31,11 @@ export default function VaultPage() {
   const [activeTab, setActiveTab] = useState("overview");
   
   // Get vault ID from URL
-  const vaultId = match && typeof match !== 'boolean' ? parseInt((match as RouteMatch).params.id) : undefined;
+  const params = match && typeof match !== 'boolean' ? (match as RouteMatch).params : null;
+  const vaultId = params ? parseInt(params.id) : undefined;
   
   // Debug log to check vault ID extraction
-  console.log("Vault ID:", vaultId, "Match:", match);
+  console.log("Vault ID:", vaultId, "Match:", match, "Params:", params);
   
   // Check if user is authenticated
   const { data: user, isLoading: isLoadingUser, isError: isUserError } = useQuery({
@@ -52,10 +53,12 @@ export default function VaultPage() {
   const { 
     data: vault, 
     isLoading: isLoadingVault, 
-    isError: isVaultError 
+    isError: isVaultError,
+    error: vaultError
   } = useQuery<Vault>({
     queryKey: [`/api/vaults/${vaultId}`],
     enabled: !!vaultId && !!user,
+    retry: 1
   });
   
   // Fetch assets
@@ -96,6 +99,7 @@ export default function VaultPage() {
   } = useQuery<RebalanceHistory[]>({
     queryKey: [`/api/vaults/${vaultId}/rebalance-history`],
     enabled: !!vaultId && !!user,
+    retry: 1
   });
   
   // Rebalance mutation
@@ -236,7 +240,7 @@ export default function VaultPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="allocations">Allocations</TabsTrigger>
           <TabsTrigger value="settings">Take Profit Settings</TabsTrigger>
-          <TabsTrigger value="rebalance">Rebalance Settings</TabsTrigger>
+          <TabsTrigger value="rebalance">My Rebalance Strategy</TabsTrigger>
           <TabsTrigger value="history">Rebalance History</TabsTrigger>
         </TabsList>
         
@@ -358,9 +362,9 @@ export default function VaultPage() {
         <TabsContent value="rebalance" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Rebalance Settings</CardTitle>
+              <CardTitle>My Rebalance Strategy</CardTitle>
               <CardDescription>
-                Configure automatic rebalancing for your portfolio
+                Configure your portfolio rebalancing strategy
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -369,8 +373,8 @@ export default function VaultPage() {
                 onSuccess={() => {
                   queryClient.invalidateQueries({ queryKey: [`/api/vaults/${vault.id}`] });
                   toast({
-                    title: "Rebalance settings updated",
-                    description: "Your portfolio rebalance settings have been updated"
+                    title: "Rebalance strategy updated",
+                    description: "Your portfolio rebalance strategy has been updated"
                   });
                 }}
               />

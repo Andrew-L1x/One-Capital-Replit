@@ -7,9 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw } from "lucide-react";
 import { Vault } from "@shared/schema";
@@ -17,10 +15,13 @@ import { Vault } from "@shared/schema";
 // Form schema for rebalance settings
 const rebalanceSettingsSchema = z.object({
   driftThreshold: z.coerce.number()
-    .min(0.1, { message: "Drift threshold must be at least 0.1%" })
-    .max(20, { message: "Drift threshold cannot exceed 20%" }),
+    .min(0, { message: "Drift threshold must be at least 0%" })
+    .max(100, { message: "Drift threshold cannot exceed 100%" }),
   rebalanceFrequency: z.enum(["manual", "weekly", "monthly", "quarterly", "yearly"])
 });
+
+// Generate drift threshold options (0-100%)
+const driftOptions = Array.from({ length: 101 }, (_, i) => i);
 
 type RebalanceSettingsFormProps = {
   vault: Vault;
@@ -35,7 +36,7 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
   const form = useForm<z.infer<typeof rebalanceSettingsSchema>>({
     resolver: zodResolver(rebalanceSettingsSchema),
     defaultValues: {
-      driftThreshold: parseFloat(vault.driftThreshold?.toString() || "5.0"),
+      driftThreshold: parseFloat(vault.driftThreshold?.toString() || "0"),
       rebalanceFrequency: (vault.rebalanceFrequency || "manual") as "manual" | "weekly" | "monthly" | "quarterly" | "yearly"
     }
   });
@@ -43,7 +44,7 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
   // Update form when vault changes
   useEffect(() => {
     form.reset({
-      driftThreshold: parseFloat(vault.driftThreshold?.toString() || "5.0"),
+      driftThreshold: parseFloat(vault.driftThreshold?.toString() || "0"),
       rebalanceFrequency: (vault.rebalanceFrequency || "manual") as "manual" | "weekly" | "monthly" | "quarterly" | "yearly"
     });
   }, [vault, form]);
@@ -133,17 +134,24 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
             name="driftThreshold"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Drift Threshold ({field.value}%)</FormLabel>
-                <FormControl>
-                  <Slider
-                    min={0.1}
-                    max={20}
-                    step={0.1}
-                    value={[field.value]}
-                    onValueChange={(value) => field.onChange(value[0])}
-                    className="py-4"
-                  />
-                </FormControl>
+                <FormLabel>Drift Threshold</FormLabel>
+                <Select
+                  onValueChange={(value) => field.onChange(parseFloat(value))}
+                  defaultValue={field.value.toString()}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select drift threshold" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {driftOptions.map((value) => (
+                      <SelectItem key={value} value={value.toString()}>
+                        {value}%
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-sm text-muted-foreground">
                   Rebalance when any asset drifts more than {field.value}% from its target allocation
                 </p>

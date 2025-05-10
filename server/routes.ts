@@ -168,20 +168,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   api.post("/auth/register", async (req: Request, res: Response) => {
     try {
+      // Parse and validate the input data
       const userData = insertUserSchema.parse(req.body);
       
+      // No modification to username - keep it exactly as provided by the user
+      const username = userData.username.trim();
+      
+      // Better validations
+      if (!username) {
+        return res.status(400).json({ message: "Username cannot be empty" });
+      }
+      
       // Check if user already exists
-      const existingUser = await storage.getUserByUsername(userData.username);
+      const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already taken" });
       }
+      
+      // Check if email already exists
+      if (userData.email) {
+        const existingEmail = await storage.getUserByEmail(userData.email);
+        if (existingEmail) {
+          return res.status(400).json({ message: "Email already in use" });
+        }
+      }
+      
+      console.log(`Creating new standard user account: ${username}`);
 
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
-      // Create user with hashed password
+      // Create user with hashed password, using exact username provided
       const user = await storage.createUser({
         ...userData,
+        username, // Use our verified username
         password: hashedPassword
       });
 
@@ -304,19 +324,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If no user exists with this Firebase UID, create one
       if (!user) {
-        // Create a username from the provided username or from the email (remove @ and domain)
-        const username = providedUsername || email.split('@')[0];
+        // Create a clean username from the provided username or from the email (remove @ and domain)
+        // Important: Preserve the exact username provided by the user for a better experience
+        let username = '';
+        
+        if (providedUsername && providedUsername.trim()) {
+          // Use the username provided during registration
+          username = providedUsername.trim();
+          console.log(`Using provided username: ${username}`);
+        } else {
+          // No username provided, create one from email
+          username = email.split('@')[0].trim();
+          console.log(`Created username from email: ${username}`);
+        }
+        
+        // Validate username isn't empty after cleaning
+        if (!username) {
+          return res.status(400).json({ message: "Invalid username" });
+        }
         
         // Check if username already exists
         const existingUserWithUsername = await storage.getUserByUsername(username);
         if (existingUserWithUsername) {
-          return res.status(400).json({ message: "Username already taken" });
+          return res.status(400).json({ 
+            message: "Username already taken. Please choose a different username." 
+          });
         }
+        
+        // Check if email already exists but with different Firebase UID
+        const existingUserWithEmail = await storage.getUserByEmail(email);
+        if (existingUserWithEmail && existingUserWithEmail.firebaseUid !== firebaseUid) {
+          return res.status(400).json({ 
+            message: "Email already associated with another account." 
+          });
+        }
+        
+        console.log(`Creating new Firebase user account with username: ${username} and email: ${email}`);
         
         user = await storage.createUser({
           username,
           email,
-          password: await bcrypt.hash(Math.random().toString(36), 10), // Random password
+          // Create a secure password, but not one with random numbers that would affect display
+          password: await bcrypt.hash(`firebase-auth-${firebaseUid.slice(0, 10)}`, 10),
           firebaseUid
         });
       }

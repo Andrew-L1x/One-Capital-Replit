@@ -50,13 +50,16 @@ try {
 }
 
 // Get Auth instance with error handling
-let auth;
+// Define a type for our auth object to avoid TypeScript errors
+type FirebaseAuth = ReturnType<typeof getAuth>;
+
+let auth: FirebaseAuth;
 try {
   auth = getAuth(app);
   console.log('Firebase auth initialized successfully');
 } catch (error) {
   console.error('Failed to initialize Firebase auth:', error);
-  // Create a mock auth object with methods that gracefully fail
+  // Create a fallback auth object with methods that gracefully fail
   auth = {
     currentUser: null,
     onAuthStateChanged: (callback: any) => {
@@ -65,8 +68,13 @@ try {
     },
     signInWithEmailAndPassword: () => Promise.reject(new Error('Firebase auth not available')),
     createUserWithEmailAndPassword: () => Promise.reject(new Error('Firebase auth not available')),
-    signOut: () => Promise.reject(new Error('Firebase auth not available'))
-  } as any;
+    signOut: () => Promise.reject(new Error('Firebase auth not available')),
+    // Add other required methods to satisfy TypeScript
+    getIdToken: () => Promise.reject(new Error('Firebase auth not available')),
+    verifyIdToken: () => Promise.reject(new Error('Firebase auth not available')),
+    updateProfile: () => Promise.reject(new Error('Firebase auth not available')),
+    sendPasswordResetEmail: () => Promise.reject(new Error('Firebase auth not available')),
+  } as unknown as FirebaseAuth;
 }
 
 export { auth };

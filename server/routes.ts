@@ -455,53 +455,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   api.get("/vaults/:id", async (req: Request, res: Response) => {
     try {
-      // TEMPORARY: Return mock vault by ID
-      const vaultId = parseInt(req.params.id);
-      
-      if (isNaN(vaultId)) {
-        return res.status(400).json({ message: "Invalid vault ID" });
-      }
-      
-      // Simulated vaults data
-      const testVaults = [
-        {
-          id: 1,
-          name: "Aggressive Growth",
-          description: "High risk, high reward portfolio focused on tech and growth stocks",
-          userId: 1,
-          isCustodial: true,
-          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          contractAddress: null
-        },
-        {
-          id: 2,
-          name: "Balanced Portfolio",
-          description: "Balanced mix of growth and value assets",
-          userId: 1,
-          isCustodial: false,
-          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          contractAddress: "0x7890123456789012345678901234567890123456"
-        },
-        {
-          id: 3,
-          name: "Stable Income",
-          description: "Low volatility assets with stable returns",
-          userId: 1,
-          isCustodial: true,
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          contractAddress: null
-        }
-      ];
-      
-      const vault = testVaults.find(v => v.id === vaultId);
-      
-      if (!vault) {
-        return res.status(404).json({ message: "Vault not found" });
-      }
-      
-      return res.json(vault);
-      
-      /* Normal authentication code
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -513,19 +466,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid vault ID" });
       }
       
+      // Use real database storage
       const vault = await storage.getVault(vaultId);
       
       if (!vault) {
+        console.log(`Vault not found: ID ${vaultId}`);
         return res.status(404).json({ message: "Vault not found" });
       }
       
       if (vault.userId !== userId) {
+        console.log(`Access denied to vault ${vaultId} for user ${userId}`);
         return res.status(403).json({ message: "Access denied" });
       }
       
       return res.json(vault);
-      */
     } catch (error) {
+      console.error("Error fetching vault:", error);
       return res.status(500).json({ message: "Error fetching vault" });
     }
   });

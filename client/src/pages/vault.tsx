@@ -174,8 +174,21 @@ export default function VaultPage() {
     );
   }
   
+  // Log the state variables for debugging
+  useEffect(() => {
+    console.log("Vault page state:", {
+      vaultId,
+      match,
+      params,
+      isVaultError,
+      isLoadingVault,
+      vaultError,
+      vault
+    });
+  }, [vaultId, match, params, isVaultError, isLoadingVault, vaultError, vault]);
+
   // Error state
-  if (isVaultError || !vault) {
+  if (isVaultError || (!vault && !isLoadingVault)) {
     return (
       <div className="container mx-auto p-4 py-8">
         <div className="flex items-center mb-8">
@@ -189,6 +202,7 @@ export default function VaultPage() {
             <CardTitle>Vault Not Found</CardTitle>
             <CardDescription>
               The vault you're looking for doesn't exist or you don't have access to it.
+              (ID: {vaultId})
             </CardDescription>
           </CardHeader>
           <CardContent>

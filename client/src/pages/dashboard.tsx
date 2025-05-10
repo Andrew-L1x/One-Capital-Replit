@@ -277,6 +277,8 @@ export default function Dashboard() {
                             size="sm" 
                             className="w-full"
                             onClick={() => {
+                              // Debug log to check vault ID before navigation
+                              console.log("Navigating to vault:", vault.id, vault);
                               setLocation(`/vaults/${vault.id}`);
                             }}
                           >

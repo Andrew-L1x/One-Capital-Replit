@@ -17,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWallet } from '@/lib/walletContext';
-import { usePrices, formatPrice } from '@/lib/priceService';
+import { formatPrice, usePriceDetails } from '@/lib/usePriceDetails';
 import { useQuery } from '@tanstack/react-query';
 
 interface Asset {

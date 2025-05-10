@@ -19,7 +19,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatPrice, usePriceDetails } from "@/lib/priceService";
+import { formatPrice, formatPercentage, usePriceDetails } from "@/lib/usePriceDetails";
 
 interface AssetPerformance {
   id: number;
@@ -42,10 +42,7 @@ interface PortfolioMetrics {
   totalAssets: number;
 }
 
-// Format percentage with % sign and 2 decimal places
-const formatPercentage = (percentage: number): string => {
-  return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
-};
+// Using formatPercentage from usePriceDetails.tsx
 
 interface AssetAllocationDetails {
   id: number;

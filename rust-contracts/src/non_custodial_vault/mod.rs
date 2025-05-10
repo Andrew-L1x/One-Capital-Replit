@@ -325,6 +325,135 @@ impl NonCustodialVaultContract {
         vault.allocations.needs_rebalancing()
     }
     
+    /// Checks if rebalancing is needed and emits events
+    pub fn check_rebalancing_with_events(vault_id: String) -> bool {
+        let state = Self::load();
+        
+        let vault = state.vaults.get(&vault_id)
+            .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
+            
+        if vault.status != VaultStatus::Active {
+            return false;
+        }
+        
+        vault.allocations.check_and_emit_rebalance_events(&vault_id)
+    }
+    
+    /// Requests rebalancing for a vault
+    pub fn request_rebalance(vault_id: String) -> String {
+        let mut state = Self::load();
+        
+        let vault = state.vaults.get_mut(&vault_id)
+            .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
+            
+        if vault.status != VaultStatus::Active {
+            let error_msg = format!("Cannot rebalance a non-active vault: status is {:?}", vault.status);
+            crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+            panic!("{}", error_msg);
+        }
+        
+        // Check if rebalancing is needed and emit events
+        if !vault.allocations.check_and_emit_rebalance_events(&vault_id) {
+            return format!("Vault {} does not need rebalancing", vault_id);
+        }
+        
+        // Emit rebalance initiated event
+        crate::events::emit_rebalance_initiated_event(&vault_id, "manual_request");
+        
+        // For non-custodial vaults, we create a rebalance request
+        // that the user will need to approve and execute
+        vault.rebalance_requested_at = Some(l1x_sdk::env::block_timestamp());
+        state.save();
+        
+        format!("Rebalance requested for vault {}", vault_id)
+    }
+    
+    /// Plan rebalance transactions for a non-custodial vault
+    pub fn plan_rebalance(vault_id: String, prices_json: String) -> String {
+        let state = Self::load();
+        
+        let vault = state.vaults.get(&vault_id)
+            .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
+            
+        if vault.status != VaultStatus::Active {
+            panic!("Cannot plan rebalance for a non-active vault");
+        }
+        
+        // Parse prices from JSON
+        let prices: Vec<(String, u128)> = match serde_json::from_str(&prices_json) {
+            Ok(p) => p,
+            Err(e) => {
+                let error_msg = format!("Failed to parse prices: {}", e);
+                crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+                panic!("{}", error_msg);
+            }
+        };
+        
+        // Calculate necessary transactions
+        let transactions = vault.allocations.calculate_rebalance_transactions(
+            &prices,
+            vault.total_value
+        );
+        
+        if transactions.is_empty() {
+            return format!("No rebalance transactions needed for vault {}", vault_id);
+        }
+        
+        // Create a rebalance operation for planning purposes
+        let rebalance_id = format!("rebalance-plan-{}-{}", vault_id, l1x_sdk::env::block_timestamp());
+        let operation = crate::rebalance::RebalanceEngine::create_rebalance_operation(
+            rebalance_id,
+            crate::rebalance::RebalanceStrategy::Manual,
+            transactions
+        );
+        
+        // Estimate gas costs
+        let estimated_cost = crate::rebalance::RebalanceEngine::estimate_gas_costs(&operation);
+        
+        // Return plan details
+        let plan = serde_json::to_string(&operation).unwrap_or_default();
+        format!("{{\"plan\": {}, \"estimated_cost\": {}}}", plan, estimated_cost)
+    }
+    
+    /// Authorize rebalance transactions for a non-custodial vault
+    pub fn authorize_rebalance(vault_id: String, plan_id: String, signature: String) -> String {
+        let mut state = Self::load();
+        
+        let vault = state.vaults.get_mut(&vault_id)
+            .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
+            
+        if vault.status != VaultStatus::Active {
+            let error_msg = format!("Cannot authorize rebalance for a non-active vault: status is {:?}", vault.status);
+            crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+            panic!("{}", error_msg);
+        }
+        
+        if vault.rebalance_requested_at.is_none() {
+            let error_msg = "No rebalance request pending";
+            crate::events::emit_rebalance_failed_event(&vault_id, error_msg);
+            panic!("{}", error_msg);
+        }
+        
+        // In a real implementation, we would verify the signature
+        // For now, we just accept it and mark as authorized
+        
+        vault.rebalance_authorized_at = Some(l1x_sdk::env::block_timestamp());
+        vault.rebalance_authorized_plan = Some(plan_id);
+        vault.rebalance_authorized_signature = Some(signature);
+        
+        state.save();
+        
+        // Emit authorization event
+        let data = format!("{{\"plan_id\": \"{}\"}}", plan_id);
+        let event = crate::events::RebalanceEvent::new(
+            crate::events::RebalanceEventType::RebalanceInitiated,
+            vault_id.clone()
+        ).with_data(data);
+        event.emit();
+        
+        format!("Rebalance authorized for vault {}", vault_id)
+    }
+    
     /// Generates rebalancing recommendations
     pub fn generate_rebalance_recommendations(vault_id: String, prices_json: String) -> String {
         let mut state = Self::load();
@@ -403,6 +532,87 @@ impl NonCustodialVaultContract {
             
         serde_json::to_string(&vault.last_recommendations)
             .unwrap_or_else(|_| "Failed to serialize recommendations".to_string())
+    }
+    
+    /// Execute authorized rebalance for a non-custodial vault
+    pub fn execute_rebalance(vault_id: String, plan_id: String) -> String {
+        let mut state = Self::load();
+        
+        let vault = state.vaults.get_mut(&vault_id)
+            .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
+            
+        if vault.status != VaultStatus::Active {
+            let error_msg = format!("Cannot execute rebalance for a non-active vault: status is {:?}", vault.status);
+            crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+            panic!("{}", error_msg);
+        }
+        
+        // Verify that rebalance was authorized
+        if vault.rebalance_authorized_at.is_none() {
+            let error_msg = "No authorized rebalance found";
+            crate::events::emit_rebalance_failed_event(&vault_id, error_msg);
+            panic!("{}", error_msg);
+        }
+        
+        // Verify the plan ID
+        if let Some(ref authorized_plan) = vault.rebalance_authorized_plan {
+            if authorized_plan != &plan_id {
+                let error_msg = format!("Plan ID mismatch: expected {}, got {}", authorized_plan, plan_id);
+                crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+                panic!("{}", error_msg);
+            }
+        } else {
+            let error_msg = "No authorized plan found";
+            crate::events::emit_rebalance_failed_event(&vault_id, error_msg);
+            panic!("{}", error_msg);
+        }
+        
+        // Parse the plan and execute it
+        // In a real scenario, this would communicate with user's wallet
+        // For now, we simulate success
+        
+        // Update the vault state
+        let prices = Vec::new(); // Would get from oracle in real implementation
+        vault.allocations.record_rebalance(&prices);
+        vault.last_rebalance = l1x_sdk::env::block_timestamp();
+        
+        // Clear the rebalance request/authorization state
+        vault.rebalance_requested_at = None;
+        vault.rebalance_authorized_at = None;
+        vault.rebalance_authorized_plan = None;
+        vault.rebalance_authorized_signature = None;
+        
+        state.save();
+        
+        // Emit completed event
+        crate::events::emit_rebalance_completed_event(&vault_id, 1, Some(2_500_000));
+        
+        format!("Rebalance executed for vault {}", vault_id)
+    }
+    
+    /// Cancel authorized rebalance for a non-custodial vault
+    pub fn cancel_rebalance(vault_id: String) -> String {
+        let mut state = Self::load();
+        
+        let vault = state.vaults.get_mut(&vault_id)
+            .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
+            
+        if vault.rebalance_requested_at.is_none() && vault.rebalance_authorized_at.is_none() {
+            return format!("No pending rebalance to cancel for vault {}", vault_id);
+        }
+        
+        // Clear the rebalance request/authorization state
+        vault.rebalance_requested_at = None;
+        vault.rebalance_authorized_at = None;
+        vault.rebalance_authorized_plan = None;
+        vault.rebalance_authorized_signature = None;
+        
+        state.save();
+        
+        // Emit failed event
+        crate::events::emit_rebalance_failed_event(&vault_id, "Rebalance cancelled by user");
+        
+        format!("Rebalance cancelled for vault {}", vault_id)
     }
     
     /// Checks if take profit should be executed

@@ -4,6 +4,8 @@
 //! portfolio allocations. The rebalancing system handles drift-based and
 //! scheduled rebalancing, optimal transaction planning, and execution.
 
+pub mod scheduled;
+
 use serde::{Deserialize, Serialize};
 use borsh::{BorshDeserialize, BorshSerialize};
 use std::collections::HashMap;

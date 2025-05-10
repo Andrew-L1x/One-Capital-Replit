@@ -228,8 +228,11 @@ export class DatabaseStorage implements IStorage {
       return dbAllocations;
     }
     
-    // For development only - provide test data for vault ID 1
-    if (vaultId === 1) {
+    // Get the vault to check if it belongs to the test user (ID 1)
+    const vault = await this.getVault(vaultId);
+    
+    // For development only - provide test data only for test user (ID 1) vaults
+    if (vault && vault.userId === 1 && vaultId === 1) {
       console.log("Providing test allocation data for development");
       return [
         {
@@ -267,6 +270,7 @@ export class DatabaseStorage implements IStorage {
       ];
     }
     
+    // For all other users, return an empty array
     return [];
   }
 

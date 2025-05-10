@@ -478,38 +478,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Vault routes
   api.get("/vaults", async (req: Request, res: Response) => {
     try {
-      // TEMPORARY: For demo purposes, always return test vaults
-      const testVaults = [
-        {
-          id: 1,
-          name: "Aggressive Growth",
-          description: "High risk, high reward portfolio focused on tech and growth stocks",
-          userId: 1,
-          isCustodial: true,
-          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          contractAddress: null
-        },
-        {
-          id: 2,
-          name: "Balanced Portfolio",
-          description: "Balanced mix of growth and value assets",
-          userId: 1,
-          isCustodial: false,
-          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          contractAddress: "0x7890123456789012345678901234567890123456"
-        },
-        {
-          id: 3,
-          name: "Stable Income",
-          description: "Low volatility assets with stable returns",
-          userId: 1,
-          isCustodial: true,
-          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          contractAddress: null
-        }
-      ];
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       
-      return res.json(testVaults);
+      const userId = (req.user as any).id;
+      
+      // Only show test vaults for the test user (id: 1)
+      // For new users, return an empty array so they can create their own vaults
+      if (userId === 1) {
+        console.log("Providing test vaults for test user");
+        const testVaults = [
+          {
+            id: 1,
+            name: "Aggressive Growth",
+            description: "High risk, high reward portfolio focused on tech and growth stocks",
+            userId: 1,
+            isCustodial: true,
+            createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+            contractAddress: null
+          },
+          {
+            id: 2,
+            name: "Balanced Portfolio",
+            description: "Balanced mix of growth and value assets",
+            userId: 1,
+            isCustodial: false,
+            createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+            contractAddress: "0x7890123456789012345678901234567890123456"
+          },
+          {
+            id: 3,
+            name: "Stable Income",
+            description: "Low volatility assets with stable returns",
+            userId: 1,
+            isCustodial: true,
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            contractAddress: null
+          }
+        ];
+        return res.json(testVaults);
+      } else {
+        // For real users, get their vaults from the database
+        const vaults = await storage.getVaultsByUserId(userId);
+        return res.json(vaults);
+      }
       
       /* Normal authentication code
       if (!req.isAuthenticated()) {

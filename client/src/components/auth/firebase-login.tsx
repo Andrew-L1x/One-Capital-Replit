@@ -125,11 +125,16 @@ export default function FirebaseLogin({ onSuccess }: FirebaseLoginProps) {
     setError(null);
     
     try {
+      console.log("Attempting to register with Firebase:", data.email);
+      
       // First register with Firebase
       const firebaseUser = await firebaseRegister(data.email, data.password);
+      console.log("Firebase registration successful, user:", firebaseUser.uid);
       
       // Get the ID token
       const idToken = await firebaseUser.getIdToken();
+      
+      console.log("Got ID token, linking with backend...");
       
       // Link the account with the backend using our firebase-link endpoint
       await apiRequest("POST", "/api/auth/firebase-link", {
@@ -138,6 +143,8 @@ export default function FirebaseLogin({ onSuccess }: FirebaseLoginProps) {
         idToken,
         username: data.username // Pass the username for account creation
       });
+      
+      console.log("Account linked with backend successfully");
       
       // Update auth state
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -152,11 +159,37 @@ export default function FirebaseLogin({ onSuccess }: FirebaseLoginProps) {
       }
     } catch (err: any) {
       console.error("Registration error:", err);
-      setError(err.message || "Failed to register. Please try again.");
+      
+      // Provide a more user-friendly error message
+      let errorMessage = "Failed to register. Please try again.";
+      
+      // Handle specific Firebase error codes
+      if (err.code) {
+        switch (err.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = "This email is already registered. Please try logging in instead.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "Please provide a valid email address.";
+            break;
+          case 'auth/weak-password':
+            errorMessage = "Password is too weak. Please use a stronger password.";
+            break;
+          case 'auth/configuration-not-found':
+            errorMessage = "Firebase configuration issue. Please check your network connection and try again.";
+            break;
+          default:
+            errorMessage = `Registration failed: ${err.message || err.code || "Unknown error"}`;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       
       toast({
         title: "Registration failed",
-        description: err.message || "Failed to register. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

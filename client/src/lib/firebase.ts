@@ -17,30 +17,61 @@ const firebaseConfig = {
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  // Add these settings to help with local development environment
-  emulator: {
-    auth: {
-      disableWarnings: true
-    }
-  }
+  messagingSenderId: "", // Empty string is fine if we don't use messaging
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
+
+// Log the configuration (without sensitive values)
+console.log("Initializing Firebase with project ID:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
 
 // Initialize Firebase
 let app;
 try {
+  // Check if we have required config values
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.appId) {
+    console.error('Firebase configuration incomplete. Missing required fields.');
+    throw new Error('Firebase configuration incomplete');
+  }
+  
+  // Try to initialize the app
   app = initializeApp(firebaseConfig);
+  console.log('Firebase initialized successfully');
 } catch (error: any) {
   // If already initialized, use the existing app
   if (error.code === 'app/duplicate-app') {
+    console.log('Firebase already initialized, getting existing app');
     app = getApp();
   } else {
     console.error('Firebase initialization error:', error);
-    throw error;
+    // Don't throw, as this would break the app for users
+    // Instead, we'll gracefully handle auth failures in the components
+    app = {} as any; // Provide a stub to prevent crashes
   }
 }
 
-export const auth = getAuth(app);
+// Get Auth instance with error handling
+let auth;
+try {
+  auth = getAuth(app);
+  console.log('Firebase auth initialized successfully');
+} catch (error) {
+  console.error('Failed to initialize Firebase auth:', error);
+  // Create a mock auth object with methods that gracefully fail
+  auth = {
+    currentUser: null,
+    onAuthStateChanged: (callback: any) => {
+      callback(null);
+      return () => {}; // Return an unsubscribe function
+    },
+    signInWithEmailAndPassword: () => Promise.reject(new Error('Firebase auth not available')),
+    createUserWithEmailAndPassword: () => Promise.reject(new Error('Firebase auth not available')),
+    signOut: () => Promise.reject(new Error('Firebase auth not available'))
+  } as any;
+}
+
+export { auth };
+
+// Initialize Google provider for signin
 const googleProvider = new GoogleAuthProvider();
 
 export const firebaseLogin = async (email: string, password: string) => {
@@ -54,10 +85,21 @@ export const firebaseLogin = async (email: string, password: string) => {
 
 export const firebaseRegister = async (email: string, password: string) => {
   try {
+    console.log("Registering with Firebase auth:", email);
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    console.log("Firebase registration successful");
     return userCredential.user;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to create account");
+    console.error("Firebase registration error:", error);
+    
+    // Preserve the original error code and message for better error handling upstream
+    if (error.code && error.message) {
+      const enhancedError = new Error(error.message);
+      (enhancedError as any).code = error.code;
+      throw enhancedError;
+    }
+    
+    throw error;
   }
 };
 

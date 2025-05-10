@@ -82,25 +82,12 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
     setError(null);
     
     try {
-      try {
-        // First, try to find the user by email
-        const findUserResponse = await apiRequest("GET", `/api/auth/find-by-email?email=${encodeURIComponent(data.email)}`);
-        
-        // Then authenticate with the username
-        await apiRequest("POST", "/api/auth/login", {
-          username: findUserResponse.username, 
-          password: data.password
-        });
-      } catch (error) {
-        // Try a fallback method - assume username is same as email prefix
-        const usernameGuess = data.email.split('@')[0];
-        console.log("Trying to login with username guess:", usernameGuess);
-        
-        await apiRequest("POST", "/api/auth/login", {
-          username: usernameGuess,
-          password: data.password
-        });
-      }
+      // Send login directly with email - no need to lookup username first
+      // Our updated backend now supports login with email
+      await apiRequest("POST", "/api/auth/login", {
+        username: data.email, // Backend strategy now accepts email as username field
+        password: data.password
+      });
       
       // Update auth state
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -119,7 +106,7 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
       
       toast({
         title: "Login failed",
-        description: err.message || "Failed to login. Please try again.",
+        description: "Invalid email or password. Please try again.",
         variant: "destructive",
       });
     } finally {

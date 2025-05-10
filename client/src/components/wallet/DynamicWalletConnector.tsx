@@ -6,15 +6,16 @@ import { Loader2, CheckCircle, XCircle, Wallet } from 'lucide-react';
 import { DynamicWidget, useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { formatEther } from 'viem';
 
-// Add window.ethereum type definition
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: {method: string; params?: any[]}) => Promise<any>;
-      isMetaMask?: boolean;
-    };
-    l1x?: any;
-  }
+// Define type for Ethereum provider
+interface EthereumProvider {
+  request: (args: {method: string; params?: any[]}) => Promise<any>;
+  isMetaMask?: boolean;
+}
+
+// Add window.ethereum type definition - but only if not already defined
+interface WindowWithEthereum extends Window {
+  ethereum?: EthereumProvider;
+  l1x?: EthereumProvider;
 }
 
 // Types for the wallet connector
@@ -48,25 +49,28 @@ export default function DynamicWalletConnector({
 
   // Add L1X testnet to MetaMask
   const addL1XNetwork = async () => {
-    if (typeof window.ethereum === 'undefined') {
+    // Cast window to our interface with ethereum property
+    const windowWithEthereum = window as WindowWithEthereum;
+    
+    if (typeof windowWithEthereum.ethereum === 'undefined') {
       setError('MetaMask not detected');
       return;
     }
     
     try {
       setStatus('connecting');
-      await window.ethereum.request({
+      await windowWithEthereum.ethereum!.request({
         method: 'wallet_addEthereumChain',
         params: [{
-          chainId: '0x6f1', // 1777 in hex
-          chainName: 'L1X Testnet',
+          chainId: '0x42b', // 1067 in hex
+          chainName: 'L1X Testnet v2',
           nativeCurrency: {
             name: 'L1X',
             symbol: 'L1X',
             decimals: 18
           },
-          rpcUrls: ['https://v2.testnet.l1x.foundation'],
-          blockExplorerUrls: ['https://explorer.testnet.l1x.foundation/']
+          rpcUrls: ['https://v2-testnet-rpc.l1x.foundation/'],
+          blockExplorerUrls: ['https://l1xapp.com/testnet-explorer']
         }]
       });
       setStatus('connected');
@@ -165,7 +169,7 @@ export default function DynamicWalletConnector({
             ) : (
               <>
                 <Wallet className="w-4 h-4 mr-2" />
-                Add L1X Testnet to MetaMask
+                Add L1X Testnet v2 to MetaMask
               </>
             )}
           </Button>

@@ -38,6 +38,12 @@ pub mod wallet;
 /// XTalk protocol integration
 pub mod xtalk;
 
+/// Scheduled jobs for automated processes
+pub mod scheduled_jobs;
+
+/// API endpoints for external interaction
+pub mod api;
+
 /// Contract version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

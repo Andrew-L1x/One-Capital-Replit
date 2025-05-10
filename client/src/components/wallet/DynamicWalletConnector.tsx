@@ -57,10 +57,9 @@ export default function DynamicWalletConnector({
       return;
     }
     
-    // We have both URLs for testing
+    // Official L1X RPC endpoints from the documentation
     const testnetRpcUrls = [
-      'https://v2-testnet-rpc.l1x.foundation',
-      'https://v2.testnet.l1x.foundation'
+      'https://rpc.testnet.l1x.foundation'
     ];
     
     try {

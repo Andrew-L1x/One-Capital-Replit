@@ -31,7 +31,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     return (
       <div className="bg-card border rounded shadow p-3">
         <p className="font-medium">{data.name} ({data.symbol})</p>
-        <p>Value: ${data.valueUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
+        <p>Value: ${data.valueUSD.toLocaleString(undefined, { maximumFractionDigits: 3 })}</p>
         <p>Percentage: {Math.round(data.value)}%</p>
       </div>
     );

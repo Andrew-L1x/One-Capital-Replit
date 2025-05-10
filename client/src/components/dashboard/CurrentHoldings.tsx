@@ -95,7 +95,7 @@ export function CurrentHoldings() {
       
       return {
         assetId: allocation.assetId,
-        amount: parseFloat(amount.toFixed(6)),
+        amount: parseFloat(amount.toFixed(3)),
         percentage: percentage,
       };
     });
@@ -336,7 +336,7 @@ export function CurrentHoldings() {
                                 type="number"
                                 placeholder="0.00"
                                 className="pl-8"
-                                step="0.000001"
+                                step="0.001"
                                 {...field}
                                 onChange={(e) => {
                                   const newAmount = parseFloat(e.target.value);
@@ -358,13 +358,13 @@ export function CurrentHoldings() {
                     
                     <div className="w-24 text-xs font-medium text-right">
                       {asset?.symbol && asset.symbol === "BTC" && (
-                        <span>{holding.amount > 0 ? (holding.amount / 65000).toFixed(8) : "0"} BTC</span>
+                        <span>{holding.amount > 0 ? (holding.amount / 65000).toFixed(3) : "0"} BTC</span>
                       )}
                       {asset?.symbol && asset.symbol === "ETH" && (
-                        <span>{holding.amount > 0 ? (holding.amount / 3500).toFixed(6) : "0"} ETH</span>
+                        <span>{holding.amount > 0 ? (holding.amount / 3500).toFixed(3) : "0"} ETH</span>
                       )}
                       {asset?.symbol && !["BTC", "ETH"].includes(asset.symbol) && (
-                        <span>{holding.amount > 0 ? holding.amount.toFixed(2) : "0"} USD</span>
+                        <span>{holding.amount > 0 ? holding.amount.toFixed(3) : "0"} USD</span>
                       )}
                     </div>
                     
@@ -412,7 +412,7 @@ export function CurrentHoldings() {
               <div className="flex items-center space-x-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm">
-                  Current Value: ${portfolioValue.toFixed(2)}
+                  Current Value: ${portfolioValue.toFixed(3)}
                 </span>
               </div>
               

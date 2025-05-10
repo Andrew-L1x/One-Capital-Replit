@@ -366,7 +366,7 @@ export function PerformanceMetrics() {
                         </div>
                       </td>
                       <td className="py-2 text-right">
-                        <span>{asset.amount.toFixed(4)}</span>
+                        <span>{asset.amount.toFixed(3)}</span>
                       </td>
                       <td className="py-2 text-right">
                         <span>{formatPrice(asset.price)}</span>

@@ -273,6 +273,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Find user by email endpoint
+  api.get("/auth/find-by-email", async (req: Request, res: Response) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) {
+        return res.status(400).json({ message: "Email parameter is required" });
+      }
+      
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Only return the username, not the full user object for security
+      return res.json({ username: user.username });
+    } catch (error) {
+      console.error("Error finding user by email:", error);
+      return res.status(500).json({ message: "Server error while finding user" });
+    }
+  });
+
   // Web3 authentication
   api.post("/auth/web3/login", async (req: Request, res: Response) => {
     try {

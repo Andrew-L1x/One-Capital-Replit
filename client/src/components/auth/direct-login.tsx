@@ -82,11 +82,25 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
     setError(null);
     
     try {
-      // Authenticate directly with our backend
-      await apiRequest("POST", "/api/auth/login", {
-        username: data.email, // Using email as username for simplicity
-        password: data.password
-      });
+      try {
+        // First, try to find the user by email
+        const findUserResponse = await apiRequest("GET", `/api/auth/find-by-email?email=${encodeURIComponent(data.email)}`);
+        
+        // Then authenticate with the username
+        await apiRequest("POST", "/api/auth/login", {
+          username: findUserResponse.username, 
+          password: data.password
+        });
+      } catch (error) {
+        // Try a fallback method - assume username is same as email prefix
+        const usernameGuess = data.email.split('@')[0];
+        console.log("Trying to login with username guess:", usernameGuess);
+        
+        await apiRequest("POST", "/api/auth/login", {
+          username: usernameGuess,
+          password: data.password
+        });
+      }
       
       // Update auth state
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -129,9 +143,9 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
       
       console.log("Registration successful, logging in...");
       
-      // Login immediately after successful registration
+      // Login immediately after successful registration with username
       await apiRequest("POST", "/api/auth/login", {
-        username: data.email, // Using email as username for login
+        username: data.username, // Using the username for login
         password: data.password
       });
       

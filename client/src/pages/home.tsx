@@ -34,7 +34,6 @@ export default function Home() {
           <nav className="hidden md:flex items-center space-x-6">
             <a href="#investment" className="text-sm font-medium hover:text-primary">Investing</a>
             <a href="#features" className="text-sm font-medium hover:text-primary">Features</a>
-            <a href="#performance" className="text-sm font-medium hover:text-primary">Performance</a>
             <a href="#pricing" className="text-sm font-medium hover:text-primary">Pricing</a>
           </nav>
           <div className="flex items-center space-x-4">
@@ -316,103 +315,6 @@ export default function Home() {
                         <span className="text-sm font-medium">25%</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        {/* Performance Section */}
-        <section className="py-16 md:py-24" id="performance">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Performance That Delivers</h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Our strategies are designed to optimize for long-term growth while managing volatility
-              </p>
-            </div>
-            
-            <div className="grid gap-8 lg:grid-cols-2 items-center">
-              <div className="space-y-8">
-                <div className="bg-white dark:bg-black/40 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow">
-                  <h3 className="text-xl font-bold mb-4">Aggressive Growth Strategy</h3>
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <p className="text-3xl font-bold text-green-500">+32.6%</p>
-                      <p className="text-sm text-muted-foreground">12-month return</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">vs. +21.4%</p>
-                      <p className="text-sm text-muted-foreground">Cryptocurrency Index</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    High-growth portfolio focused on emerging Layer 1 blockchains and DeFi projects with strong fundamentals.
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full">
-                    View Strategy Details
-                  </Button>
-                </div>
-                
-                <div className="bg-white dark:bg-black/40 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow">
-                  <h3 className="text-xl font-bold mb-4">Balanced Strategy</h3>
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <p className="text-3xl font-bold text-green-500">+24.8%</p>
-                      <p className="text-sm text-muted-foreground">12-month return</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">vs. +19.2%</p>
-                      <p className="text-sm text-muted-foreground">Cryptocurrency Index</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Moderate-growth portfolio with focus on established cryptocurrencies and select growth assets.
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full">
-                    View Strategy Details
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-black/40 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold">Strategy Performance</h3>
-                  <div className="flex text-sm space-x-2">
-                    <span className="inline-flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-primary mr-1"></span>
-                      Aggressive
-                    </span>
-                    <span className="inline-flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-blue-400 mr-1"></span>
-                      Balanced
-                    </span>
-                    <span className="inline-flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-gray-400 mr-1"></span>
-                      Index
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    [Performance Chart]
-                  </div>
-                </div>
-                
-                <div className="mt-6 grid grid-cols-3 gap-4 text-center">
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">1 Month</p>
-                    <p className="font-bold text-green-500">+5.2%</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">6 Months</p>
-                    <p className="font-bold text-green-500">+18.7%</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">1 Year</p>
-                    <p className="font-bold text-green-500">+32.6%</p>
                   </div>
                 </div>
               </div>

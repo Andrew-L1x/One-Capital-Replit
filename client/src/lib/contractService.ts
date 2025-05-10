@@ -259,17 +259,37 @@ export const getContract = async (
     // Only try to get network details if we have a provider
     if (provider) {
       try {
-        const network = await provider.getNetwork();
-        // Handle different ethers versions where chainId might be bigint
-        if (network && network.chainId) {
-          currentChainId = typeof network.chainId === 'bigint' 
-            ? Number(network.chainId) 
-            : network.chainId;
+        // Check if the provider has getNetwork function first
+        if (typeof provider.getNetwork === 'function') {
+          try {
+            // Safely call getNetwork with timeout protection
+            const networkPromise = provider.getNetwork();
+            
+            // Create a timeout promise to avoid hanging
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error("Network request timeout")), 3000);
+            });
+            
+            // Race them to prevent hanging
+            const network = await Promise.race([networkPromise, timeoutPromise]) as any;
+            
+            // Handle different ethers versions where chainId might be bigint
+            if (network && network.chainId) {
+              currentChainId = typeof network.chainId === 'bigint' 
+                ? Number(network.chainId) 
+                : network.chainId;
+            }
+          } catch (innerError) {
+            console.log("Error fetching network details, using default chainId");
+          }
+        } else {
+          console.log("Provider doesn't support getNetwork, using default chainId");
         }
       } catch (error) {
-        console.log("Error getting network details, using default chainId", error);
-        // Keep using the default chainId
+        console.log("Error with provider, using default chainId");
       }
+    } else {
+      console.log("Using fallback simulation mode with default chainId");
     }
     
     // Get contract address

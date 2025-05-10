@@ -332,7 +332,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-5xl mx-auto">
+            <div className="grid gap-8 md:grid-cols-2 max-w-5xl mx-auto">
               <Card className="p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
                 <div className="mb-4">
                   <h3 className="text-xl font-bold">Basic</h3>
@@ -347,25 +347,37 @@ export default function Home() {
                     <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>Up to $10,000 in assets</span>
+                    <span>Up to 3 assets</span>
                   </li>
                   <li className="flex items-center">
                     <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>Quarterly rebalancing</span>
+                    <span>Manual Rebalances</span>
                   </li>
                   <li className="flex items-center">
                     <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>3 portfolio strategies</span>
+                    <span>Manual Take Profit</span>
                   </li>
                   <li className="flex items-center text-muted-foreground">
                     <svg className="h-5 w-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
-                    <span>Advanced take-profit</span>
+                    <span>Scheduled Rebalances</span>
+                  </li>
+                  <li className="flex items-center text-muted-foreground">
+                    <svg className="h-5 w-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span>Drift Threshold Rebalances</span>
+                  </li>
+                  <li className="flex items-center text-muted-foreground">
+                    <svg className="h-5 w-5 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span>Scheduled and Threshold Take Profit</span>
                   </li>
                 </ul>
                 <Button className="w-full">Get Started</Button>
@@ -379,45 +391,8 @@ export default function Home() {
                   <h3 className="text-xl font-bold">Pro</h3>
                   <p className="text-muted-foreground mb-4">For serious investors</p>
                   <div className="mb-4">
-                    <span className="text-4xl font-bold">$9</span>
+                    <span className="text-4xl font-bold">$10</span>
                     <span className="text-muted-foreground">/mo</span>
-                  </div>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center">
-                    <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span>Up to $100,000 in assets</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span>Monthly rebalancing</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span>All portfolio strategies</span>
-                  </li>
-                  <li className="flex items-center">
-                    <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span>Advanced take-profit</span>
-                  </li>
-                </ul>
-                <Button className="w-full bg-primary">Get Started</Button>
-              </Card>
-              
-              <Card className="p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
-                <div className="mb-4">
-                  <h3 className="text-xl font-bold">Enterprise</h3>
-                  <p className="text-muted-foreground mb-4">For institutions</p>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold">Custom</span>
                   </div>
                 </div>
                 <ul className="space-y-3 mb-6">
@@ -431,24 +406,34 @@ export default function Home() {
                     <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>Custom rebalancing</span>
+                    <span>Manual Rebalances</span>
                   </li>
                   <li className="flex items-center">
                     <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>Custom strategies</span>
+                    <span>Manual Take Profit</span>
                   </li>
                   <li className="flex items-center">
                     <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                     </svg>
-                    <span>Dedicated support</span>
+                    <span>Scheduled Rebalances</span>
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Drift Threshold Rebalances</span>
+                  </li>
+                  <li className="flex items-center">
+                    <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Scheduled and Threshold Take Profit</span>
                   </li>
                 </ul>
-                <Button className="w-full" variant="outline">
-                  Contact Sales
-                </Button>
+                <Button className="w-full bg-primary">Get Started</Button>
               </Card>
             </div>
           </div>

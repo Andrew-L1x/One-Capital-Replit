@@ -1307,61 +1307,198 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      // Validate swap parameters
-      const { fromAsset, toAsset, amount, targetChain } = req.body;
+      // Import the cross-chain swap service
+      const { executeSwap, Chain, SwapStatus } = await import('./services/crossChainSwap');
       
-      if (!fromAsset || !toAsset || !amount || !targetChain) {
-        return res.status(400).json({ message: "Missing required parameters" });
+      // Validate swap request parameters
+      const { 
+        fromAsset, 
+        toAsset, 
+        amount, 
+        fromChain = Chain.L1X, // Default from chain is L1X
+        toChain,
+        slippageTolerance = 0.5, // Default slippage tolerance is 0.5%
+        walletAddress 
+      } = req.body;
+      
+      if (!fromAsset || !toAsset || !amount) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters (fromAsset, toAsset, amount)" 
+        });
+      }
+      
+      if (!toChain) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameter: toChain" 
+        });
       }
       
       if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-        return res.status(400).json({ message: "Invalid amount" });
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid amount - must be a positive number" 
+        });
       }
       
-      // Get asset IDs
+      // Validate that the chains are supported
+      const supportedChains = Object.values(Chain);
+      if (!supportedChains.includes(fromChain) || !supportedChains.includes(toChain)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Unsupported blockchain. Supported chains: ${supportedChains.join(', ')}` 
+        });
+      }
+      
+      // Get asset objects to verify they exist
       const fromAssetObj = await storage.getAssetBySymbol(fromAsset);
       const toAssetObj = await storage.getAssetBySymbol(toAsset);
       
       if (!fromAssetObj || !toAssetObj) {
-        return res.status(404).json({ message: "Asset not found" });
+        return res.status(404).json({ 
+          success: false, 
+          message: `Asset not found: ${!fromAssetObj ? fromAsset : toAsset}` 
+        });
       }
       
-      // Calculate expected received amount based on current prices
-      const fromPrice = await getPrice(fromAsset);
-      const toPrice = await getPrice(toAsset);
+      // Execute the swap
+      const swapResult = await executeSwap({
+        vaultId,
+        fromAsset,
+        toAsset,
+        amount,
+        fromChain,
+        toChain,
+        slippageTolerance,
+        walletAddress
+      });
       
-      if (fromPrice === null || toPrice === null) {
-        return res.status(400).json({ message: "Price information not available" });
+      // Return the result based on status
+      if (swapResult.status === SwapStatus.COMPLETED) {
+        return res.status(200).json({
+          success: true,
+          message: "Cross-chain swap executed successfully",
+          transaction: swapResult
+        });
+      } else if (swapResult.status === SwapStatus.PENDING) {
+        return res.status(202).json({
+          success: true,
+          message: "Cross-chain swap initiated, pending completion",
+          transaction: swapResult
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: swapResult.errorMessage || "Swap failed",
+          transaction: swapResult
+        });
+      }
+    } catch (error) {
+      console.error("Error executing cross-chain swap:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error executing cross-chain swap", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Get swap status by ID
+  api.get("/swaps/:swapId", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
       }
       
-      // Apply 0.5% swap fee
-      const amountInUSD = parseFloat(amount) * fromPrice * 0.995;
-      const receivedAmount = amountInUSD / toPrice;
+      const swapId = req.params.swapId;
       
-      // In a real implementation, this would initiate a cross-chain swap
-      // via the L1X blockchain's bridge/X-Talk protocol
+      if (!swapId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing swap ID" 
+        });
+      }
       
-      // For demo purposes, return a successful response with a mock tx hash
-      // and expected completion time
-      const txHash = `xswap_${Date.now().toString(36)}`;
-      const completionTime = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // 3 mins
+      // Import the cross-chain swap service
+      const { getSwapStatus } = await import('./services/crossChainSwap');
+      
+      // Get swap status
+      const swapStatus = await getSwapStatus(swapId);
+      
+      if (!swapStatus) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Swap not found or expired" 
+        });
+      }
       
       return res.json({
         success: true,
-        message: "Cross-chain swap initiated",
-        txHash,
-        details: {
-          fromAsset,
-          toAsset,
-          amount: parseFloat(amount),
-          targetChain,
-          estimatedReceivedAmount: receivedAmount,
-          estimatedCompletionTime: completionTime
-        }
+        swap: swapStatus
       });
     } catch (error) {
-      console.error("Error initiating cross-chain swap:", error);
-      return res.status(500).json({ message: "Error initiating cross-chain swap" });
+      console.error("Error checking swap status:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error checking swap status", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // API endpoint for getting a swap quote (price estimate)
+  api.post("/swaps/quote", async (req: Request, res: Response) => {
+    try {
+      // Import the cross-chain swap service
+      const { getSwapQuote, Chain } = await import('./services/crossChainSwap');
+      
+      // Validate request parameters
+      const { 
+        fromAsset, 
+        toAsset, 
+        amount, 
+        fromChain = Chain.L1X, 
+        toChain,
+        slippageTolerance 
+      } = req.body;
+      
+      if (!fromAsset || !toAsset || !amount || !toChain) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Missing required parameters" 
+        });
+      }
+      
+      // Validate amount
+      if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid amount - must be a positive number" 
+        });
+      }
+      
+      // Get quote
+      const quote = await getSwapQuote(
+        fromAsset, 
+        toAsset, 
+        amount, 
+        fromChain, 
+        toChain, 
+        slippageTolerance
+      );
+      
+      return res.json({
+        success: true,
+        quote
+      });
+    } catch (error) {
+      console.error("Error getting swap quote:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error getting swap quote", 
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

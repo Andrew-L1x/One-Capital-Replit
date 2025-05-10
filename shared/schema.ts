@@ -127,12 +127,15 @@ export const priceFeeds = pgTable("price_feeds", {
   id: serial("id").primaryKey(),
   assetId: integer("asset_id").notNull().references(() => assets.id, { onDelete: "cascade" }),
   price: decimal("price", { precision: 18, scale: 8 }).notNull(),
+  source: text("source").default("system").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
 export const insertPriceFeedSchema = createInsertSchema(priceFeeds).pick({
   assetId: true,
   price: true,
+  source: true,
+  timestamp: true,
 });
 
 // Relations

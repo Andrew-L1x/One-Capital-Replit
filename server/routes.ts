@@ -10,7 +10,7 @@ import {
   insertPriceFeedSchema,
   insertRebalanceHistorySchema
 } from "@shared/schema";
-import { getAllAssetPrices, getPrice, getPrices } from "./services/priceFeed";
+import { getPrice, getPrices, getPricesWithChange } from "./services/priceFeed";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import session from "express-session";
@@ -1188,43 +1188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API route to get real-time prices for all assets
   api.get("/prices", async (_req: Request, res: Response) => {
     try {
-      // First try to get prices from the service
-      const prices = await getAllAssetPrices();
-      
-      // For demo purposes, if no prices are returned, use sample data
-      let priceData = prices;
-      if (Object.keys(prices).length === 0) {
-        // Sample prices for demo assets
-        priceData = {
-          "BTC": 65421.37,
-          "ETH": 3512.89,
-          "L1X": 28.76,
-          "USDC": 1.00,
-          "USDT": 1.00,
-          "SOL": 142.67,
-          "AVAX": 34.95,
-          "MATIC": 0.78,
-          "DOT": 6.82,
-          "LINK": 14.32
-        };
-      }
-      
-      // Add 24h price change data for performance metrics
-      const pricesWithHistory: Record<string, any> = {};
-      
-      for (const [symbol, price] of Object.entries(priceData)) {
-        // Generate a realistic 24h change (between -15% and +15%)
-        const changePercentage = (Math.random() * 30 - 15);
-        const previousPrice = price / (1 + (changePercentage / 100));
-        
-        pricesWithHistory[symbol] = {
-          current: price,
-          previous24h: previousPrice,
-          change24h: price - previousPrice,
-          changePercentage24h: changePercentage
-        };
-      }
-      
+      // Get prices with 24h change data
+      const pricesWithHistory = await getPricesWithChange();
       return res.json(pricesWithHistory);
     } catch (error) {
       console.error("Error fetching all asset prices:", error);

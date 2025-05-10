@@ -272,15 +272,20 @@ export async function checkContractRebalanceNeeded(vaultId: number): Promise<boo
 
     // Check drift-based rebalancing
     const allocations = await storage.getAllocationsByVaultId(vaultId);
-    const threshold = vault.driftThreshold || 500; // Default 5%
+    const threshold = typeof vault.driftThreshold === 'string'
+      ? parseInt(vault.driftThreshold)
+      : (vault.driftThreshold || 500); // Default 5%
     
     // Get current percentages (would come from contract in production)
     // For testing, we'll simulate some drift
     for (const allocation of allocations) {
       // Simulate drift (±3%)
       const driftFactor = 1 + (Math.random() * 0.06 - 0.03);
-      const currentPercentage = Math.round(allocation.targetPercentage * driftFactor);
-      const drift = Math.abs(currentPercentage - allocation.targetPercentage);
+      const targetPercentage = typeof allocation.targetPercentage === 'string'
+        ? parseInt(allocation.targetPercentage)
+        : allocation.targetPercentage;
+      const currentPercentage = Math.round(targetPercentage * driftFactor);
+      const drift = Math.abs(currentPercentage - targetPercentage);
       
       if (drift > threshold) {
         return true; // Drift-based rebalance needed

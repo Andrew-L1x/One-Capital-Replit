@@ -1,214 +1,209 @@
 /**
- * Price Feed Service for One Capital
+ * Price Feed Service
  * 
- * This service manages asset price data including:
- * - Fetching prices from external APIs
- * - Caching prices to reduce API calls
- * - Providing consistent price data to the application
- * - Scheduled updates for price data
+ * This service manages price data for assets in the One Capital platform.
+ * It provides both real-time and historical price data for portfolio valuation
+ * and rebalancing calculations.
  */
 
-import axios from 'axios';
 import { storage } from '../storage';
-import { InsertPriceFeed, Asset } from '@shared/schema';
-import { log } from '../vite';
+import { PriceFeed, InsertPriceFeed } from '@shared/schema';
 
-// Configuration
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-// Cache for prices to reduce external API calls
-interface PriceCache {
-  [symbol: string]: {
-    price: number;
-    lastUpdated: number;
-  }
-}
-
-const priceCache: PriceCache = {};
-
-// Symbol mapping for CoinGecko API
-const COINGECKO_ID_MAP: Record<string, string> = {
-  'BTC': 'bitcoin',
-  'ETH': 'ethereum',
-  'DOT': 'polkadot',
-  'SOL': 'solana',
-  'AVAX': 'avalanche-2',
-  'MATIC': 'polygon',
-  'LINK': 'chainlink',
-  'UNI': 'uniswap',
-  'AAVE': 'aave',
-  'L1X': 'layer-one-x', // For demo purposes
-  'USDC': 'usd-coin',
-  'USDT': 'tether',
-  'DAI': 'dai'
+// Simulated price data for testing
+const SIMULATED_PRICES: Record<string, number> = {
+  BTC: 65421.37,
+  ETH: 3512.89,
+  L1X: 28.76,
+  USDC: 1.0,
+  USDT: 1.0,
+  SOL: 142.67,
+  AVAX: 34.95,
+  MATIC: 0.78
 };
 
-/**
- * Fetch price from CoinGecko API
- */
-async function fetchPriceFromCoinGecko(symbol: string): Promise<number | null> {
-  try {
-    const id = getCoinGeckoId(symbol);
-    if (!id) {
-      log(`No CoinGecko ID mapping for symbol: ${symbol}`, 'priceFeed');
-      return null;
-    }
-
-    const response = await axios.get(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`
-    );
-
-    if (response.data && response.data[id] && response.data[id].usd) {
-      return response.data[id].usd;
-    }
-    
-    log(`Invalid response format from CoinGecko for ${symbol}`, 'priceFeed');
-    return null;
-  } catch (error) {
-    log(`Error fetching price from CoinGecko for ${symbol}: ${error}`, 'priceFeed');
-    return null;
-  }
-}
+// Historical prices with some volatility for 24h change calculation
+const PREVIOUS_PRICES: Record<string, number> = {};
 
 /**
- * Get CoinGecko ID for a given token symbol
- */
-function getCoinGeckoId(symbol: string): string | null {
-  return COINGECKO_ID_MAP[symbol] || null;
-}
-
-/**
- * Get price for a specific token
- * First checks cache, then database, then external API
+ * Get the current price for a specific asset
+ * 
+ * @param symbol Asset symbol (e.g., "BTC")
+ * @returns Current price or null if not available
  */
 export async function getPrice(symbol: string): Promise<number | null> {
-  // Normalize symbol
-  const normalizedSymbol = symbol.toUpperCase();
-  
-  // Check cache first
-  const now = Date.now();
-  const cached = priceCache[normalizedSymbol];
-  if (cached && (now - cached.lastUpdated < CACHE_TTL_MS)) {
-    return cached.price;
-  }
-  
   try {
-    // Check if asset exists in our database
-    const asset = await storage.getAssetBySymbol(normalizedSymbol);
-    if (!asset) {
-      log(`Asset with symbol ${normalizedSymbol} not found in database`, 'priceFeed');
+    // In production, this would fetch from a real price oracle
+    // For now, use simulated prices
+    const price = SIMULATED_PRICES[symbol];
+    
+    if (price === undefined) {
       return null;
     }
     
-    // Try to get latest price from database
-    const latestPrice = await storage.getLatestPriceByAssetId(asset.id);
-    if (latestPrice && (now - new Date(latestPrice.timestamp).getTime() < CACHE_TTL_MS)) {
-      // Cache and return the price from database
-      priceCache[normalizedSymbol] = {
-        price: Number(latestPrice.price),
-        lastUpdated: new Date(latestPrice.timestamp).getTime()
-      };
-      return Number(latestPrice.price);
-    }
-    
-    // Fetch from external API
-    const price = await fetchPriceFromCoinGecko(normalizedSymbol);
-    if (price !== null) {
-      // Cache the price
-      priceCache[normalizedSymbol] = {
-        price,
-        lastUpdated: now
-      };
-      
-      // Store in database
-      const priceFeed: InsertPriceFeed = {
-        assetId: asset.id,
-        price: price.toString(),
-        source: 'coingecko',
-        timestamp: new Date().toISOString()
-      };
-      
-      await storage.createPriceFeed(priceFeed);
-      
-      return price;
-    }
-    
-    // If we get here, we failed to get a price
-    return null;
+    return price;
   } catch (error) {
-    log(`Error in getPrice for ${normalizedSymbol}: ${error}`, 'priceFeed');
+    console.error(`Error fetching price for ${symbol}:`, error);
     return null;
   }
 }
 
 /**
- * Get prices for multiple tokens
+ * Get prices for multiple assets
+ * 
+ * @param symbols Array of asset symbols
+ * @returns Record of symbol to price
  */
 export async function getPrices(symbols: string[]): Promise<Record<string, number>> {
   const result: Record<string, number> = {};
   
-  // Process in parallel for efficiency
-  const promises = symbols.map(async (symbol) => {
-    const price = await getPrice(symbol);
-    if (price !== null) {
-      result[symbol] = price;
-    }
-  });
+  await Promise.all(
+    symbols.map(async (symbol) => {
+      const price = await getPrice(symbol);
+      if (price !== null) {
+        result[symbol] = price;
+      }
+    })
+  );
   
-  await Promise.all(promises);
   return result;
 }
 
 /**
- * Get prices for all assets in the database
+ * Get price with 24h change information
+ * 
+ * @param symbol Asset symbol
+ * @returns Price with change data or null
  */
-export async function getAllAssetPrices(): Promise<Record<string, number>> {
+export async function getPriceWithChange(symbol: string): Promise<{
+  current: number;
+  previous24h: number;
+  change24h: number;
+  changePercentage24h: number;
+} | null> {
   try {
-    const assets = await storage.getAllAssets();
-    const symbols = assets.map(asset => asset.symbol);
-    return getPrices(symbols);
+    const currentPrice = await getPrice(symbol);
+    
+    if (currentPrice === null) {
+      return null;
+    }
+    
+    // Generate a random previous price for simulation if not available
+    // In production, this would come from historical price data
+    if (!PREVIOUS_PRICES[symbol]) {
+      // Random change between -15% and +15%
+      const randomFactor = 1 + ((Math.random() * 0.3) - 0.15);
+      PREVIOUS_PRICES[symbol] = currentPrice * randomFactor;
+    }
+    
+    const previous24h = PREVIOUS_PRICES[symbol];
+    const change24h = currentPrice - previous24h;
+    const changePercentage24h = (change24h / previous24h) * 100;
+    
+    return {
+      current: currentPrice,
+      previous24h,
+      change24h,
+      changePercentage24h
+    };
   } catch (error) {
-    log(`Error getting all asset prices: ${error}`, 'priceFeed');
-    return {};
+    console.error(`Error fetching price data for ${symbol}:`, error);
+    return null;
   }
 }
 
 /**
- * Update on-chain prices via Oracle contract
- * This would integrate with our L1X price oracle contract
+ * Get prices with 24h change information for multiple assets
+ * 
+ * @param symbols Array of asset symbols
+ * @returns Record of symbol to price data
  */
-export async function updateOnChainPrices(): Promise<void> {
+export async function getPricesWithChange(
+  symbols: string[] = Object.keys(SIMULATED_PRICES)
+): Promise<Record<string, {
+  current: number;
+  previous24h: number;
+  change24h: number;
+  changePercentage24h: number;
+}>> {
+  const result: Record<string, any> = {};
+  
+  await Promise.all(
+    symbols.map(async (symbol) => {
+      const priceData = await getPriceWithChange(symbol);
+      if (priceData !== null) {
+        result[symbol] = priceData;
+      }
+    })
+  );
+  
+  return result;
+}
+
+/**
+ * Store a price feed entry in the database
+ * 
+ * @param assetSymbol Asset symbol
+ * @param price Current price
+ * @returns Created price feed entry
+ */
+export async function storePriceFeed(assetSymbol: string, price: number): Promise<PriceFeed | null> {
   try {
-    const prices = await getAllAssetPrices();
+    const asset = await storage.getAssetBySymbol(assetSymbol);
     
-    // In a real implementation, we would:
-    // 1. Connect to the L1X network
-    // 2. Load the oracle contract
-    // 3. Sign and submit transactions to update prices
+    if (!asset) {
+      console.error(`Cannot store price feed: Asset with symbol ${assetSymbol} not found`);
+      return null;
+    }
     
-    log(`Would update ${Object.keys(prices).length} prices on-chain`, 'priceFeed');
+    const priceFeedData: InsertPriceFeed = {
+      assetId: asset.id,
+      price: price.toString(),
+      source: 'oracle',
+      timestamp: new Date()
+    };
     
-    // For demonstration purposes, we're just logging
-    Object.entries(prices).forEach(([symbol, price]) => {
-      log(`Would update ${symbol} price to $${price} on-chain`, 'priceFeed');
-    });
+    return await storage.createPriceFeed(priceFeedData);
   } catch (error) {
-    log(`Error updating on-chain prices: ${error}`, 'priceFeed');
+    console.error(`Error storing price feed for ${assetSymbol}:`, error);
+    return null;
   }
 }
 
 /**
- * Schedule regular price updates
+ * Update prices from an external oracle
+ * This would be called periodically or via webhook in production
+ * 
+ * @param priceData Map of asset symbols to prices
+ * @returns Success status and details
  */
-export function schedulePriceUpdates(intervalMinutes = 10): NodeJS.Timer {
-  const intervalMs = intervalMinutes * 60 * 1000;
-  
-  // Initial update
-  updateOnChainPrices();
-  
-  // Schedule regular updates
-  return setInterval(() => {
-    log('Running scheduled price update', 'priceFeed');
-    updateOnChainPrices();
-  }, intervalMs);
+export async function updatePricesFromOracle(
+  priceData: Record<string, number>
+): Promise<{ success: boolean; details: string }> {
+  try {
+    const results = [];
+    
+    for (const [symbol, price] of Object.entries(priceData)) {
+      // Update the local cache
+      SIMULATED_PRICES[symbol] = price;
+      
+      // Store in database
+      const priceFeed = await storePriceFeed(symbol, price);
+      results.push({
+        symbol,
+        price,
+        stored: !!priceFeed
+      });
+    }
+    
+    return {
+      success: true,
+      details: `Updated prices for ${results.length} assets`
+    };
+  } catch (error) {
+    console.error('Error updating prices from oracle:', error);
+    return {
+      success: false,
+      details: `Error updating prices: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
 }

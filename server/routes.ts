@@ -206,27 +206,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   api.get("/auth/me", (req: Request, res: Response) => {
-    // TEMPORARY: Return a test user for demonstration purposes
-    // This bypasses the need for Firebase authentication
-    const testUser = {
-      id: 1,
-      username: "test_user",
-      email: "test@example.com",
-      walletAddress: "0x1234...5678",
-      firebaseUid: "test-firebase-uid",
-      createdAt: new Date().toISOString(),
-    };
-    
-    return res.json(testUser);
-    
-    /* Normal authentication code - uncomment when Firebase is properly configured
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "Not authenticated" });
+      // For development purposes, auto-login a test user
+      const testUser = {
+        id: 1,
+        username: "test_user",
+        email: "test@example.com",
+        walletAddress: "0x1234...5678",
+        firebaseUid: "test-firebase-uid",
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Create a session for the test user
+      req.login(testUser, (err) => {
+        if (err) {
+          console.error("Error auto-login test user:", err);
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+        console.log("Auto-logged in test user");
+        return res.json(testUser);
+      });
+    } else {
+      // User is already authenticated, return their information
+      const { password, ...userWithoutPassword } = req.user as any;
+      return res.json(userWithoutPassword);
     }
-    // Remove password from response
-    const { password, ...userWithoutPassword } = req.user as any;
-    res.json(userWithoutPassword);
-    */
   });
 
   // Web3 authentication

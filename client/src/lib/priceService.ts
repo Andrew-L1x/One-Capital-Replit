@@ -1,38 +1,48 @@
-import { apiRequest } from "./queryClient";
+import { useEffect, useState } from 'react';
+import { apiRequest } from './queryClient';
 
-// Types
+// Define types for price data
 export interface AssetPrice {
   symbol: string;
   price: number;
+  lastUpdated: Date;
 }
 
-export interface VaultValue {
-  vaultId: number;
-  vaultValue: number;
-  assetValues: AssetValue[];
-  timestamp: string;
+interface PriceMap {
+  [symbol: string]: number;
 }
 
-export interface AssetValue {
-  assetId: number;
-  symbol: string;
-  tokenAmount: number;
-  price: number;
-  value: number;
-}
+// Cache for prices
+let priceCache: PriceMap = {};
+let lastFetchTime = 0;
+const CACHE_DURATION = 60000; // 1 minute cache
 
 /**
- * Fetch real-time prices for all assets
+ * Fetch all prices from the API
  */
-export async function fetchAllPrices(): Promise<Record<string, number>> {
+export async function fetchAllPrices(): Promise<PriceMap> {
   try {
-    const response = await apiRequest({
-      url: '/prices',
-      method: 'GET',
-    });
-    return response as Record<string, number>;
+    const now = Date.now();
+    
+    // Use cache if it's still fresh
+    if (now - lastFetchTime < CACHE_DURATION && Object.keys(priceCache).length > 0) {
+      return priceCache;
+    }
+    
+    // Fetch from API
+    const response = await apiRequest('GET', '/api/prices');
+    const prices = await response.json();
+    
+    // Update cache
+    if (prices && typeof prices === 'object') {
+      priceCache = prices as PriceMap;
+      lastFetchTime = now;
+      return priceCache;
+    }
+    
+    return {};
   } catch (error) {
-    console.error('Error fetching asset prices:', error);
+    console.error('Error fetching prices:', error);
     return {};
   }
 }
@@ -40,13 +50,27 @@ export async function fetchAllPrices(): Promise<Record<string, number>> {
 /**
  * Fetch price for a specific asset by symbol
  */
-export async function fetchAssetPrice(symbol: string): Promise<number | null> {
+export async function fetchPriceBySymbol(symbol: string): Promise<number | null> {
   try {
-    const response = await apiRequest({
-      url: `/prices/${symbol}`,
-      method: 'GET',
-    });
-    return (response as { symbol: string; price: number }).price;
+    // Check cache first
+    const now = Date.now();
+    if (now - lastFetchTime < CACHE_DURATION && priceCache[symbol]) {
+      return priceCache[symbol];
+    }
+    
+    // Fetch from API
+    const response = await apiRequest('GET', `/api/prices/${symbol}`);
+    const priceData = await response.json();
+    const price = priceData ? Number(priceData) : null;
+    
+    // Update cache for this symbol
+    if (price !== null && !isNaN(price)) {
+      priceCache[symbol] = price;
+      lastFetchTime = now;
+      return price;
+    }
+    
+    return null;
   } catch (error) {
     console.error(`Error fetching price for ${symbol}:`, error);
     return null;
@@ -54,60 +78,94 @@ export async function fetchAssetPrice(symbol: string): Promise<number | null> {
 }
 
 /**
- * Fetch value for a specific vault including all asset values
+ * Custom hook to subscribe to price updates
  */
-export async function fetchVaultValue(vaultId: number): Promise<VaultValue | null> {
-  try {
-    const response = await apiRequest({
-      url: `/vaults/${vaultId}/value`,
-      method: 'GET',
-    });
-    return response as VaultValue;
-  } catch (error) {
-    console.error(`Error fetching value for vault ${vaultId}:`, error);
-    return null;
-  }
+export function usePrices(symbols: string[] = [], refreshInterval = 30000): {
+  prices: PriceMap;
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+} {
+  const [prices, setPrices] = useState<PriceMap>({});
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  
+  const fetchPrices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (symbols.length === 0) {
+        // Fetch all prices
+        const allPrices = await fetchAllPrices();
+        setPrices(allPrices);
+      } else {
+        // Fetch specific symbols
+        const priceMap: PriceMap = {};
+        
+        // Use existing cache where possible
+        const uncachedSymbols = symbols.filter(
+          symbol => !priceCache[symbol] || Date.now() - lastFetchTime > CACHE_DURATION
+        );
+        
+        // Add cached prices to the result
+        symbols.forEach(symbol => {
+          if (priceCache[symbol] && Date.now() - lastFetchTime <= CACHE_DURATION) {
+            priceMap[symbol] = priceCache[symbol];
+          }
+        });
+        
+        // Fetch uncached symbols
+        if (uncachedSymbols.length > 0) {
+          const promises = uncachedSymbols.map(symbol => fetchPriceBySymbol(symbol));
+          const results = await Promise.all(promises);
+          
+          // Add fetched prices to the result
+          uncachedSymbols.forEach((symbol, index) => {
+            const price = results[index];
+            if (price !== null) {
+              priceMap[symbol] = price;
+            }
+          });
+        }
+        
+        setPrices(priceMap);
+      }
+    } catch (err) {
+      console.error('Error in usePrices hook:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error fetching prices'));
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fetch prices on mount and when symbols change
+  useEffect(() => {
+    fetchPrices();
+    
+    // Set up interval for regular price updates
+    const intervalId = setInterval(fetchPrices, refreshInterval);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [JSON.stringify(symbols), refreshInterval]);
+  
+  return { prices, loading, error, refetch: fetchPrices };
 }
 
 /**
- * Format price as USD currency string
+ * Format price for display
  */
-export function formatUSD(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-/**
- * Format large number with appropriate suffix (K, M, B)
- */
-export function formatLargeNumber(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`;
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`;
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`;
+export function formatPrice(price: number | null | undefined): string {
+  if (price === null || price === undefined) return '$0.00';
+  
+  // Format with appropriate precision
+  if (price >= 1000) {
+    return `$${price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+  } else if (price >= 1) {
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   } else {
-    return value.toFixed(2);
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}`;
   }
-}
-
-/**
- * Calculate percentage change
- */
-export function calculatePercentageChange(current: number, previous: number): number {
-  if (previous === 0) return 0;
-  return ((current - previous) / previous) * 100;
-}
-
-/**
- * Format percentage change with + or - sign
- */
-export function formatPercentChange(value: number): string {
-  const sign = value >= 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
 }

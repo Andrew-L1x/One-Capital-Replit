@@ -31,7 +31,7 @@ import { z } from "zod";
 import { ArrowDown, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { fetchAssetPrice, formatUSD } from "@/lib/priceService";
+import { usePrices, formatPrice } from "@/lib/priceService";
 
 // Define form schema with zod
 const swapFormSchema = z.object({
@@ -123,22 +123,23 @@ export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
     fetchAssets();
   }, [toast]);
   
-  // Update prices when assets change
+  // Get prices using the hook
+  const { prices, isLoading: isPricesLoading } = usePrices();
+  
+  // Update local prices when selected assets or prices change
   useEffect(() => {
-    const updatePrices = async () => {
-      if (fromAsset) {
-        const price = await fetchAssetPrice(fromAsset);
-        setFromPrice(price);
-      }
-      
-      if (toAsset) {
-        const price = await fetchAssetPrice(toAsset);
-        setToPrice(price);
-      }
-    };
+    if (prices && fromAsset && prices[fromAsset]) {
+      setFromPrice(prices[fromAsset]);
+    } else {
+      setFromPrice(null);
+    }
     
-    updatePrices();
-  }, [fromAsset, toAsset]);
+    if (prices && toAsset && prices[toAsset]) {
+      setToPrice(prices[toAsset]);
+    } else {
+      setToPrice(null);
+    }
+  }, [prices, fromAsset, toAsset]);
   
   // Calculate estimated received amount
   useEffect(() => {

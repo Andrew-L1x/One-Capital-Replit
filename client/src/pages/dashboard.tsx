@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import VaultCard from "@/components/dashboard/vault-card";
-import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import PortfolioManager from "@/components/dashboard/portfolio-manager";
 import DashboardHeader from "@/components/dashboard/dashboard-header";
 import { PortfolioValue } from "@/components/dashboard/PortfolioValue";
+import { AssetAllocationTable } from "@/components/dashboard/AssetAllocationTable";
+import { CurrentPortfolio } from "@/components/dashboard/CurrentPortfolio";
 import { CrossChainSwap } from "@/components/dashboard/CrossChainSwap";
+import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import { 
   PlusCircle, 
   ArrowUpRight, 
@@ -24,7 +26,7 @@ import {
   ChevronDown,
   ArrowRightLeft
 } from "lucide-react";
-import { Vault, Asset, Allocation } from "@shared/schema";
+import { Vault, Asset } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -235,19 +237,8 @@ export default function Dashboard() {
           
           {/* Portfolio Overview Tab */}
           <TabsContent value="portfolio" className="space-y-8">
-            <div className="grid gap-6 md:grid-cols-2">
-              <PortfolioChart
-                allocations={getAllChartData()}
-                isLoading={isLoadingVaults || isLoadingAssets}
-                title="Portfolio Allocation"
-                description="Current allocation across all vaults"
-              />
-              
-              {/* Add real-time portfolio value component */}
-              {vaults.length > 0 && (
-                <PortfolioValue vaultId={vaults[0].id} refreshInterval={30000} />
-              )}
-            </div>
+            {/* Real-time current portfolio with chart and table */}
+            <CurrentPortfolio />
             
             {/* Add Cross-Chain Swap section if vaults exist */}
             {vaults.length > 0 && (

@@ -1,0 +1,70 @@
+Replit AI Agent Prompt — One Capital dApp: Wallet Integration, Real-Time Prices, and Portfolio Display
+
+I’ve already implemented the following features in the One Capital dApp:
+	•	✓ Smart contracts for price oracle and cross-chain swaps
+	•	✓ Server-side price feed service with CoinGecko integration
+	•	✓ PortfolioValue component for real-time value visualization
+	•	✓ CrossChainSwap component for bridgeless asset swaps
+	•	✓ Backend API routes for price and cross-chain transactions
+
+Now, I need help with wallet integration, real-time price data binding, and a comprehensive Current Portfolio component.
+
+⸻
+
+1. WALLET CONNECTION SUPPORT
+
+A. L1X Wallet SDK Integration
+	•	Integrate the L1X Wallet SDK (v2 Testnet).
+	•	Allow users to:
+	•	Connect and disconnect their L1X wallet.
+	•	View their wallet address once connected.
+	•	Use the connected wallet for contract interactions (vaults, swaps, price updates).
+	•	Persist wallet state using localStorage.
+
+B. MetaMask Integration
+	•	Also enable MetaMask (EVM) wallet support.
+	•	Detect if MetaMask is installed.
+	•	Allow connection/disconnection and show wallet address.
+	•	Ensure this works in parallel with L1X wallet—users should only have one active wallet at a time.
+	•	Use appropriate network IDs (e.g., Ethereum Testnet or L1X-compatible EVM testnet).
+
+⸻
+
+2. REAL-TIME PRICE DATA IN CRYPTO ALLOCATION
+	•	Use the backend /api/prices route to fetch live price data.
+	•	Extend the PortfolioValue section with a Cryptocurrency Allocation table that updates dynamically.
+	•	For each asset in the portfolio, display:
+	•	Token name & symbol
+	•	Current price in USD
+	•	Amount held (crypto units)
+	•	Value in USD
+	•	% of total portfolio
+	•	Ensure the frontend updates prices and recalculates values every 60 seconds.
+
+⸻
+
+3. CURRENT PORTFOLIO SECTION
+	•	Add a new section on the dashboard titled “Current Portfolio”, ideally beside or below the Performance chart.
+	•	Display a full breakdown in tabular format:
+	•	Token name
+	•	Symbol
+	•	Price (USD)
+	•	Amount held (token units)
+	•	Value (USD)
+	•	% allocation
+	•	Add a Total Balance (USD) summary at the top or bottom.
+	•	Optional: Show 24h change if supported by the price API.
+
+⸻
+
+4. TESTING & UI POLISH
+	•	Ensure all new components are responsive and cleanly styled.
+	•	Write unit tests and Playwright E2E tests for:
+	•	Wallet connection/disconnection (both L1X and MetaMask)
+	•	Price fetch and live updating
+	•	Total portfolio value calculation and breakdown
+	•	Optionally, animate price/value changes (e.g., flash green/red on price changes).
+
+⸻
+
+Please prioritize wallet SDK integration and price display first. Let me know when those are working or if you need backend or contract context to complete the integrations.

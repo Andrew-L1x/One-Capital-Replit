@@ -6,18 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { 
   ArrowUpRight, 
   Wallet, 
-  ChevronUp, 
-  ChevronDown, 
   ArrowRight,
   UserCircle
 } from "lucide-react";
-
-// Mock wallet amount and growth for demo
-const MOCK_WALLET = {
-  balance: 10420.87,
-  growth: 5.2,
-  address: "0x1a2b3c4d5e6f7890123456789abcdef0123456789"
-};
+import { WalletConnection } from "@/components/wallet/WalletConnection";
+import { useWallet } from "@/lib/walletContext";
 
 export default function DashboardHeader() {
   const [, setLocation] = useLocation();
@@ -26,6 +19,9 @@ export default function DashboardHeader() {
   const { data: user } = useQuery({
     queryKey: ["/api/auth/me"],
   });
+  
+  // Get wallet information
+  const { walletAddress, walletType, isConnected } = useWallet();
   
   // Format wallet address
   const formatWalletAddress = (address: string) => {
@@ -50,34 +46,42 @@ export default function DashboardHeader() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="hidden md:block">
-              <Card className="rounded-full border-none shadow-none bg-transparent">
-                <CardContent className="p-2 flex items-center space-x-2">
-                  <Wallet className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">${MOCK_WALLET.balance.toFixed(2)}</p>
-                    <div className="flex items-center">
-                      <Badge 
-                        variant={MOCK_WALLET.growth >= 0 ? "default" : "destructive"}
-                        className="text-xs px-1 py-0 h-4"
-                      >
-                        {MOCK_WALLET.growth >= 0 ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                        {Math.abs(MOCK_WALLET.growth)}%
-                      </Badge>
-                      <span className="text-xs text-muted-foreground ml-1">24h</span>
+            {/* Balance card - shown when wallet is connected */}
+            {isConnected && walletAddress && (
+              <div className="hidden md:block">
+                <Card className="rounded-full border-none shadow-none bg-transparent">
+                  <CardContent className="p-2 flex items-center space-x-2">
+                    <Wallet className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">Connected</p>
+                      <div className="flex items-center">
+                        <Badge 
+                          variant={walletType === 'l1x' ? "default" : "secondary"}
+                          className="text-xs px-2 py-0 h-4"
+                        >
+                          {walletType === 'l1x' ? 'L1X' : 'ETH'}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
             
+            {/* User profile */}
             <div className="flex items-center space-x-2 p-2 rounded-full bg-muted/30">
               <div className="text-right">
                 <p className="text-sm font-medium">{(user as any)?.username || 'User'}</p>
                 <p className="text-xs text-muted-foreground flex items-center">
-                  <span className="hidden sm:inline">{formatWalletAddress(MOCK_WALLET.address)}</span>
-                  <span className="sm:hidden">L1X Wallet</span>
-                  <ArrowRight className="h-3 w-3 ml-1" />
+                  {isConnected && walletAddress ? (
+                    <>
+                      <span className="hidden sm:inline">{formatWalletAddress(walletAddress)}</span>
+                      <span className="sm:hidden">{walletType === 'l1x' ? 'L1X' : 'ETH'}</span>
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </>
+                  ) : (
+                    <span>Not connected</span>
+                  )}
                 </p>
               </div>
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -85,6 +89,10 @@ export default function DashboardHeader() {
               </div>
             </div>
             
+            {/* Wallet connection button */}
+            <WalletConnection />
+            
+            {/* Logout button */}
             <Button variant="outline" size="sm" onClick={() => setLocation("/")}>
               <ArrowUpRight className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Logout</span>

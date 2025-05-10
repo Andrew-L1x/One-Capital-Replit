@@ -131,13 +131,44 @@ async function fetchCoinGeckoPrices(): Promise<Record<string, PriceData> | null>
       return null;
     }
     
-    // Extract symbols for API call
-    const symbols = assets.map(asset => asset.symbol.toLowerCase());
+    // Map asset symbols to CoinGecko IDs
+    const cryptoIdMap: Record<string, string> = {
+      'BTC': 'bitcoin',
+      'ETH': 'ethereum',
+      'SOL': 'solana',
+      'AVAX': 'avalanche-2',
+      'USDC': 'usd-coin',
+      'USDT': 'tether',
+      'MATIC': 'matic-network',
+      'DOT': 'polkadot',
+      'ADA': 'cardano',
+      'XRP': 'ripple',
+      'DOGE': 'dogecoin',
+      'SHIB': 'shiba-inu',
+      'LINK': 'chainlink',
+      'ATOM': 'cosmos',
+      'UNI': 'uniswap',
+      'DAI': 'dai',
+      'LTC': 'litecoin',
+      'CRO': 'crypto-com-chain',
+      'ALGO': 'algorand',
+      'L1X': 'l1x' // May need to be updated with actual CoinGecko ID
+    };
+    
+    // Filter assets we have IDs for
+    const coingeckoIds = assets
+      .map(asset => cryptoIdMap[asset.symbol])
+      .filter(id => id !== undefined);
+    
+    if (coingeckoIds.length === 0) {
+      console.log('No valid CoinGecko IDs found for assets');
+      return null;
+    }
     
     // Current prices
     const currentResponse = await axios.get(`${COINGECKO_BASE_URL}/simple/price`, {
       params: {
-        ids: symbols.join(','),
+        ids: coingeckoIds.join(','),
         vs_currencies: 'usd',
         include_24hr_change: true,
         x_cg_pro_api_key: COINGECKO_API_KEY
@@ -152,13 +183,19 @@ async function fetchCoinGeckoPrices(): Promise<Record<string, PriceData> | null>
     // Map CoinGecko response to our format
     const prices: Record<string, PriceData> = {};
     
-    assets.forEach(asset => {
-      const symbol = asset.symbol;
-      const cgData = currentResponse.data[symbol.toLowerCase()];
+    // Reverse map to go from CoinGecko ID to our symbol
+    const reverseIdMap: Record<string, string> = {};
+    Object.entries(cryptoIdMap).forEach(([symbol, id]) => {
+      reverseIdMap[id] = symbol;
+    });
+    
+    // Process the response data
+    Object.entries(currentResponse.data).forEach(([coingeckoId, priceData]: [string, any]) => {
+      const symbol = reverseIdMap[coingeckoId];
       
-      if (cgData) {
-        const current = cgData.usd;
-        const changePercentage24h = cgData.usd_24h_change || 0;
+      if (symbol) {
+        const current = priceData.usd;
+        const changePercentage24h = priceData.usd_24h_change || 0;
         const previous24h = current / (1 + changePercentage24h / 100);
         const change24h = current - previous24h;
         
@@ -168,6 +205,8 @@ async function fetchCoinGeckoPrices(): Promise<Record<string, PriceData> | null>
           change24h,
           changePercentage24h
         };
+        
+        console.log(`Received price for ${symbol}: $${current} (${changePercentage24h.toFixed(2)}%)`);
       }
     });
     

@@ -102,6 +102,11 @@ export function CrossChainSwap() {
     queryKey: ['/api/assets']
   });
   
+  // Load vaults to get the default vault ID
+  const { data: vaults = [] } = useQuery<any[]>({
+    queryKey: ['/api/vaults']
+  });
+  
   // Get prices using the hook
   const { prices, loading: isPricesLoading } = usePrices();
   
@@ -144,10 +149,13 @@ export function CrossChainSwap() {
     setIsLoading(true);
     
     try {
+      // Get default vault ID - use the first vault if available
+      const defaultVaultId = vaults.length > 0 ? vaults[0].id : 1;
+      
       // This would call the backend to initiate the cross-chain swap
       const response = await apiRequest(
         'POST',
-        `/api/cross-chain-swap`,
+        `/api/vaults/${defaultVaultId}/cross-chain-swap`,
         {
           fromAsset: values.fromAsset,
           toAsset: values.toAsset,
@@ -190,7 +198,18 @@ export function CrossChainSwap() {
     <Card>
       <CardHeader>
         <CardTitle>Cross-Chain Swap</CardTitle>
-        <CardDescription>Swap assets across different blockchains</CardDescription>
+        <CardDescription>
+          Swap assets across different blockchains
+          {vaults.length > 0 ? (
+            <span className="block mt-2 text-xs">
+              Using vault: <span className="font-medium">{vaults[0].name}</span>
+            </span>
+          ) : (
+            <span className="block mt-2 text-xs text-amber-500">
+              No vaults found. Create a vault for better tracking.
+            </span>
+          )}
+        </CardDescription>
       </CardHeader>
       
       <CardContent>

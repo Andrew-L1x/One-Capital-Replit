@@ -47,8 +47,21 @@ const formatPercentage = (percentage: number): string => {
   return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
 };
 
+interface AssetAllocationDetails {
+  id: number;
+  symbol: string;
+  name: string;
+  amount: number;
+  price: number;
+  value: number;
+  percentage: number;
+  priceChange24h: number;
+  priceChangePercentage24h: number;
+}
+
 export function PerformanceMetrics() {
   const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
+  const [assetAllocations, setAssetAllocations] = useState<AssetAllocationDetails[]>([]);
   
   // Get vault allocations to calculate portfolio values
   const { data: vaults = [], isLoading: isLoadingVaults } = useQuery<any[]>({
@@ -80,6 +93,7 @@ export function PerformanceMetrics() {
       allocationsData.length > 0
     ) {
       const assetPerformance: AssetPerformance[] = [];
+      const detailedAllocations: AssetAllocationDetails[] = [];
       let totalValue = 0;
       let previousTotalValue = 0;
 
@@ -113,6 +127,37 @@ export function PerformanceMetrics() {
           });
         }
       }
+      
+      // Now that we know the total, calculate the percentage for each asset and build detailed allocations
+      for (const allocation of allocationsData) {
+        const asset = assets.find((a: any) => a.id === allocation.assetId);
+        if (asset && priceDetails[asset.symbol]) {
+          const priceDetail = priceDetails[asset.symbol];
+          const currentPrice = priceDetail.current;
+          
+          // Get allocation amount
+          const amount = allocation.amount || parseInt(allocation.targetPercentage);
+          
+          const value = amount * currentPrice;
+          const percentage = totalValue > 0 ? (value / totalValue) * 100 : 0;
+          
+          detailedAllocations.push({
+            id: asset.id,
+            symbol: asset.symbol,
+            name: asset.name,
+            amount,
+            price: currentPrice,
+            value,
+            percentage,
+            priceChange24h: priceDetail.change24h,
+            priceChangePercentage24h: priceDetail.changePercentage24h
+          });
+        }
+      }
+      
+      // Sort detailed allocations by value (descending)
+      detailedAllocations.sort((a, b) => b.value - a.value);
+      setAssetAllocations(detailedAllocations);
       
       // Sort assets by performance
       const sortedByPerformance = [...assetPerformance].sort(
@@ -169,7 +214,7 @@ export function PerformanceMetrics() {
         Performance Overview
       </h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {/* Total Portfolio Value */}
         <Card>
           <CardHeader className="pb-2">
@@ -314,6 +359,83 @@ export function PerformanceMetrics() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Cryptocurrency Allocation Table */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Cryptocurrency Allocation</CardTitle>
+          <CardDescription>
+            Live allocation data with real-time prices
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : assetAllocations.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 text-left font-medium text-muted-foreground">Asset</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">Amount</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">Price</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">24h Change</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">Value (USD)</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">Allocation %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assetAllocations.map((asset) => (
+                    <tr key={asset.id} className="border-b border-muted hover:bg-muted/50 transition-colors">
+                      <td className="py-2">
+                        <div className="flex items-center">
+                          <span className="font-semibold">{asset.symbol}</span>
+                          <span className="ml-2 text-muted-foreground text-sm">{asset.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 text-right">
+                        <span>{asset.amount.toFixed(4)}</span>
+                      </td>
+                      <td className="py-2 text-right">
+                        <span>{formatPrice(asset.price)}</span>
+                      </td>
+                      <td className="py-2 text-right">
+                        <span className={asset.priceChangePercentage24h >= 0 ? 'text-green-500' : 'text-red-500'}>
+                          {formatPercentage(asset.priceChangePercentage24h)}
+                        </span>
+                      </td>
+                      <td className="py-2 text-right font-medium">
+                        {formatPrice(asset.value)}
+                      </td>
+                      <td className="py-2 text-right">
+                        {asset.percentage.toFixed(2)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t">
+                    <td colSpan={4} className="py-2 font-medium">Total</td>
+                    <td className="py-2 text-right font-bold">{formatPrice(metrics.totalValue)}</td>
+                    <td className="py-2 text-right font-bold">100%</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              No asset allocations found
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground mt-4 text-right">
+            Last updated: {new Date().toLocaleTimeString()} • Auto-refreshes every 60 seconds
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

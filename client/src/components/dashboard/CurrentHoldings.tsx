@@ -252,22 +252,21 @@ export function CurrentHoldings() {
                                   if (newValue === oldValue || isNaN(newValue)) return;
                                   
                                   const currentHoldings = [...form.watch("holdings")];
+                                  const difference = newValue - oldValue;
                                   
-                                  // Calculate what the total would be with this change
-                                  let newTotal = 0;
-                                  currentHoldings.forEach((h, i) => {
-                                    newTotal += (i === index) ? newValue : h.percentage;
-                                  });
+                                  // Set the new value for this holding
+                                  field.onChange(newValue);
+                                  form.setValue(`holdings.${index}.amount`, (newValue / 100) * portfolioValue);
                                   
-                                  // If this would make the total over 100%, adjust the highest holding down
-                                  if (newTotal > 100) {
-                                    // Find holdings sorted by percentage (highest first), excluding current
-                                    const sortable = currentHoldings
+                                  // Always adjust other holdings to maintain 100% total
+                                  if (difference !== 0) {
+                                    // Find all other holdings sorted by percentage (highest first)
+                                    const othersToAdjust = currentHoldings
                                       .map((h, i) => ({percentage: h.percentage, index: i}))
                                       .filter(h => h.index !== index)
                                       .sort((a, b) => b.percentage - a.percentage);
                                     
-                                    if (sortable.length === 0) {
+                                    if (othersToAdjust.length === 0) {
                                       // This is the only holding, cap at 100%
                                       const actualValue = 100;
                                       field.onChange(actualValue);
@@ -275,45 +274,72 @@ export function CurrentHoldings() {
                                       return;
                                     }
                                     
-                                    // Get the highest allocation that's not this one
-                                    const highestHolding = sortable[0];
-                                    const excess = newTotal - 100;
+                                    // Calculate how much to distribute among other holdings
+                                    let remainingAdjustment = -difference; // If this holding increased, others decrease
                                     
-                                    // Make sure we don't reduce below 1%
-                                    const newHighestValue = Math.max(highestHolding.percentage - excess, 1);
+                                    // First pass: try to distribute evenly respecting minimums (1%)
+                                    const totalOtherPercentage = othersToAdjust.reduce((sum, h) => 
+                                      sum + currentHoldings[h.index].percentage, 0);
                                     
-                                    // If we'd reduce below 1%, cap the current value instead
-                                    if (newHighestValue <= 1) {
-                                      const maxIncrease = highestHolding.percentage - 1;
-                                      const actualValue = oldValue + maxIncrease;
-                                      field.onChange(actualValue);
+                                    // If we're increasing this asset's percentage and total would be over 100%
+                                    // OR if we're decreasing and total would be under 100%
+                                    if ((difference > 0 && totalOtherPercentage < remainingAdjustment) ||
+                                        (difference < 0 && -remainingAdjustment > newValue)) {
+                                      // Cannot adjust properly, reset to previous value
+                                      field.onChange(oldValue);
+                                      form.setValue(`holdings.${index}.amount`, (oldValue / 100) * portfolioValue);
                                       
-                                      // Update the amount for this holding
-                                      form.setValue(`holdings.${index}.amount`, (actualValue / 100) * portfolioValue);
+                                      // Show toast notification
+                                      toast({
+                                        title: "Adjustment not possible",
+                                        description: "Cannot maintain valid percentages with this change.",
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
+                                    
+                                    // Proportionally distribute the adjustment
+                                    for (const holding of othersToAdjust) {
+                                      if (remainingAdjustment === 0) break;
                                       
-                                      // Set the highest holding to 1%
-                                      form.setValue(`holdings.${highestHolding.index}.percentage`, 1);
-                                      form.setValue(`holdings.${highestHolding.index}.amount`, (1 / 100) * portfolioValue);
-                                    } else {
-                                      // Set the new value for this holding
-                                      field.onChange(newValue);
+                                      const currentPercentage = currentHoldings[holding.index].percentage;
+                                      const proportion = currentPercentage / totalOtherPercentage;
                                       
-                                      // Update the amount for this holding
-                                      form.setValue(`holdings.${index}.amount`, (newValue / 100) * portfolioValue);
+                                      // Calculate adjustment for this holding
+                                      let adjustment = Math.round(remainingAdjustment * proportion);
                                       
-                                      // Reduce the highest holding by the excess
-                                      form.setValue(`holdings.${highestHolding.index}.percentage`, newHighestValue);
+                                      // Ensure we don't reduce below 1%
+                                      const minAdjustment = 1 - currentPercentage;
+                                      if (adjustment < minAdjustment) adjustment = minAdjustment;
+                                      
+                                      // Don't adjust more than what's remaining
+                                      if (Math.abs(adjustment) > Math.abs(remainingAdjustment)) {
+                                        adjustment = remainingAdjustment;
+                                      }
+                                      
+                                      // Apply the adjustment
+                                      const newPercentage = Math.max(1, currentPercentage + adjustment);
+                                      form.setValue(`holdings.${holding.index}.percentage`, newPercentage);
                                       form.setValue(
-                                        `holdings.${highestHolding.index}.amount`, 
-                                        (newHighestValue / 100) * portfolioValue
+                                        `holdings.${holding.index}.amount`,
+                                        (newPercentage / 100) * portfolioValue
+                                      );
+                                      
+                                      remainingAdjustment -= adjustment;
+                                    }
+                                    
+                                    // If there's still remaining adjustment, apply to highest holding
+                                    if (remainingAdjustment !== 0 && othersToAdjust.length > 0) {
+                                      const highestHolding = othersToAdjust[0];
+                                      const currentPercentage = currentHoldings[highestHolding.index].percentage;
+                                      const newPercentage = Math.max(1, currentPercentage + remainingAdjustment);
+                                      
+                                      form.setValue(`holdings.${highestHolding.index}.percentage`, newPercentage);
+                                      form.setValue(
+                                        `holdings.${highestHolding.index}.amount`,
+                                        (newPercentage / 100) * portfolioValue
                                       );
                                     }
-                                  } else {
-                                    // The total is not over 100%, set the new value
-                                    field.onChange(newValue);
-                                    
-                                    // Update the amount for this holding
-                                    form.setValue(`holdings.${index}.amount`, (newValue / 100) * portfolioValue);
                                   }
                                 }}
                               />

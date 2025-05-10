@@ -1,8 +1,62 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import cors from "cors";
 
 const app = express();
+
+// Configure CORS for cross-origin requests
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      // Local development
+      'http://localhost:5000',
+      'http://127.0.0.1:5000',
+      // Replit domains
+      '.replit.app',
+      '.replit.dev',
+      // Dynamic Labs domains
+      'dynamic.xyz',
+      'app.dynamic.xyz',
+      '.dynamic.xyz',
+      // Wallet providers
+      'metamask.io',
+      '.metamask.io',
+      'infura.io',
+      '.infura.io',
+      'alchemy.com',
+      '.alchemy.com',
+      'wallet.coinbase.com',
+      '.wallet.coinbase.com',
+      'walletconnect.com',
+      '.walletconnect.com',
+    ];
+    
+    // Check if origin is in allowed list or matches a pattern
+    const allowed = allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin.startsWith('.') && origin) {
+        // Check if origin ends with the allowed domain
+        return origin.endsWith(allowedOrigin.substring(1));
+      }
+      return allowedOrigin === origin;
+    });
+    
+    if (allowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'), false);
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true, // Allow cookies to be sent with requests
+  maxAge: 86400 // Cache preflight requests for 1 day
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

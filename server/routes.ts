@@ -19,6 +19,7 @@ import memoryStoreCreator from "memorystore";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import bcrypt from "bcryptjs";
+import cors from "cors";
 
 const MemoryStore = memoryStoreCreator(session);
 

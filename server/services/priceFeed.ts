@@ -9,11 +9,17 @@
 import axios from 'axios';
 import { storage } from '../storage';
 import { Asset, InsertPriceFeed } from '@shared/schema';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 // CoinGecko API configuration
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
 const PRICE_CACHE_DURATION = 60 * 1000; // 60 seconds
+
+console.log(`CoinGecko API Key available: ${COINGECKO_API_KEY ? 'Yes' : 'No'}`); // Debugging
 
 // Cache for price data
 interface PriceCache {
@@ -242,7 +248,7 @@ async function savePricesToDatabase(prices: Record<string, PriceData>): Promise<
     if (price) {
       const priceFeed: InsertPriceFeed = {
         assetId: asset.id,
-        price: price.current,
+        price: price.current.toString(), // Convert to string for database
         timestamp: new Date(),
       };
       

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Asset, Allocation } from "@shared/schema";
+import { Asset, Allocation, Vault } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Plus, DollarSign, Wallet, ArrowUpDown } from "lucide-react";
 import { usePortfolio } from "@/lib/portfolioContext";
@@ -49,7 +49,7 @@ export function CurrentHoldings() {
   });
 
   // Fetch user's current holdings (in a real app, would come from API)
-  const { data: vaults = [], isLoading: isLoadingVaults } = useQuery({
+  const { data: vaults = [], isLoading: isLoadingVaults } = useQuery<Vault[]>({
     queryKey: ["/api/vaults"],
   });
   
@@ -70,7 +70,9 @@ export function CurrentHoldings() {
     return allocations.map((allocation: Allocation) => {
       const asset = assets.find(a => a.id === allocation.assetId);
       // Calculate the actual amount based on percentage of portfolio value
-      const amount = (allocation.percentage / 100) * (portfolioValue || 10000);
+      // Convert targetPercentage string to number
+      const percentage = parseFloat(allocation.targetPercentage.toString());
+      const amount = (percentage / 100) * (portfolioValue || 10000);
       
       return {
         assetId: allocation.assetId,

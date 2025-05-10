@@ -12,6 +12,7 @@ import { AssetAllocationTable } from "@/components/dashboard/AssetAllocationTabl
 import { CurrentPortfolio } from "@/components/dashboard/CurrentPortfolio";
 import { CrossChainSwap } from "@/components/dashboard/CrossChainSwap";
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
+import { PortfolioBalance } from "@/components/dashboard/PortfolioBalance";
 import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import { 
   PlusCircle, 
@@ -22,9 +23,6 @@ import {
   History,
   Settings,
   Circle,
-  DollarSign,
-  ChevronUp,
-  ChevronDown,
   ArrowRightLeft,
   LineChart
 } from "lucide-react";
@@ -151,43 +149,7 @@ export default function Dashboard() {
           </TabsList>
           
           {/* Portfolio Balance Bar */}
-          <div className="bg-card rounded-lg border p-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-              <div className="flex items-center gap-2 mb-2 sm:mb-0">
-                <DollarSign className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Portfolio Balance</h3>
-                  <p className="text-2xl font-bold">$10,420.87</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-6">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">24h Change</h3>
-                  <p className="flex items-center text-lg font-medium text-green-600">
-                    <ChevronUp className="h-4 w-4 mr-1" />
-                    5.2%
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">7d Change</h3>
-                  <p className="flex items-center text-lg font-medium text-green-600">
-                    <ChevronUp className="h-4 w-4 mr-1" />
-                    12.8%
-                  </p>
-                </div>
-                
-                <div className="hidden md:block">
-                  <h3 className="text-sm font-medium text-muted-foreground">30d Change</h3>
-                  <p className="flex items-center text-lg font-medium text-red-600">
-                    <ChevronDown className="h-4 w-4 mr-1" />
-                    2.4%
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PortfolioBalance />
           
           {/* Portfolio Allocation Tab */}
           <TabsContent value="allocation" className="space-y-8">

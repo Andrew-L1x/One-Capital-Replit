@@ -19,6 +19,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Asset, Allocation, Vault } from "@shared/schema";
@@ -48,6 +55,8 @@ type HoldingsFormValues = z.infer<typeof holdingsSchema>;
 
 export function CurrentHoldings() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAssetSelector, setShowAssetSelector] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
   const { toast } = useToast();
   const { portfolioValue, isLoading: isLoadingPortfolio } = usePortfolio();
 

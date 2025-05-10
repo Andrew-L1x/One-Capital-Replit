@@ -242,6 +242,7 @@ export function CurrentHoldings() {
                                   }
                                 }}
                                 {...field}
+                                value={field.value === 0 ? '' : field.value}
                                 onChange={(e) => {
                                   // Get the new value as a whole number
                                   const newValue = Math.round(parseFloat(e.target.value) || 0);

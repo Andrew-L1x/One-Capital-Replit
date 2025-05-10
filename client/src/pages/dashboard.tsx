@@ -8,6 +8,8 @@ import VaultCard from "@/components/dashboard/vault-card";
 import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import PortfolioManager from "@/components/dashboard/portfolio-manager";
 import DashboardHeader from "@/components/dashboard/dashboard-header";
+import { PortfolioValue } from "@/components/dashboard/PortfolioValue";
+import { CrossChainSwap } from "@/components/dashboard/CrossChainSwap";
 import { 
   PlusCircle, 
   ArrowUpRight, 
@@ -19,7 +21,8 @@ import {
   Circle,
   DollarSign,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ArrowRightLeft
 } from "lucide-react";
 import { Vault, Asset, Allocation } from "@shared/schema";
 
@@ -240,40 +243,76 @@ export default function Dashboard() {
                 description="Current allocation across all vaults"
               />
               
+              {/* Add real-time portfolio value component */}
+              {vaults.length > 0 && (
+                <PortfolioValue vaultId={vaults[0].id} refreshInterval={30000} />
+              )}
+            </div>
+            
+            {/* Add Cross-Chain Swap section if vaults exist */}
+            {vaults.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-lg font-medium mb-4 flex items-center">
+                  <ArrowRightLeft className="h-5 w-5 mr-2" />
+                  Cross-Chain Operations
+                </h3>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <CrossChainSwap vaultId={vaults[0].id} />
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Performance Summary</CardTitle>
+                      <CardDescription>
+                        Overview of your portfolio performance
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center border-b pb-2">
+                          <span className="text-sm">Total Assets</span>
+                          <span className="font-medium">
+                            {vaults.length > 0 ? `${vaults.length} Vaults` : "No vaults yet"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center border-b pb-2">
+                          <span className="text-sm">Rebalance Status</span>
+                          <span className="font-medium text-green-600">Up to date</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">Last Updated</span>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date().toLocaleDateString()}
+                          </span>
+                        </div>
+                        
+                        <Button variant="outline" className="w-full mt-4" onClick={() => setLocation("/vaults")}>
+                          View All Vaults
+                          <ArrowUpRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+            
+            {/* Show message if no vaults exist */}
+            {vaults.length === 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Performance Summary</CardTitle>
+                  <CardTitle>No Portfolio Data</CardTitle>
                   <CardDescription>
-                    Overview of your portfolio performance
+                    Create a vault to see your portfolio overview and access cross-chain operations
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <span className="text-sm">Total Assets</span>
-                      <span className="font-medium">
-                        {vaults.length > 0 ? `${vaults.length} Vaults` : "No vaults yet"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center border-b pb-2">
-                      <span className="text-sm">Rebalance Status</span>
-                      <span className="font-medium text-green-600">Up to date</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Last Updated</span>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date().toLocaleDateString()}
-                      </span>
-                    </div>
-                    
-                    <Button variant="outline" className="w-full mt-4" onClick={() => setLocation("/vaults")}>
-                      View All Vaults
-                      <ArrowUpRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </div>
+                <CardContent className="flex justify-center">
+                  <Button onClick={handleCreateVault}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Create Vault
+                  </Button>
                 </CardContent>
               </Card>
-            </div>
+            )}
           </TabsContent>
           
           {/* Settings Tab */}

@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/queryClient";
 import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import AllocationCard from "@/components/dashboard/allocation-card";
 import AllocationList from "@/components/dashboard/allocation-list";
+// Import the deposit/withdraw form
 import { DepositWithdrawForm } from "@/components/dashboard/DepositWithdrawForm";
 import TakeProfitForm from "@/components/forms/take-profit-form";
 import RebalanceSettingsForm from "@/components/forms/rebalance-settings-form";
@@ -373,6 +374,21 @@ export default function VaultPage() {
               </CardContent>
             </Card>
           )}
+          
+          {/* Deposit and Withdraw Form in Overview Tab */}
+          {allocations.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Deposit & Withdraw</CardTitle>
+                <CardDescription>
+                  Manage your vault investments with easy deposits and withdrawals
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DepositWithdrawForm />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         
         <TabsContent value="allocations" className="space-y-6">
@@ -394,7 +410,18 @@ export default function VaultPage() {
           
           {/* Add Deposit and Withdraw Form */}
           <div className="mt-6">
-            <DepositWithdrawForm />
+            {/* Use DepositWithdrawForm component */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Deposit & Withdraw</CardTitle>
+                <CardDescription>
+                  Manage your vault investments with easy deposits and withdrawals
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DepositWithdrawForm />
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
         

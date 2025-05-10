@@ -16,6 +16,7 @@ import MainLayout from "@/components/layout/main-layout";
 // Dynamic Labs and Wallet Integration
 import {
   DynamicContextProvider,
+  DynamicWidget,
 } from "@dynamic-labs/sdk-react-core";
 import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
 import { createConfig, WagmiProvider } from "wagmi";
@@ -25,7 +26,7 @@ import { BitcoinWalletConnectors } from "@dynamic-labs/bitcoin";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { SolanaWalletConnectors } from "@dynamic-labs/solana";
 
-// Define L1X chains
+// Define L1X chains - L1X Testnet chain ID 1777 (0x6f1)
 const l1xTestnet = {
   id: 1777,
   name: 'L1X Testnet',
@@ -74,27 +75,8 @@ function App() {
       settings={{
         environmentId: "e24ef9b0-333d-4618-8677-c155bcc3ad3b",
         walletConnectors: [
-          BitcoinWalletConnectors,
           EthereumWalletConnectors,
-          SolanaWalletConnectors,
-        ],
-        networkConfigurations: {
-          evm: [
-            {
-              type: 'EVM',
-              chainId: 1777,
-              chainName: 'L1X Testnet',
-              nativeCurrency: {
-                name: 'L1X',
-                symbol: 'L1X',
-                decimals: 18,
-              },
-              rpcUrls: ['https://v2.testnet.l1x.foundation'],
-              blockExplorerUrls: ['https://explorer.testnet.l1x.foundation'],
-              iconUrls: ['https://www.l1x.foundation/favicon.ico'],
-            }
-          ]
-        }
+        ]
       }}
     >
       <WagmiProvider config={wagmiConfig}>

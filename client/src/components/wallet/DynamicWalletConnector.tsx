@@ -35,6 +35,37 @@ export default function DynamicWalletConnector({
     }
   }, [user, primaryWallet]);
 
+  // Add L1X testnet to MetaMask
+  const addL1XNetwork = async () => {
+    if (typeof window.ethereum === 'undefined') {
+      setError('MetaMask not detected');
+      return;
+    }
+    
+    try {
+      setStatus('connecting');
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x6f1', // 1777 in hex
+          chainName: 'L1X Testnet',
+          nativeCurrency: {
+            name: 'L1X',
+            symbol: 'L1X',
+            decimals: 18
+          },
+          rpcUrls: ['https://v2.testnet.l1x.foundation'],
+          blockExplorerUrls: ['https://explorer.testnet.l1x.foundation/']
+        }]
+      });
+      setStatus('connected');
+    } catch (err) {
+      console.error('Error adding L1X network:', err);
+      setStatus('error');
+      setError(err instanceof Error ? err.message : 'Failed to add L1X network to MetaMask');
+    }
+  };
+
   // Process a test transaction
   const sendTestTransaction = async () => {
     if (!primaryWallet) {
@@ -97,7 +128,14 @@ export default function DynamicWalletConnector({
         )}
         
         <div className="mb-4">
-          <DynamicWidget />
+          <DynamicWidget 
+            innerButtonComponent={
+              <Button className="w-full">
+                <Wallet className="w-4 h-4 mr-2" />
+                Connect to L1X Testnet
+              </Button>
+            }
+          />
         </div>
         
         {primaryWallet && (

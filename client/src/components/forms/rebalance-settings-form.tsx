@@ -37,7 +37,7 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
     resolver: zodResolver(rebalanceSettingsSchema),
     defaultValues: {
       driftThreshold: parseFloat(vault.driftThreshold?.toString() || "0"),
-      rebalanceFrequency: (vault.rebalanceFrequency || "manual") as "manual" | "weekly" | "monthly" | "quarterly" | "yearly"
+      rebalanceFrequency: "manual" // Default to manual
     }
   });
 
@@ -45,7 +45,7 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
   useEffect(() => {
     form.reset({
       driftThreshold: parseFloat(vault.driftThreshold?.toString() || "0"),
-      rebalanceFrequency: (vault.rebalanceFrequency || "manual") as "manual" | "weekly" | "monthly" | "quarterly" | "yearly"
+      rebalanceFrequency: "manual" // Always default to manual with options in dropdown
     });
   }, [vault, form]);
 
@@ -137,15 +137,16 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
                 <FormLabel>Drift Threshold</FormLabel>
                 <Select
                   onValueChange={(value) => field.onChange(parseFloat(value))}
-                  defaultValue={field.value.toString()}
+                  defaultValue="0"
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select drift threshold" />
+                      <SelectValue placeholder="0%" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    {driftOptions.map((value) => (
+                    <SelectItem value="0">0%</SelectItem>
+                    {driftOptions.slice(1).map((value) => (
                       <SelectItem key={value} value={value.toString()}>
                         {value}%
                       </SelectItem>
@@ -153,7 +154,9 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Rebalance when any asset drifts more than {field.value}% from its target allocation
+                  {field.value === 0 
+                    ? "Rebalance will only happen on schedule or manually" 
+                    : `Rebalance when any asset drifts more than ${field.value}% from its target allocation`}
                 </p>
                 <FormMessage />
               </FormItem>
@@ -165,18 +168,18 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
             name="rebalanceFrequency"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Rebalance Frequency</FormLabel>
+                <FormLabel>Frequency</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue="manual"
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select frequency" />
+                      <SelectValue placeholder="Manual" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="manual">Manual Only</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
                     <SelectItem value="weekly">Weekly</SelectItem>
                     <SelectItem value="monthly">Monthly</SelectItem>
                     <SelectItem value="quarterly">Quarterly</SelectItem>
@@ -184,7 +187,7 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  How often your portfolio should automatically rebalance
+                  Select manual or scheduled automatic rebalancing
                 </p>
                 <FormMessage />
               </FormItem>

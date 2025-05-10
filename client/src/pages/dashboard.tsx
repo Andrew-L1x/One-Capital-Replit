@@ -257,36 +257,37 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      {vaults.map((vault) => (
-                        <div key={vault.id} className="border-b pb-4 last:border-0 last:pb-0">
-                          <h4 className="font-medium mb-2">{vault.name}</h4>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm">Frequency</span>
-                            <span className="font-medium">
-                              {vault.rebalanceFrequency ? 
-                                vault.rebalanceFrequency.charAt(0).toUpperCase() + vault.rebalanceFrequency.slice(1) : 
-                                "Manual"}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center mb-4">
-                            <span className="text-sm">Drift Threshold</span>
-                            <span className="font-medium">{vault.driftThreshold?.toString() || "5.0"}%</span>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full"
-                            onClick={() => {
-                              // Debug log to check vault ID before navigation
-                              console.log("Navigating to vault:", vault.id, vault);
-                              setLocation(`/vaults/${vault.id}`);
-                            }}
-                          >
-                            <Settings className="h-4 w-4 mr-2" />
-                            Manage Vault Settings
-                          </Button>
+                      <div className="pb-4">
+                        <h4 className="font-medium mb-2">My Rebalance Strategy</h4>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm">Frequency</span>
+                          <span className="font-medium">
+                            {vaults[0]?.rebalanceFrequency ? 
+                              vaults[0].rebalanceFrequency.charAt(0).toUpperCase() + vaults[0].rebalanceFrequency.slice(1) : 
+                              "Manual"}
+                          </span>
                         </div>
-                      ))}
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm">Drift Threshold</span>
+                          <span className="font-medium">{vaults[0]?.driftThreshold?.toString() || "0"}%</span>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => {
+                            if (vaults.length > 0) {
+                              // Debug log to check vault ID before navigation
+                              console.log("Navigating to vault:", vaults[0].id, vaults[0]);
+                              setLocation(`/vaults/${vaults[0].id}`);
+                            }
+                          }}
+                          disabled={vaults.length === 0}
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Manage Rebalance Strategy
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -1,4 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { 
+  connectWallet as connectWeb3Wallet, 
+  getCurrentAccount,
+  getChainId,
+  getChainName,
+  ChainId
+} from './web3';
 
 // Define wallet types
 export type WalletType = 'l1x' | 'metamask' | null;
@@ -12,9 +19,12 @@ interface WalletContextType {
   error: string | null;
   connectL1X: () => Promise<void>;
   connectMetaMask: () => Promise<void>;
+  connectWallet: () => Promise<string | null>;
   disconnectWallet: () => void;
   getProvider: () => any;
   getSigner: () => any;
+  currentAccount: string | null;
+  currentChain: string | null;
 }
 
 // Local storage keys
@@ -30,9 +40,12 @@ const WalletContext = createContext<WalletContextType>({
   error: null,
   connectL1X: async () => {},
   connectMetaMask: async () => {},
+  connectWallet: async () => null,
   disconnectWallet: () => {},
   getProvider: () => null,
   getSigner: () => null,
+  currentAccount: null,
+  currentChain: null,
 });
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
@@ -42,6 +55,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [provider, setProvider] = useState<any>(null);
   const [signer, setSigner] = useState<any>(null);
+  const [currentChain, setCurrentChain] = useState<string | null>(null);
 
   // Load wallet state from local storage on component mount
   useEffect(() => {
@@ -162,6 +176,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setProvider(window.ethereum);
       setSigner({ address });
       
+      // Get chain info
+      const network = await window.ethereum.request({ method: 'eth_chainId' });
+      const chainIdHex = network?.toString();
+      if (chainIdHex) {
+        const chainId = parseInt(chainIdHex, 16);
+        setCurrentChain(getChainName(chainId as ChainId));
+      }
+      
       // Store in local storage
       localStorage.setItem(WALLET_TYPE_KEY, 'metamask');
       localStorage.setItem(WALLET_ADDRESS_KEY, address);
@@ -174,6 +196,54 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       console.error('Error connecting to MetaMask:', error);
       setError(error instanceof Error ? error.message : 'Failed to connect to MetaMask');
       clearWalletState();
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+  
+  // Connect wallet using web3.ts implementation
+  const connectWallet = async (): Promise<string | null> => {
+    try {
+      setIsConnecting(true);
+      setError(null);
+      
+      // Call the web3.ts connectWallet implementation
+      const account = await connectWeb3Wallet();
+      
+      if (account) {
+        // Determine wallet type (MetaMask or L1X) based on provider detection
+        const walletType: WalletType = window.l1x ? 'l1x' : 'metamask';
+        
+        // Save connection details
+        setWalletType(walletType);
+        setWalletAddress(account);
+        
+        // Set provider based on wallet type
+        setProvider(walletType === 'l1x' ? window.l1x : window.ethereum);
+        
+        // Store in local storage
+        localStorage.setItem(WALLET_TYPE_KEY, walletType);
+        localStorage.setItem(WALLET_ADDRESS_KEY, account);
+        
+        // Get and set chain info
+        if (window.ethereum) {
+          const network = await window.ethereum.request({ method: 'eth_chainId' });
+          const chainIdHex = network?.toString();
+          if (chainIdHex) {
+            const chainId = parseInt(chainIdHex, 16);
+            setCurrentChain(getChainName(chainId as ChainId));
+          }
+        }
+        
+        return account;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+      setError(error instanceof Error ? error.message : 'Failed to connect wallet');
+      clearWalletState();
+      return null;
     } finally {
       setIsConnecting(false);
     }
@@ -241,9 +311,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     error,
     connectL1X,
     connectMetaMask,
+    connectWallet,
     disconnectWallet,
     getProvider,
     getSigner,
+    currentAccount: walletAddress, // Alias for walletAddress for compatibility
+    currentChain
   };
 
   return (
@@ -264,9 +337,10 @@ export function useWallet() {
   return context;
 }
 
-// Declare window.ethereum type
+// Declare window.ethereum and window.l1x types
 declare global {
   interface Window {
     ethereum?: any;
+    l1x?: any; // L1X wallet provider
   }
 }

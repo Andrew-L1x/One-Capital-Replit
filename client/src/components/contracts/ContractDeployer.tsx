@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -6,288 +6,224 @@ import {
   CardFooter, 
   CardHeader, 
   CardTitle 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { CheckCircle, AlertCircle, Upload, Copy } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { L1X_TESTNET_URL, getCurrentAccount, getL1XDirectProvider } from "@/lib/web3";
-import { setContractAddress } from "@/lib/contract";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { useWallet } from '../../lib/walletContext';
+import { Label } from '@/components/ui/label';
+import { 
+  ChainId, 
+  getChainName 
+} from '../../lib/web3';
+import { 
+  getContractAddresses, 
+  setContractAddresses 
+} from '../../lib/contractABI';
 
+/**
+ * ContractDeployer component for setting contract addresses
+ */
 export default function ContractDeployer() {
-  // State variables
-  const [wasmFile, setWasmFile] = useState<File | null>(null);
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [deployedAddress, setDeployedAddress] = useState<string>("");
-  const [deploymentResult, setDeploymentResult] = useState<{
-    success: boolean;
-    message: string;
-    txHash?: string;
-  } | null>(null);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [gasLimit, setGasLimit] = useState<string>("3000000");
-  const [constructorArgs, setConstructorArgs] = useState<string>("");
-  
   const { toast } = useToast();
+  const { isConnected, connectWallet, currentAccount } = useWallet();
+  const [loading, setLoading] = useState(false);
   
-  // Load connected wallet
-  const checkWallet = async () => {
-    const account = await getCurrentAccount();
-    setWalletAddress(account);
-  };
-
-  // Handle file upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      if (file.name.endsWith('.wasm')) {
-        setWasmFile(file);
-        toast({
-          title: "WASM File Selected",
-          description: `${file.name} (${(file.size / 1024).toFixed(2)}KB)`,
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Invalid File",
-          description: "Please select a .wasm file",
-        });
-      }
-    }
-  };
-
-  // Deploy contract to L1X testnet
-  const deployContract = async () => {
-    if (!wasmFile) {
-      toast({
-        variant: "destructive",
-        title: "No WASM File",
-        description: "Please select a WASM file to deploy",
-      });
-      return;
-    }
-
+  // Contract address form state
+  const [chainId, setChainId] = useState<string>(ChainId.L1X_TESTNET.toString());
+  const [vaultAddress, setVaultAddress] = useState<string>('');
+  const [bridgeAddress, setBridgeAddress] = useState<string>('');
+  const [oracleAddress, setOracleAddress] = useState<string>('');
+  
+  // Handle wallet connection
+  const handleConnect = async () => {
     try {
-      setIsDeploying(true);
-      setDeploymentResult(null);
-      
-      // Check wallet connection
-      await checkWallet();
-      if (!walletAddress) {
-        throw new Error("No wallet connected. Please connect a wallet first.");
-      }
-      
-      // Read the WASM file
-      const wasmBytes = await wasmFile.arrayBuffer();
-      const wasmHex = '0x' + Array.from(new Uint8Array(wasmBytes))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
-      // Parse constructor arguments if any
-      let parsedArgs: any[] = [];
-      if (constructorArgs.trim()) {
-        try {
-          parsedArgs = JSON.parse(constructorArgs);
-          if (!Array.isArray(parsedArgs)) {
-            parsedArgs = [parsedArgs];
-          }
-        } catch (e) {
-          throw new Error("Invalid constructor arguments. Please use JSON format.");
-        }
-      }
-      
-      // Prepare deployment transaction
-      const provider = getL1XDirectProvider();
-      const deployTx = {
-        from: walletAddress,
-        data: wasmHex,
-        gas: `0x${parseInt(gasLimit).toString(16)}`,
-        args: parsedArgs
-      };
-      
-      // Since we're in a demo environment, we'll simulate a successful deployment
-      // In a real environment, this would call eth_sendTransaction via the provider
-      console.log('Deploying contract with:', deployTx);
-      
-      // Simulate contract deployment (would use provider.send in production)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Generate a fake contract address for demo purposes
-      const demoContractAddress = "0x" + Array.from({length: 40}, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('');
-      
-      // Set the deployed address
-      setDeployedAddress(demoContractAddress);
-      setContractAddress(demoContractAddress);
-      
-      // Set success result
-      setDeploymentResult({
-        success: true,
-        message: "Contract deployed successfully",
-        txHash: "0x" + Array.from({length: 64}, () => 
-          Math.floor(Math.random() * 16).toString(16)).join('')
-      });
-      
+      await connectWallet();
       toast({
-        title: "Contract Deployed",
-        description: `Contract deployed to ${demoContractAddress.substring(0, 8)}...`,
+        title: 'Wallet Connected',
+        description: 'Successfully connected to wallet.',
       });
     } catch (error: any) {
-      console.error("Deployment error:", error);
-      setDeploymentResult({
-        success: false,
-        message: error.message || "Failed to deploy contract",
+      toast({
+        title: 'Connection Error',
+        description: error.message || 'Failed to connect wallet.',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  // Load existing contract addresses
+  const loadAddresses = () => {
+    try {
+      setLoading(true);
+      const chainIdNum = parseInt(chainId);
+      const addresses = getContractAddresses(chainIdNum);
+      
+      setVaultAddress(addresses.Vault || '');
+      setBridgeAddress(addresses.Bridge || '');
+      setOracleAddress(addresses.PriceOracle || '');
+      
+      toast({
+        title: 'Addresses Loaded',
+        description: `Loaded contract addresses for ${getChainName(chainIdNum as ChainId)}`,
+      });
+    } catch (error: any) {
+      console.error('Error loading addresses:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to load contract addresses.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Save contract addresses
+  const saveAddresses = () => {
+    try {
+      setLoading(true);
+      const chainIdNum = parseInt(chainId);
+      
+      setContractAddresses(chainIdNum, {
+        Vault: vaultAddress,
+        Bridge: bridgeAddress,
+        PriceOracle: oracleAddress,
       });
       
       toast({
-        variant: "destructive",
-        title: "Deployment Failed",
-        description: error.message || "Failed to deploy contract",
+        title: 'Addresses Saved',
+        description: `Saved contract addresses for ${getChainName(chainIdNum as ChainId)}`,
+      });
+    } catch (error: any) {
+      console.error('Error saving addresses:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to save contract addresses.',
+        variant: 'destructive',
       });
     } finally {
-      setIsDeploying(false);
+      setLoading(false);
     }
   };
-
-  // Copy contract address to clipboard
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied to Clipboard",
-      description: "Contract address copied to clipboard",
-    });
+  
+  // Handle chain change
+  const handleChainChange = (value: string) => {
+    setChainId(value);
+    // Load addresses for selected chain
+    const chainIdNum = parseInt(value);
+    const addresses = getContractAddresses(chainIdNum);
+    
+    setVaultAddress(addresses.Vault || '');
+    setBridgeAddress(addresses.Bridge || '');
+    setOracleAddress(addresses.PriceOracle || '');
   };
-
+  
   return (
-    <Card className="w-full max-w-3xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Deploy L1X Contract</CardTitle>
+        <CardTitle>Contract Deployer</CardTitle>
         <CardDescription>
-          Deploy your compiled WASM contract to the L1X V2 Testnet
+          Set contract addresses for the One Capital smart contracts
         </CardDescription>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Contract File Upload */}
-        <div className="space-y-2">
-          <Label htmlFor="wasmFile">Contract WASM File</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              id="wasmFile"
-              type="file"
-              accept=".wasm"
-              onChange={handleFileUpload}
-              className="flex-1"
-            />
+      <CardContent>
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between bg-muted/50 p-4 rounded-lg">
+            <div>
+              <h3 className="text-sm font-medium">Wallet Status</h3>
+              <p className="text-xs text-muted-foreground">
+                {isConnected ? (
+                  <>Connected: {currentAccount?.substring(0, 6)}...{currentAccount?.substring(38)}</>
+                ) : (
+                  'Not connected'
+                )}
+              </p>
+            </div>
+            <Button
+              variant={isConnected ? "outline" : "default"}
+              size="sm"
+              onClick={handleConnect}
+              disabled={isConnected}
+            >
+              {isConnected ? "Connected" : "Connect Wallet"}
+            </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Select the compiled .wasm file from your Rust contract build
-          </p>
-        </div>
-        
-        {/* Constructor Arguments */}
-        <div className="space-y-2">
-          <Label htmlFor="constructorArgs">Constructor Arguments (JSON format, optional)</Label>
-          <Textarea
-            id="constructorArgs"
-            placeholder='["arg1", 123, true]'
-            value={constructorArgs}
-            onChange={(e) => setConstructorArgs(e.target.value)}
-          />
-          <p className="text-sm text-muted-foreground">
-            Enter constructor arguments in JSON format if your contract requires them
-          </p>
-        </div>
-        
-        {/* Gas Settings */}
-        <div className="space-y-2">
-          <Label htmlFor="gasLimit">Gas Limit</Label>
-          <Input
-            id="gasLimit"
-            type="number"
-            value={gasLimit}
-            onChange={(e) => setGasLimit(e.target.value)}
-          />
-          <p className="text-sm text-muted-foreground">
-            Gas limit for contract deployment (may need to be high for complex contracts)
-          </p>
-        </div>
-        
-        <Separator />
-        
-        {/* Network Info */}
-        <div className="space-y-2">
-          <h3 className="text-lg font-medium">Deployment Network</h3>
-          <div className="p-2 border rounded-md bg-muted/50">
-            <p className="text-sm">
-              <span className="font-semibold">Network:</span> L1X V2 Testnet
-            </p>
-            <p className="text-sm">
-              <span className="font-semibold">RPC URL:</span> {L1X_TESTNET_URL}
-            </p>
-            <p className="text-sm">
-              <span className="font-semibold">From Address:</span> {walletAddress || "Not connected"}
-            </p>
-          </div>
-        </div>
-        
-        {/* Deployment Button */}
-        <Button 
-          onClick={deployContract} 
-          disabled={isDeploying || !wasmFile}
-          className="w-full"
-        >
-          {isDeploying ? "Deploying..." : "Deploy Contract"}
-          {!isDeploying && <Upload className="ml-2 h-4 w-4" />}
-        </Button>
-        
-        {/* Deployment Result */}
-        {deploymentResult && (
-          <Alert variant={deploymentResult.success ? "default" : "destructive"}>
-            {deploymentResult.success ? (
-              <CheckCircle className="h-4 w-4" />
-            ) : (
-              <AlertCircle className="h-4 w-4" />
-            )}
-            <AlertDescription>
-              {deploymentResult.message}
-              {deploymentResult.txHash && (
-                <p className="mt-2 text-xs font-mono break-all">
-                  Transaction: {deploymentResult.txHash}
-                </p>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {/* Deployed Contract Address */}
-        {deployedAddress && (
-          <div className="p-4 border rounded-md bg-muted/50 space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Contract Address:</h3>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => copyToClipboard(deployedAddress)}
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="chainId">Blockchain</Label>
+              <Select 
+                value={chainId}
+                onValueChange={handleChainChange}
               >
-                <Copy className="h-4 w-4" />
+                <SelectTrigger id="chainId" className="w-full">
+                  <SelectValue placeholder="Select blockchain" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ChainId.ETHEREUM_MAINNET.toString()}>Ethereum Mainnet</SelectItem>
+                  <SelectItem value={ChainId.ETHEREUM_GOERLI.toString()}>Ethereum Goerli</SelectItem>
+                  <SelectItem value={ChainId.L1X_MAINNET.toString()}>L1X Mainnet</SelectItem>
+                  <SelectItem value={ChainId.L1X_TESTNET.toString()}>L1X Testnet</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="vaultAddress">Vault Contract Address</Label>
+              <Input
+                id="vaultAddress"
+                value={vaultAddress}
+                onChange={(e) => setVaultAddress(e.target.value)}
+                placeholder="Enter Vault contract address"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="bridgeAddress">Bridge Contract Address</Label>
+              <Input
+                id="bridgeAddress"
+                value={bridgeAddress}
+                onChange={(e) => setBridgeAddress(e.target.value)}
+                placeholder="Enter Bridge contract address"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="oracleAddress">Price Oracle Contract Address</Label>
+              <Input
+                id="oracleAddress"
+                value={oracleAddress}
+                onChange={(e) => setOracleAddress(e.target.value)}
+                placeholder="Enter Price Oracle contract address"
+              />
+            </div>
+            
+            <div className="flex gap-4 pt-4">
+              <Button
+                variant="outline"
+                onClick={loadAddresses}
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? 'Loading...' : 'Load Saved Addresses'}
+              </Button>
+              <Button
+                onClick={saveAddresses}
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? 'Saving...' : 'Save Addresses'}
               </Button>
             </div>
-            <p className="text-sm font-mono break-all">{deployedAddress}</p>
-            <p className="text-sm text-muted-foreground">
-              This address has been stored for testing in the ContractTester component
-            </p>
           </div>
-        )}
+        </div>
       </CardContent>
-      
-      <CardFooter>
-        <p className="text-sm text-muted-foreground">
-          Note: Testnet deployments are for testing only and may be reset by the network
+      <CardFooter className="flex flex-col items-start">
+        <p className="text-xs text-muted-foreground">
+          This component allows you to set contract addresses for the One Capital smart contracts.
+          These addresses will be used by the contract service when making calls to the blockchain.
         </p>
       </CardFooter>
     </Card>

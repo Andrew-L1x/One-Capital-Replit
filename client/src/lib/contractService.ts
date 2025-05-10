@@ -302,12 +302,12 @@ export const getTakeProfitSettings = async (vaultId: number): Promise<TakeProfit
     
     const result = await contract.getTakeProfitSettings(vaultId);
     
-    // Parse result
+    // Parse result with ethers v6 (using Number() instead of toNumber())
     return {
-      strategyType: result.strategyType,
-      targetPercentage: result.targetPercentage.toNumber(),
-      intervalSeconds: result.intervalSeconds.toNumber(),
-      lastExecution: result.lastExecution.toNumber(),
+      strategyType: Number(result.strategyType),
+      targetPercentage: Number(result.targetPercentage),
+      intervalSeconds: Number(result.intervalSeconds),
+      lastExecution: Number(result.lastExecution),
       baselineValue: result.baselineValue.toString(),
       isActive: result.isActive
     };

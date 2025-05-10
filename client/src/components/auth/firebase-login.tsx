@@ -1,22 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  GoogleAuthProvider, 
-  signInWithRedirect, 
-  getRedirectResult,
-  User as FirebaseUser
-} from "firebase/auth";
-
-// Import the Firebase config
-import { firebaseApp } from "@/lib/firebase";
 
 import {
   Card,
@@ -94,16 +82,10 @@ export default function FirebaseLogin({ onSuccess }: FirebaseLoginProps) {
     setError(null);
     
     try {
-      // First authenticate with Firebase
-      const firebaseUser = await firebaseLogin(data.email, data.password);
-      
-      // Then authenticate with our backend using Firebase
-      const idToken = await firebaseUser.getIdToken();
-      
-      await apiRequest("POST", "/api/auth/firebase-link", {
-        firebaseUid: firebaseUser.uid,
-        email: firebaseUser.email,
-        idToken,
+      // Authenticate directly with our backend
+      const response = await apiRequest("POST", "/api/auth/login", {
+        username: data.email, // Using email as username for simplicity
+        password: data.password
       });
       
       // Update auth state
@@ -136,26 +118,24 @@ export default function FirebaseLogin({ onSuccess }: FirebaseLoginProps) {
     setError(null);
     
     try {
-      console.log("Attempting to register with Firebase:", data.email);
+      console.log("Attempting to register with backend:", data.email);
       
-      // First register with Firebase
-      const firebaseUser = await firebaseRegister(data.email, data.password);
-      console.log("Firebase registration successful, user:", firebaseUser.uid);
-      
-      // Get the ID token
-      const idToken = await firebaseUser.getIdToken();
-      
-      console.log("Got ID token, linking with backend...");
-      
-      // Link the account with the backend using our firebase-link endpoint
-      await apiRequest("POST", "/api/auth/firebase-link", {
-        firebaseUid: firebaseUser.uid,
+      // Register directly with our backend
+      await apiRequest("POST", "/api/auth/register", {
+        username: data.username,
         email: data.email,
-        idToken,
-        username: data.username // Pass the username for account creation
+        password: data.password
       });
       
-      console.log("Account linked with backend successfully");
+      console.log("Registration successful, logging in...");
+      
+      // Login immediately after successful registration
+      await apiRequest("POST", "/api/auth/login", {
+        username: data.email, // Using email as username for login
+        password: data.password
+      });
+      
+      console.log("Login successful after registration");
       
       // Update auth state
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -174,26 +154,14 @@ export default function FirebaseLogin({ onSuccess }: FirebaseLoginProps) {
       // Provide a more user-friendly error message
       let errorMessage = "Failed to register. Please try again.";
       
-      // Handle specific Firebase error codes
-      if (err.code) {
-        switch (err.code) {
-          case 'auth/email-already-in-use':
-            errorMessage = "This email is already registered. Please try logging in instead.";
-            break;
-          case 'auth/invalid-email':
-            errorMessage = "Please provide a valid email address.";
-            break;
-          case 'auth/weak-password':
-            errorMessage = "Password is too weak. Please use a stronger password.";
-            break;
-          case 'auth/configuration-not-found':
-            errorMessage = "Firebase configuration issue. Please check your network connection and try again.";
-            break;
-          default:
-            errorMessage = `Registration failed: ${err.message || err.code || "Unknown error"}`;
+      if (err.message) {
+        if (err.message.includes("Username already taken")) {
+          errorMessage = "This username is already taken. Please choose another one.";
+        } else if (err.message.includes("Email already in use")) {
+          errorMessage = "This email is already registered. Please try logging in instead.";
+        } else {
+          errorMessage = err.message;
         }
-      } else if (err.message) {
-        errorMessage = err.message;
       }
       
       setError(errorMessage);

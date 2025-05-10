@@ -70,14 +70,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [percentChange, setPercentChange] = useState(0);
   const [assetAllocations, setAssetAllocations] = useState<AssetWithAllocation[]>([]);
   
-  // Define a consistent mock portfolio that all components will use when no API data is available
-  const mockPortfolio: MockAsset[] = [
-    { id: 1, name: "Bitcoin", symbol: "BTC", type: "digital_asset", amount: 0.5 },
-    { id: 2, name: "Ethereum", symbol: "ETH", type: "digital_asset", amount: 5.0 },
-    { id: 3, name: "Layer One X", symbol: "L1X", type: "digital_asset", amount: 500.0 },
-    { id: 4, name: "Solana", symbol: "SOL", type: "digital_asset", amount: 15.0 },
-    { id: 5, name: "USD Coin", symbol: "USDC", type: "stablecoin", amount: 1000.0 }
-  ];
+  // An empty portfolio will be used when no wallet is connected
+  const mockPortfolio: MockAsset[] = [];
   
   // Calculate portfolio values when all data is available
   useEffect(() => {
@@ -146,33 +140,21 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
           }
         }
       } else if (!isNewUser) {
-        // Only use mock data when API data isn't available AND it's not a new user
-        mockPortfolio.forEach(asset => {
-          if (priceDetails[asset.symbol]) {
-            // Calculate current value
-            const price = priceDetails[asset.symbol].current;
-            const assetValue = asset.amount * price;
-            totalValue += assetValue;
-            
-            // Calculate previous value (24h ago)
-            const assetPrevValue = asset.amount * priceDetails[asset.symbol].previous24h;
-            totalPreviousValue += assetPrevValue;
-            
-            // Store allocation data
-            allocations.push({
-              asset: asset,
-              amount: asset.amount,
-              valueUSD: assetValue,
-              price: price,
-              percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
-            });
-          }
-        });
+        // If we have a wallet connection but no API data, we don't show mock data
+        // This ensures we only display real authenticated data from wallets
+        console.log("Connected wallet with no portfolio data - showing empty portfolio");
+        return {
+          allocations: [],
+          totalValue: 0,
+          totalPreviousValue: 0,
+          change: 0
+        };
       }
       
-      // If we don't have previous values, simulate one
-      if (totalPreviousValue === 0) {
-        totalPreviousValue = totalValue * 0.95; // Simulate 5% growth by default
+      // If we don't have previous values and have real data
+      if (totalPreviousValue === 0 && totalValue > 0 && hasApiData) {
+        // Use same value as current (0% change)
+        totalPreviousValue = totalValue;
       }
       
       // Only continue with updates if we have actual data

@@ -78,6 +78,23 @@ function App() {
           EthereumWalletConnectors,
           SolanaWalletConnectors,
         ],
+        networkConfigurations: {
+          evm: [
+            {
+              type: 'EVM',
+              chainId: 1777,
+              chainName: 'L1X Testnet',
+              nativeCurrency: {
+                name: 'L1X',
+                symbol: 'L1X',
+                decimals: 18,
+              },
+              rpcUrls: ['https://v2.testnet.l1x.foundation'],
+              blockExplorerUrls: ['https://explorer.testnet.l1x.foundation'],
+              iconUrls: ['https://www.l1x.foundation/favicon.ico'],
+            }
+          ]
+        }
       }}
     >
       <WagmiProvider config={wagmiConfig}>

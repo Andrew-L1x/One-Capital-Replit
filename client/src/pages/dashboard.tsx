@@ -132,9 +132,10 @@ export default function Dashboard() {
               <span className="hidden sm:inline">Allocation</span>
               <span className="sm:hidden">Alloc</span>
             </TabsTrigger>
-            <TabsTrigger value="vaults">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              <span>Vaults</span>
+            <TabsTrigger value="move-assets">
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Move Assets</span>
+              <span className="sm:hidden">Move</span>
             </TabsTrigger>
             <TabsTrigger value="portfolio">
               <LineChart className="h-4 w-4 mr-2" />
@@ -156,37 +157,22 @@ export default function Dashboard() {
             <PortfolioManager />
           </TabsContent>
           
-          {/* Vaults Tab */}
-          <TabsContent value="vaults" className="space-y-8">
-            {isLoadingVaults ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="h-48">
-                    <CardHeader>
-                      <div className="h-5 w-1/3 bg-muted rounded animate-pulse" />
-                      <div className="h-4 w-2/3 bg-muted rounded animate-pulse" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="h-4 w-full bg-muted rounded animate-pulse" />
-                        <div className="h-4 w-2/3 bg-muted rounded animate-pulse" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : vaults.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {vaults.map((vault) => (
-                  <VaultCard key={vault.id} vault={vault} />
-                ))}
-              </div>
-            ) : (
-              <Card>
+          {/* Move Assets Tab */}
+          <TabsContent value="move-assets" className="space-y-8">
+            <h3 className="text-lg font-medium mb-4 flex items-center">
+              <ArrowRightLeft className="h-5 w-5 mr-2" />
+              Cross-Chain Operations
+            </h3>
+            <div className="grid gap-6 md:grid-cols-1">
+              <CrossChainSwap />
+            </div>
+            
+            {vaults.length === 0 && (
+              <Card className="mt-6">
                 <CardHeader>
-                  <CardTitle>No Vaults</CardTitle>
+                  <CardTitle>No Vaults Available</CardTitle>
                   <CardDescription>
-                    Create your first investment vault to get started
+                    Create a vault to enable cross-chain operations and asset movement
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
@@ -211,26 +197,13 @@ export default function Dashboard() {
               </div>
             )}
             
-            {/* Add Cross-Chain Swap section if vaults exist */}
-            {vaults.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg font-medium mb-4 flex items-center">
-                  <ArrowRightLeft className="h-5 w-5 mr-2" />
-                  Cross-Chain Operations
-                </h3>
-                <div className="grid gap-6 md:grid-cols-1">
-                  <CrossChainSwap />
-                </div>
-              </div>
-            )}
-            
             {/* Show message if no vaults exist */}
             {vaults.length === 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>No Portfolio Data</CardTitle>
                   <CardDescription>
-                    Create a vault to see your portfolio overview and access cross-chain operations
+                    Create a vault to see your portfolio overview
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">

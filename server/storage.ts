@@ -236,7 +236,7 @@ export class DatabaseStorage implements IStorage {
           id: 1,
           vaultId: 1,
           assetId: 1, // BTC
-          targetPercentage: 40,
+          targetPercentage: "40.00",
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -244,7 +244,7 @@ export class DatabaseStorage implements IStorage {
           id: 2,
           vaultId: 1,
           assetId: 2, // ETH
-          targetPercentage: 30,
+          targetPercentage: "30.00",
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -252,7 +252,7 @@ export class DatabaseStorage implements IStorage {
           id: 3,
           vaultId: 1,
           assetId: 3, // L1X
-          targetPercentage: 20,
+          targetPercentage: "20.00",
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -260,7 +260,7 @@ export class DatabaseStorage implements IStorage {
           id: 4,
           vaultId: 1,
           assetId: 4, // USDC
-          targetPercentage: 10,
+          targetPercentage: "10.00",
           createdAt: new Date(),
           updatedAt: new Date()
         }

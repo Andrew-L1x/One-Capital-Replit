@@ -70,82 +70,100 @@ export function PerformanceMetrics() {
   
   // Calculate metrics when portfolio data is loaded
   useEffect(() => {
-    if (isLoadingPortfolio || !portfolioAllocations.length) {
+    // Skip calculation if data is not loaded yet
+    if (isLoadingPortfolio || !portfolioAllocations.length || Object.keys(priceDetails).length === 0) {
       return;
     }
     
-    const assetPerformance: AssetPerformance[] = [];
-    const detailedAllocations: AssetAllocationDetails[] = [];
-    
-    // Process data from portfolio context
-    for (const allocation of portfolioAllocations) {
-      const asset = allocation.asset;
-      if (priceDetails[asset.symbol]) {
-        const priceDetail = priceDetails[asset.symbol];
-        const currentPrice = priceDetail.current;
-        
-        // Add to asset performance list
-        assetPerformance.push({
-          id: asset.id,
-          symbol: asset.symbol,
-          name: asset.name,
-          price: currentPrice,
-          priceChange24h: priceDetail.change24h,
-          priceChangePercentage24h: priceDetail.changePercentage24h
-        });
-        
-        // Add to detailed allocations
-        detailedAllocations.push({
-          id: asset.id,
-          symbol: asset.symbol,
-          name: asset.name,
-          amount: allocation.amount,
-          price: currentPrice,
-          value: allocation.valueUSD,
-          percentage: allocation.percentOfPortfolio,
-          priceChange24h: priceDetail.change24h,
-          priceChangePercentage24h: priceDetail.changePercentage24h
-        });
-      }
+    // Check if we need to update at all based on existing metrics state
+    // This helps break the potential infinite loop
+    if (metrics && 
+        metrics.totalValue === portfolioValue && 
+        metrics.changePercentage24h === percentChange &&
+        assetAllocations.length === portfolioAllocations.length) {
+      // Data hasn't changed, no need to recalculate
+      return;
     }
     
-    // Sort assets by performance
-    const sortedByPerformance = [...assetPerformance].sort(
-      (a, b) => b.priceChangePercentage24h - a.priceChangePercentage24h
-    );
-    
-    // Calculate overall portfolio metrics
-    const change24h = portfolioValue - previousValue;
-    const uniqueAssets = new Set(assetPerformance.map(a => a.symbol)).size;
-    const totalAssets = portfolioAllocations.length;
-    
-    // Calculate diversity score (higher is better)
-    // Formula: 1 - sum of (allocation percentage squared)
-    // This is a simplified version of Herfindahl-Hirschman Index (HHI)
-    let diversityScore = 0;
-    if (portfolioValue > 0 && assetPerformance.length > 1) {
-      const allocPercentages = portfolioAllocations.map(allocation => 
-        allocation.percentOfPortfolio / 100 // Convert from percentage to decimal
-      );
+    try {
+      const assetPerformance: AssetPerformance[] = [];
+      const detailedAllocations: AssetAllocationDetails[] = [];
       
-      diversityScore = 1 - allocPercentages.reduce((sum, alloc) => sum + (alloc * alloc), 0);
+      // Process data from portfolio context
+      for (const allocation of portfolioAllocations) {
+        const asset = allocation.asset;
+        if (priceDetails[asset.symbol]) {
+          const priceDetail = priceDetails[asset.symbol];
+          const currentPrice = priceDetail.current;
+          
+          // Add to asset performance list
+          assetPerformance.push({
+            id: asset.id,
+            symbol: asset.symbol,
+            name: asset.name,
+            price: currentPrice,
+            priceChange24h: priceDetail.change24h,
+            priceChangePercentage24h: priceDetail.changePercentage24h
+          });
+          
+          // Add to detailed allocations
+          detailedAllocations.push({
+            id: asset.id,
+            symbol: asset.symbol,
+            name: asset.name,
+            amount: allocation.amount,
+            price: currentPrice,
+            value: allocation.valueUSD,
+            percentage: allocation.percentOfPortfolio,
+            priceChange24h: priceDetail.change24h,
+            priceChangePercentage24h: priceDetail.changePercentage24h
+          });
+        }
+      }
+      
+      // Only continue if we have data to work with
+      if (assetPerformance.length > 0) {
+        // Sort assets by performance
+        const sortedByPerformance = [...assetPerformance].sort(
+          (a, b) => b.priceChangePercentage24h - a.priceChangePercentage24h
+        );
+        
+        // Calculate overall portfolio metrics
+        const change24h = portfolioValue - previousValue;
+        const uniqueAssets = new Set(assetPerformance.map(a => a.symbol)).size;
+        const totalAssets = portfolioAllocations.length;
+        
+        // Calculate diversity score (higher is better)
+        // Formula: 1 - sum of (allocation percentage squared)
+        // This is a simplified version of Herfindahl-Hirschman Index (HHI)
+        let diversityScore = 0;
+        if (portfolioValue > 0 && assetPerformance.length > 1) {
+          const allocPercentages = portfolioAllocations.map(allocation => 
+            allocation.percentOfPortfolio / 100 // Convert from percentage to decimal
+          );
+          
+          diversityScore = 1 - allocPercentages.reduce((sum, alloc) => sum + (alloc * alloc), 0);
+        }
+        
+        // Update the component state
+        setMetrics({
+          totalValue: portfolioValue,
+          change24h,
+          changePercentage24h: percentChange,
+          topPerformer: sortedByPerformance[0] || null,
+          worstPerformer: sortedByPerformance[sortedByPerformance.length - 1] || null,
+          diversityScore,
+          diversityPercentage: diversityScore * 100,
+          uniqueAssets,
+          totalAssets
+        });
+        
+        setAssetAllocations(detailedAllocations);
+      }
+    } catch (error) {
+      console.error("Error calculating performance metrics:", error);
     }
-    
-    // Update the component state
-    setMetrics({
-      totalValue: portfolioValue,
-      change24h,
-      changePercentage24h: percentChange,
-      topPerformer: sortedByPerformance[0] || null,
-      worstPerformer: sortedByPerformance[sortedByPerformance.length - 1] || null,
-      diversityScore,
-      diversityPercentage: diversityScore * 100,
-      uniqueAssets,
-      totalAssets
-    });
-    
-    setAssetAllocations(detailedAllocations);
-  }, [portfolioValue, previousValue, percentChange, portfolioAllocations, priceDetails, isLoadingPortfolio]);
+  }, [portfolioValue, previousValue, percentChange, portfolioAllocations, priceDetails, isLoadingPortfolio, metrics, assetAllocations.length]);
   
   // Show loading state if data is not loaded yet
   const isLoading = isLoadingPortfolio || !metrics;

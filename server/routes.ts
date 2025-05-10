@@ -111,13 +111,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        const user = await storage.getUserByUsername(username);
+        // Convert username to lowercase for case-insensitive comparison
+        // Also support login with email
+        let user = null;
+        
+        if (username.includes('@')) {
+          // Try to find by email if username contains @ symbol
+          user = await storage.getUserByEmail(username);
+        } else {
+          // Try by username
+          user = await storage.getUserByUsername(username);
+        }
+        
+        // If still not found, try case-insensitive search
         if (!user) {
-          return done(null, false, { message: "Incorrect username" });
+          // This would ideally be handled at the database level with LOWER() function
+          // For our in-memory implementation, we do a simple workaround
+          const allUsers = await storage.getAllUsers();
+          user = allUsers.find(u => 
+            u.username.toLowerCase() === username.toLowerCase() || 
+            (u.email && u.email.toLowerCase() === username.toLowerCase())
+          );
+        }
+        
+        if (!user) {
+          return done(null, false, { message: "User not found. Please check your username or email." });
         }
 
-        // In a real app, you should use bcrypt.compare
-        // This is a simplified version for the example
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
           return done(null, false, { message: "Incorrect password" });

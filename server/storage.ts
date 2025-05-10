@@ -13,6 +13,7 @@ import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
+  getAllUsers(): Promise<User[]>;
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;

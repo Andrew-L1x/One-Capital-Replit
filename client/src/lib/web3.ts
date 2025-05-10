@@ -53,37 +53,42 @@ export const getEthereumDirectProvider = (testnet = false): ethers.JsonRpcProvid
 
 // Get the L1X provider from browser wallet
 export const getL1XProvider = async (): Promise<Web3Provider | null> => {
-  // First try L1X native wallet if available
-  if (isL1XWalletInstalled()) {
-    return window.l1x;
-  }
-  
-  // Fall back to MetaMask as the provider
-  if (!isMetaMaskInstalled()) {
+  try {
+    // First try L1X native wallet if available
+    if (isL1XWalletInstalled() && window.l1x) {
+      return window.l1x;
+    }
+    
+    // Fall back to MetaMask as the provider
+    if (!isMetaMaskInstalled() || !window.ethereum) {
+      throw new Error("No wallet provider detected");
+    }
+    
+    // Configure MetaMask to use L1X network if possible
+    try {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x3939', // Chain ID for L1X testnet
+          chainName: 'L1X V2 Testnet',
+          nativeCurrency: {
+            name: 'L1X',
+            symbol: 'L1X',
+            decimals: 18
+          },
+          rpcUrls: [L1X_TESTNET_URL],
+          blockExplorerUrls: ['https://explorer.testnet.l1x.foundation/']
+        }]
+      });
+    } catch (error) {
+      console.warn('Failed to add L1X network to MetaMask:', error);
+    }
+    
+    return window.ethereum;
+  } catch (error) {
+    console.log("No wallet provider available:", error);
     return null;
   }
-  
-  // Configure MetaMask to use L1X network if possible
-  try {
-    await window.ethereum?.request({
-      method: 'wallet_addEthereumChain',
-      params: [{
-        chainId: '0x3939', // Chain ID for L1X testnet
-        chainName: 'L1X V2 Testnet',
-        nativeCurrency: {
-          name: 'L1X',
-          symbol: 'L1X',
-          decimals: 18
-        },
-        rpcUrls: [L1X_TESTNET_URL],
-        blockExplorerUrls: ['https://explorer.testnet.l1x.foundation/']
-      }]
-    });
-  } catch (error) {
-    console.warn('Failed to add L1X network to MetaMask:', error);
-  }
-  
-  return window.ethereum || null;
 };
 
 // Get Ethereum provider

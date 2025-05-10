@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -19,7 +18,8 @@ import {
   TrendingUp
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatPrice, formatPercentage, usePriceDetails } from "@/lib/usePriceDetails";
+import { formatPrice, formatPercentage } from "@/lib/usePriceDetails";
+import { usePortfolio } from "@/lib/portfolioContext";
 
 interface AssetPerformance {
   id: number;
@@ -42,8 +42,6 @@ interface PortfolioMetrics {
   totalAssets: number;
 }
 
-// Using formatPercentage from usePriceDetails.tsx
-
 interface AssetAllocationDetails {
   id: number;
   symbol: string;
@@ -60,156 +58,104 @@ export function PerformanceMetrics() {
   const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
   const [assetAllocations, setAssetAllocations] = useState<AssetAllocationDetails[]>([]);
   
-  // Get vault allocations to calculate portfolio values
-  const { data: vaults = [], isLoading: isLoadingVaults } = useQuery<any[]>({
-    queryKey: ['/api/vaults']
-  });
+  // Get portfolio data from the shared context
+  const { 
+    portfolioValue, 
+    previousValue,
+    percentChange,
+    assetAllocations: portfolioAllocations,
+    priceDetails,
+    isLoading: isLoadingPortfolio
+  } = usePortfolio();
   
-  // Get assets to map symbols to names
-  const { data: assets = [], isLoading: isLoadingAssets } = useQuery<any[]>({
-    queryKey: ['/api/assets']
-  });
-  
-  // Get detailed price information with 24h history
-  const { priceDetails, loading: isLoadingPriceDetails, error } = usePriceDetails(60000);
-
-  // Prepare asset allocations for all vaults
-  const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
-    queryKey: [vaults.length > 0 ? `/api/vaults/${vaults[0]?.id}/allocations` : null],
-    enabled: vaults.length > 0
-  });
-  
-  // Calculate metrics when all data is loaded
+  // Calculate metrics when portfolio data is loaded
   useEffect(() => {
-    if (
-      !isLoadingVaults && 
-      !isLoadingAssets && 
-      !isLoadingPriceDetails && 
-      !isLoadingAllocations && 
-      Object.keys(priceDetails).length > 0 && 
-      allocationsData.length > 0
-    ) {
-      const assetPerformance: AssetPerformance[] = [];
-      const detailedAllocations: AssetAllocationDetails[] = [];
-      let totalValue = 0;
-      let previousTotalValue = 0;
-
-      // Calculate current values and 24h changes
-      for (const allocation of allocationsData) {
-        const asset = assets.find((a: any) => a.id === allocation.assetId);
-        if (asset && priceDetails[asset.symbol]) {
-          const priceDetail = priceDetails[asset.symbol];
-          const currentPrice = priceDetail.current;
-          const previousPrice = priceDetail.previous24h;
-          
-          const priceChange = priceDetail.change24h;
-          const priceChangePercentage = priceDetail.changePercentage24h;
-          
-          // Get allocation amount (in a real app, this would be the actual token amount)
-          const amount = allocation.amount || parseInt(allocation.targetPercentage);
-          
-          const value = amount * currentPrice;
-          const previousValue = amount * previousPrice;
-          
-          totalValue += value;
-          previousTotalValue += previousValue;
-          
-          assetPerformance.push({
-            id: asset.id,
-            symbol: asset.symbol,
-            name: asset.name,
-            price: currentPrice,
-            priceChange24h: priceChange,
-            priceChangePercentage24h: priceChangePercentage
-          });
-        }
-      }
-      
-      // Now that we know the total, calculate the percentage for each asset and build detailed allocations
-      for (const allocation of allocationsData) {
-        const asset = assets.find((a: any) => a.id === allocation.assetId);
-        if (asset && priceDetails[asset.symbol]) {
-          const priceDetail = priceDetails[asset.symbol];
-          const currentPrice = priceDetail.current;
-          
-          // Get allocation amount
-          const amount = allocation.amount || parseInt(allocation.targetPercentage);
-          
-          const value = amount * currentPrice;
-          const percentage = totalValue > 0 ? (value / totalValue) * 100 : 0;
-          
-          detailedAllocations.push({
-            id: asset.id,
-            symbol: asset.symbol,
-            name: asset.name,
-            amount,
-            price: currentPrice,
-            value,
-            percentage,
-            priceChange24h: priceDetail.change24h,
-            priceChangePercentage24h: priceDetail.changePercentage24h
-          });
-        }
-      }
-      
-      // Sort detailed allocations by value (descending)
-      detailedAllocations.sort((a, b) => b.value - a.value);
-      setAssetAllocations(detailedAllocations);
-      
-      // Sort assets by performance
-      const sortedByPerformance = [...assetPerformance].sort(
-        (a, b) => b.priceChangePercentage24h - a.priceChangePercentage24h
-      );
-      
-      // Calculate overall portfolio metrics
-      const change24h = totalValue - previousTotalValue;
-      const changePercentage24h = previousTotalValue > 0 
-        ? ((totalValue - previousTotalValue) / previousTotalValue) * 100
-        : 0;
-      const uniqueAssets = new Set(assetPerformance.map(a => a.symbol)).size;
-      const totalAssets = allocationsData.length;
-      
-      // Calculate diversity score (higher is better)
-      // Formula: 1 - sum of (allocation percentage squared)
-      // This is a simplified version of Herfindahl-Hirschman Index (HHI)
-      let diversityScore = 0;
-      if (totalValue > 0 && assetPerformance.length > 1) {
-        const allocations = allocationsData.map((allocation: any) => {
-          const asset = assets.find((a: any) => a.id === allocation.assetId);
-          if (asset && priceDetails[asset.symbol]) {
-            const amount = allocation.amount || parseInt(allocation.targetPercentage);
-            const value = amount * priceDetails[asset.symbol].current;
-            return value / totalValue;
-          }
-          return 0;
+    if (isLoadingPortfolio || !portfolioAllocations.length) {
+      return;
+    }
+    
+    const assetPerformance: AssetPerformance[] = [];
+    const detailedAllocations: AssetAllocationDetails[] = [];
+    
+    // Process data from portfolio context
+    for (const allocation of portfolioAllocations) {
+      const asset = allocation.asset;
+      if (priceDetails[asset.symbol]) {
+        const priceDetail = priceDetails[asset.symbol];
+        const currentPrice = priceDetail.current;
+        
+        // Add to asset performance list
+        assetPerformance.push({
+          id: asset.id,
+          symbol: asset.symbol,
+          name: asset.name,
+          price: currentPrice,
+          priceChange24h: priceDetail.change24h,
+          priceChangePercentage24h: priceDetail.changePercentage24h
         });
         
-        diversityScore = 1 - allocations.reduce((sum, alloc) => sum + (alloc * alloc), 0);
+        // Add to detailed allocations
+        detailedAllocations.push({
+          id: asset.id,
+          symbol: asset.symbol,
+          name: asset.name,
+          amount: allocation.amount,
+          price: currentPrice,
+          value: allocation.valueUSD,
+          percentage: allocation.percentOfPortfolio,
+          priceChange24h: priceDetail.change24h,
+          priceChangePercentage24h: priceDetail.changePercentage24h
+        });
       }
-      
-      setMetrics({
-        totalValue,
-        change24h,
-        changePercentage24h,
-        topPerformer: sortedByPerformance[0] || null,
-        worstPerformer: sortedByPerformance[sortedByPerformance.length - 1] || null,
-        diversityScore,
-        diversityPercentage: diversityScore * 100,
-        uniqueAssets,
-        totalAssets
-      });
     }
-  }, [vaults, assets, priceDetails, allocationsData, isLoadingVaults, isLoadingAssets, isLoadingPriceDetails, isLoadingAllocations]);
+    
+    // Sort assets by performance
+    const sortedByPerformance = [...assetPerformance].sort(
+      (a, b) => b.priceChangePercentage24h - a.priceChangePercentage24h
+    );
+    
+    // Calculate overall portfolio metrics
+    const change24h = portfolioValue - previousValue;
+    const uniqueAssets = new Set(assetPerformance.map(a => a.symbol)).size;
+    const totalAssets = portfolioAllocations.length;
+    
+    // Calculate diversity score (higher is better)
+    // Formula: 1 - sum of (allocation percentage squared)
+    // This is a simplified version of Herfindahl-Hirschman Index (HHI)
+    let diversityScore = 0;
+    if (portfolioValue > 0 && assetPerformance.length > 1) {
+      const allocPercentages = portfolioAllocations.map(allocation => 
+        allocation.percentOfPortfolio / 100 // Convert from percentage to decimal
+      );
+      
+      diversityScore = 1 - allocPercentages.reduce((sum, alloc) => sum + (alloc * alloc), 0);
+    }
+    
+    // Update the component state
+    setMetrics({
+      totalValue: portfolioValue,
+      change24h,
+      changePercentage24h: percentChange,
+      topPerformer: sortedByPerformance[0] || null,
+      worstPerformer: sortedByPerformance[sortedByPerformance.length - 1] || null,
+      diversityScore,
+      diversityPercentage: diversityScore * 100,
+      uniqueAssets,
+      totalAssets
+    });
+    
+    setAssetAllocations(detailedAllocations);
+  }, [portfolioValue, previousValue, percentChange, portfolioAllocations, priceDetails, isLoadingPortfolio]);
   
   // Show loading state if data is not loaded yet
-  const isLoading = isLoadingVaults || isLoadingAssets || isLoadingPriceDetails || isLoadingAllocations || !metrics;
+  const isLoading = isLoadingPortfolio || !metrics;
 
-  // If there's no price data available, manually connect a wallet
+  // If there's no price data available, display a warning
   useEffect(() => {
-    if (Object.keys(priceDetails).length === 0 && !isLoadingPriceDetails) {
+    if (Object.keys(priceDetails).length === 0) {
       console.log("No price details available yet, metrics may not display properly");
     }
-  }, [priceDetails, isLoadingPriceDetails]);
+  }, [priceDetails]);
   
   return (
     <div>

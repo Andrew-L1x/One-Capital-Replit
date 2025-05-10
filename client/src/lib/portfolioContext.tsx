@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { usePriceDetails } from './usePriceDetails';
 import { useWallet } from './walletContext';
 
@@ -25,7 +26,7 @@ interface PortfolioContextType {
   previousValue: number;
   percentChange: number;
   assetAllocations: AssetWithAllocation[];
-  priceDetails: Record<string, { current: number; previous24h: number }>;
+  priceDetails: Record<string, { current: number; previous24h: number; change24h: number; changePercentage24h: number }>;
   isLoading: boolean;
 }
 
@@ -43,14 +44,33 @@ const PortfolioContext = createContext<PortfolioContextType>({
 // Provider component that wraps the app
 export function PortfolioProvider({ children }: { children: ReactNode }) {
   const { isConnected } = useWallet();
+  
+  // Fetch price information with 24h history
   const { priceDetails, loading: pricesLoading } = usePriceDetails(30000);
+  
+  // Get vault allocations to calculate portfolio values (from API)
+  const { data: vaults = [], isLoading: isLoadingVaults } = useQuery<any[]>({
+    queryKey: ['/api/vaults']
+  });
+  
+  // Get assets to map symbols to names (from API)
+  const { data: assets = [], isLoading: isLoadingAssets } = useQuery<any[]>({
+    queryKey: ['/api/assets']
+  });
+  
+  // Prepare asset allocations for all vaults (from API)
+  const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
+    queryKey: [vaults.length > 0 ? `/api/vaults/${vaults[0]?.id}/allocations` : null],
+    enabled: vaults.length > 0
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [previousValue, setPreviousValue] = useState(0);
   const [percentChange, setPercentChange] = useState(0);
   const [assetAllocations, setAssetAllocations] = useState<AssetWithAllocation[]>([]);
   
-  // Define a consistent mock portfolio that all components will use
+  // Define a consistent mock portfolio that all components will use when no API data is available
   const mockPortfolio: MockAsset[] = [
     { id: 1, name: "Bitcoin", symbol: "BTC", type: "crypto", amount: 0.5 },
     { id: 2, name: "Ethereum", symbol: "ETH", type: "crypto", amount: 5.0 },
@@ -59,40 +79,80 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     { id: 5, name: "USD Coin", symbol: "USDC", type: "stablecoin", amount: 1000.0 }
   ];
   
-  // Calculate portfolio values when price data changes
+  // Calculate portfolio values when all data is available
   useEffect(() => {
+    // If price data isn't loaded yet or we're not connected, don't proceed
     if (!isConnected || pricesLoading || Object.keys(priceDetails).length === 0) {
       return;
     }
     
     setIsLoading(true);
     
-    // Calculate current total value
+    // Check if we have API data or should use mock data
+    const useApiData = !isLoadingVaults && !isLoadingAssets && !isLoadingAllocations && 
+                     allocationsData.length > 0 && assets.length > 0;
+    
     let totalValue = 0;
     let totalPreviousValue = 0;
     const allocations: AssetWithAllocation[] = [];
     
-    mockPortfolio.forEach(asset => {
-      if (priceDetails[asset.symbol]) {
-        // Calculate current value
-        const price = priceDetails[asset.symbol].current;
-        const assetValue = asset.amount * price;
-        totalValue += assetValue;
-        
-        // Calculate previous value (24h ago)
-        const assetPrevValue = asset.amount * priceDetails[asset.symbol].previous24h;
-        totalPreviousValue += assetPrevValue;
-        
-        // Store allocation data
-        allocations.push({
-          asset: asset,
-          amount: asset.amount,
-          valueUSD: assetValue,
-          price: price,
-          percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
-        });
+    if (useApiData) {
+      // Use real data from API
+      for (const allocation of allocationsData) {
+        const asset = assets.find((a: any) => a.id === allocation.assetId);
+        if (asset && priceDetails[asset.symbol]) {
+          const currentPrice = priceDetails[asset.symbol].current;
+          const previousPrice = priceDetails[asset.symbol].previous24h;
+          
+          // Get allocation amount (in a real app, this would be the actual token amount)
+          const amount = allocation.amount || parseInt(allocation.targetPercentage);
+          
+          const value = amount * currentPrice;
+          const previousValue = amount * previousPrice;
+          
+          totalValue += value;
+          totalPreviousValue += previousValue;
+          
+          // Store allocation data
+          allocations.push({
+            asset: {
+              id: asset.id,
+              name: asset.name,
+              symbol: asset.symbol,
+              type: asset.type,
+              amount
+            },
+            amount,
+            valueUSD: value,
+            price: currentPrice,
+            percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
+          });
+        }
       }
-    });
+    } else {
+      // Use mock data when API data isn't available
+      mockPortfolio.forEach(asset => {
+        if (priceDetails[asset.symbol]) {
+          // Calculate current value
+          const price = priceDetails[asset.symbol].current;
+          const assetValue = asset.amount * price;
+          totalValue += assetValue;
+          
+          // Calculate previous value (24h ago)
+          const assetPrevValue = asset.amount * priceDetails[asset.symbol].previous24h;
+          totalPreviousValue += assetPrevValue;
+          
+          // Store allocation data
+          allocations.push({
+            asset: asset,
+            amount: asset.amount,
+            valueUSD: assetValue,
+            price: price,
+            percentOfPortfolio: 0, // Temporary value, will be calculated after totalValue is known
+          });
+        }
+      });
+    }
     
     // If we don't have previous values, simulate one
     if (totalPreviousValue === 0) {
@@ -117,7 +177,17 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     setPreviousValue(totalPreviousValue);
     setPercentChange(change);
     setIsLoading(false);
-  }, [isConnected, priceDetails, pricesLoading]);
+  }, [
+    isConnected, 
+    priceDetails, 
+    pricesLoading, 
+    vaults, 
+    assets, 
+    allocationsData, 
+    isLoadingVaults, 
+    isLoadingAssets, 
+    isLoadingAllocations
+  ]);
   
   // Context value that will be provided to consumers
   const value = {
@@ -127,7 +197,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     percentChange,
     assetAllocations,
     priceDetails,
-    isLoading: isLoading || pricesLoading
+    isLoading: isLoading || pricesLoading || isLoadingVaults || isLoadingAssets || isLoadingAllocations
   };
   
   return (

@@ -70,7 +70,7 @@ export default function Home() {
                   <span className="text-primary">Automated</span> investing for digital assets
                 </h1>
                 <p className="text-xl text-muted-foreground mb-8 max-w-md">
-                  One Capital helps you build long-term wealth by making it easy to create and automate your crypto investment strategy.
+                  One Capital helps you build long-term wealth by making it easy to create and automate your digital asset investment strategy.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button size="lg" className="bg-primary hover:bg-primary/90 text-white" onClick={() => {
@@ -161,7 +161,7 @@ export default function Home() {
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Investing Made Effortless</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                One Capital combines intelligent automation with powerful crypto investing features to help you achieve your financial goals.
+                One Capital combines intelligent automation with powerful digital asset investing features to help you achieve your financial goals.
               </p>
             </div>
             
@@ -214,7 +214,7 @@ export default function Home() {
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">How One Capital Works</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Our platform simplifies crypto investing with a powerful yet easy-to-use approach
+                Our platform simplifies digital asset investing with a powerful yet easy-to-use approach
               </p>
             </div>
             
@@ -228,7 +228,7 @@ export default function Home() {
                     <div>
                       <h3 className="text-xl font-bold mb-2">Create Your Strategy</h3>
                       <p className="text-muted-foreground">
-                        Choose from a selection of pre-built portfolios or create your own custom allocations of cryptocurrencies.
+                        Choose from a selection of pre-built portfolios or create your own custom allocations of digital assets.
                       </p>
                     </div>
                   </div>
@@ -336,7 +336,7 @@ export default function Home() {
               <Card className="p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
                 <div className="mb-4">
                   <h3 className="text-xl font-bold">Basic</h3>
-                  <p className="text-muted-foreground mb-4">For new crypto investors</p>
+                  <p className="text-muted-foreground mb-4">For new digital asset investors</p>
                   <div className="mb-4">
                     <span className="text-4xl font-bold">$0</span>
                     <span className="text-muted-foreground">/mo</span>

@@ -87,14 +87,43 @@ export function PortfolioChart() {
   
   // Empty state when no data is available
   if (chartData.length === 0) {
+    // Create an empty/placeholder pie chart with a single 100% segment
+    const emptyChartData = [
+      {
+        name: "Empty Portfolio",
+        value: 100,
+        color: "hsl(var(--muted))"
+      }
+    ];
+    
     return (
       <Card>
         <CardHeader>
           <CardTitle>Portfolio Distribution</CardTitle>
           <CardDescription>No assets in your portfolio</CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center items-center h-64">
-          <p className="text-muted-foreground">Add assets to your vaults to see distribution</p>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={emptyChartData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  <Cell fill="hsl(var(--muted))" />
+                </Pie>
+                <Legend content={() => (
+                  <div className="flex justify-center mt-4">
+                    <p className="text-muted-foreground">Add assets to your portfolio to see distribution</p>
+                  </div>
+                )} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
     );

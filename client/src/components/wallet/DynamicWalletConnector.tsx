@@ -6,6 +6,17 @@ import { Loader2, CheckCircle, XCircle, Wallet } from 'lucide-react';
 import { DynamicWidget, useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { formatEther } from 'viem';
 
+// Add window.ethereum type definition
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: {method: string; params?: any[]}) => Promise<any>;
+      isMetaMask?: boolean;
+    };
+    l1x?: any;
+  }
+}
+
 // Types for the wallet connector
 type WalletStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -132,10 +143,35 @@ export default function DynamicWalletConnector({
             innerButtonComponent={
               <Button className="w-full">
                 <Wallet className="w-4 h-4 mr-2" />
-                Connect to L1X Testnet
+                Connect Wallet
               </Button>
             }
           />
+        </div>
+        
+        {/* L1X Network Configuration Button */}
+        <div className="mt-4">
+          <Button 
+            variant="outline"
+            className="w-full"
+            onClick={addL1XNetwork}
+            disabled={status === 'connecting'}
+          >
+            {status === 'connecting' ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Adding L1X Network...
+              </>
+            ) : (
+              <>
+                <Wallet className="w-4 h-4 mr-2" />
+                Add L1X Testnet to MetaMask
+              </>
+            )}
+          </Button>
+          <p className="mt-2 text-xs text-gray-500">
+            Click this button to configure your wallet with the L1X Testnet network.
+          </p>
         </div>
         
         {primaryWallet && (

@@ -107,7 +107,7 @@ export function PortfolioChart() {
         <CardDescription>Asset allocation across your portfolio</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -115,9 +115,10 @@ export function PortfolioChart() {
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                outerRadius={80}
+                outerRadius={100}
                 fill="#8884d8"
                 dataKey="value"
+                label={({ name, percent }) => `${Math.round(percent * 100)}%`}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />

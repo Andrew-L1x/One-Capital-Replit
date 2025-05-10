@@ -42,17 +42,7 @@ export function CurrentPortfolio() {
           <CurrentHoldings />
         </div>
         <div className="w-full">
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Allocation</CardTitle>
-              <CardDescription>
-                Visual breakdown of your current assets
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px]">
-              <PortfolioChart />
-            </CardContent>
-          </Card>
+          <PortfolioChart />
         </div>
       </div>
     </div>

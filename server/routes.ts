@@ -555,109 +555,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Allocation routes
   api.get("/vaults/:vaultId/allocations", async (req: Request, res: Response) => {
     try {
-      // TEMPORARY: Return mock allocations by vault ID
-      const vaultId = parseInt(req.params.vaultId);
-      
-      if (isNaN(vaultId)) {
-        return res.status(400).json({ message: "Invalid vault ID" });
-      }
-      
-      // Check if the requested vault exists in our test data
-      const testVaults = [1, 2, 3];
-      if (!testVaults.includes(vaultId)) {
-        return res.status(404).json({ message: "Vault not found" });
-      }
-      
-      // Mock allocations based on vault ID
-      let testAllocations = [];
-      
-      if (vaultId === 1) {
-        // Aggressive Growth vault
-        testAllocations = [
-          {
-            id: 1,
-            vaultId: 1,
-            assetId: 2, // ETH
-            targetPercentage: 40,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 2,
-            vaultId: 1,
-            assetId: 1, // BTC
-            targetPercentage: 35,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 3,
-            vaultId: 1,
-            assetId: 3, // L1X
-            targetPercentage: 25,
-            createdAt: new Date().toISOString()
-          }
-        ];
-      } else if (vaultId === 2) {
-        // Balanced Portfolio vault
-        testAllocations = [
-          {
-            id: 4,
-            vaultId: 2,
-            assetId: 1, // BTC
-            targetPercentage: 30,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 5,
-            vaultId: 2,
-            assetId: 2, // ETH
-            targetPercentage: 30,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 6,
-            vaultId: 2,
-            assetId: 4, // SOL
-            targetPercentage: 20,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 7,
-            vaultId: 2,
-            assetId: 5, // USDC
-            targetPercentage: 20,
-            createdAt: new Date().toISOString()
-          }
-        ];
-      } else if (vaultId === 3) {
-        // Stable Income vault
-        testAllocations = [
-          {
-            id: 8,
-            vaultId: 3,
-            assetId: 5, // USDC
-            targetPercentage: 60,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 9,
-            vaultId: 3,
-            assetId: 1, // BTC
-            targetPercentage: 20,
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 10,
-            vaultId: 3,
-            assetId: 2, // ETH
-            targetPercentage: 20,
-            createdAt: new Date().toISOString()
-          }
-        ];
-      }
-      
-      return res.json(testAllocations);
-      
-      /* Normal authentication code
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -669,19 +566,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid vault ID" });
       }
       
+      // Use real database storage
       const vault = await storage.getVault(vaultId);
       
       if (!vault) {
+        console.log(`Vault not found: ID ${vaultId}`);
         return res.status(404).json({ message: "Vault not found" });
       }
       
       if (vault.userId !== userId) {
+        console.log(`Access denied to vault ${vaultId} for user ${userId}`);
         return res.status(403).json({ message: "Access denied" });
       }
       
       const allocations = await storage.getAllocationsByVaultId(vaultId);
+      console.log(`Fetched ${allocations.length} allocations for vault ${vaultId}`);
       return res.json(allocations);
-      */
     } catch (error) {
       return res.status(500).json({ message: "Error fetching allocations" });
     }

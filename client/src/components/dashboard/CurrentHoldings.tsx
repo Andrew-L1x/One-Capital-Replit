@@ -502,15 +502,26 @@ export function CurrentHoldings() {
                     
                       if (currentHoldings.length === 0) {
                         // First asset gets 100%
-                      form.setValue("holdings", [
-                        {
-                          assetId: selectedAssetId,
-                          amount: portfolioValue,
-                          percentage: 100,
-                        }
-                      ]);
-                      return;
-                    }
+                        form.setValue("holdings", [
+                          {
+                            assetId: selectedAssetId,
+                            amount: portfolioValue,
+                            percentage: 100,
+                          }
+                        ]);
+                        
+                        // Close the asset selector popup
+                        setShowAssetSelector(false);
+                        setSelectedAssetId(null);
+                        
+                        toast({
+                          title: "Asset Added",
+                          description: `Added first asset to your portfolio`,
+                          variant: "default",
+                        });
+                        
+                        return;
+                      }
                     
                     // Find the highest allocation
                     const sortedHoldings = [...currentHoldings]
@@ -551,6 +562,10 @@ export function CurrentHoldings() {
                         percentage: newAssetPercentage,
                       }
                     ]);
+                    
+                    // Close the asset selector popup
+                    setShowAssetSelector(false);
+                    setSelectedAssetId(null);
                     
                     toast({
                       title: "Asset Added",

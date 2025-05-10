@@ -13,7 +13,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<string>("web2");
   
   // Check if user is already logged in
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading } = useQuery<{id: number, username: string, email: string}>({
     queryKey: ["/api/auth/me"],
     retry: false,
     gcTime: 0,
@@ -38,25 +38,25 @@ export default function Home() {
             <a href="#pricing" className="text-sm font-medium hover:text-primary">Pricing</a>
           </nav>
           <div className="flex items-center space-x-4">
-            {!isLoading && !user ? (
-              <>
-                <Button variant="ghost" onClick={() => setLocation("/dashboard")}>
-                  Try Demo
-                </Button>
-                <Button onClick={() => {
-                  // Scroll to login section
-                  document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
-                }}>
-                  Get Started
-                </Button>
-              </>
-            ) : user && (
-              <>
+            {!isLoading ? (
+              !user ? (
+                <>
+                  <Button variant="ghost" onClick={() => setLocation("/dashboard")}>
+                    Try Demo
+                  </Button>
+                  <Button onClick={() => {
+                    // Scroll to login section
+                    document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+                  }}>
+                    Get Started
+                  </Button>
+                </>
+              ) : (
                 <Button variant="outline" onClick={() => setLocation("/dashboard")}>
                   Go to Dashboard
                 </Button>
-              </>
-            )}
+              )
+            ) : null}
           </div>
         </div>
       </header>

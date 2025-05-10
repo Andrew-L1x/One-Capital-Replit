@@ -47,6 +47,9 @@ export default function DashboardHeader() {
               <Button variant="ghost" size="sm" onClick={() => setLocation("/vaults/new")}>
                 Create Vault
               </Button>
+              <Button variant="ghost" size="sm" onClick={() => setLocation("/contract-test")}>
+                Contract Testing
+              </Button>
             </div>
           </div>
           

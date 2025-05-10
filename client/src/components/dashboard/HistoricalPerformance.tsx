@@ -136,7 +136,7 @@ export function HistoricalPerformance() {
           </div>
           <div className="text-right">
             <div className={isPositive ? "text-green-600" : "text-red-600"}>
-              <span className="text-xl font-bold">{isPositive ? "+" : ""}{change}%</span>
+              <span className="text-xl font-bold">{isPositive ? "+" : ""}{percentChange}%</span>
             </div>
             <div className="text-sm text-muted-foreground">
               {activeTimeRange} change

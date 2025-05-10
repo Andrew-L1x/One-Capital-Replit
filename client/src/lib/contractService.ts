@@ -256,40 +256,14 @@ export const getContract = async (
     // Use current network if chainId not provided
     let currentChainId = chainId || 1; // Default to chain ID 1 if not provided
     
-    // Only try to get network details if we have a provider
-    if (provider) {
-      try {
-        // Check if the provider has getNetwork function first
-        if (typeof provider.getNetwork === 'function') {
-          try {
-            // Safely call getNetwork with timeout protection
-            const networkPromise = provider.getNetwork();
-            
-            // Create a timeout promise to avoid hanging
-            const timeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error("Network request timeout")), 3000);
-            });
-            
-            // Race them to prevent hanging
-            const network = await Promise.race([networkPromise, timeoutPromise]) as any;
-            
-            // Handle different ethers versions where chainId might be bigint
-            if (network && network.chainId) {
-              currentChainId = typeof network.chainId === 'bigint' 
-                ? Number(network.chainId) 
-                : network.chainId;
-            }
-          } catch (innerError) {
-            console.log("Error fetching network details, using default chainId");
-          }
-        } else {
-          console.log("Provider doesn't support getNetwork, using default chainId");
-        }
-      } catch (error) {
-        console.log("Error with provider, using default chainId");
-      }
+    // SIMPLIFIED APPROACH: Skip network detection entirely and use default or provided chainId
+    // This is more reliable for development/testing without an active blockchain connection
+    if (chainId) {
+      currentChainId = chainId;
+      console.log(`Using provided chain ID: ${currentChainId}`);
     } else {
-      console.log("Using fallback simulation mode with default chainId");
+      currentChainId = 1; // Default to Ethereum mainnet
+      console.log(`Using fallback simulation mode with default chainId: ${currentChainId}`);
     }
     
     // Get contract address
@@ -348,81 +322,63 @@ export const getContract = async (
  * @returns Contract instance with signer
  */
 export const getSignerContract = async (
-  contractName: 'Vault' | 'Bridge' | 'PriceOracle',
+  contractName: 'Vault' | 'Bridge' | 'PriceOracle', 
   chainId?: number
 ): Promise<ethers.Contract | null> => {
   try {
-    // Try to get provider but don't error if not available, we'll use fallback mode
+    // Default chain ID if not provided
+    const currentChainId = chainId || 1;
+    
+    // SIMPLIFIED APPROACH: Always try real provider first, fall back to simulation
     let provider = null;
+    
     try {
       provider = await getProvider();
     } catch (error) {
-      console.log("Provider not available for signer, using fallback mode");
-      // Return fallback contract with simulated transaction capabilities
-      return createFallbackContract(contractName, 
-                                   getContractAddress(chainId || 1, contractName) || '', 
-                                   null);
+      console.log("Failed to get provider, using fallback mode");
     }
     
+    // If no provider, go straight to fallback
     if (!provider) {
-      console.log("No provider available for signer, using fallback mode");
-      // Return fallback contract with simulated transaction capabilities
-      return createFallbackContract(contractName, 
-                                   getContractAddress(chainId || 1, contractName) || '', 
-                                   null);
+      console.log(`No provider available, using fallback simulation for ${contractName}`);
+      return createFallbackContract(
+        contractName,
+        getContractAddress(currentChainId, contractName) || '',
+        null
+      );
     }
     
-    // Get signer in ethers v6
-    let signer;
+    // We have a provider, try to get a signer
     try {
       if ('getSigner' in provider) {
-        // Browser provider
-        signer = await (provider as ethers.BrowserProvider).getSigner();
-        if (!signer) {
-          throw new Error('Signer not available');
+        const signer = await (provider as ethers.BrowserProvider).getSigner();
+        
+        // Get the base contract 
+        const contract = await getContract(contractName, currentChainId);
+        
+        if (contract && typeof contract.connect === 'function') {
+          // Connect the contract to the signer
+          return (contract as any).connect(signer);
         }
-      } else {
-        throw new Error('Provider does not support signing transactions');
       }
     } catch (error) {
-      console.log("Error getting signer, using fallback mode:", error);
-      // Return fallback contract with simulated transaction capabilities
-      return createFallbackContract(contractName, 
-                                   getContractAddress(chainId || 1, contractName) || '', 
-                                   null);
+      console.log("Error with signer or contract, using fallback mode");
     }
     
-    // Get read-only contract first
-    const contract = await getContract(contractName, chainId);
-    if (!contract) {
-      console.log(`Failed to get ${contractName} contract, using fallback`);
-      // Return fallback contract with simulated transaction capabilities
-      return createFallbackContract(contractName, 
-                                   getContractAddress(chainId || 1, contractName) || '', 
-                                   null);
-    }
-    
-    // If it's a real contract with connect method
-    try {
-      if (contract && typeof contract.connect === 'function') {
-        // Connect with signer - cast to any to avoid TypeScript errors with ethers version differences
-        return (contract as any).connect(signer);
-      } else {
-        // Already a mock contract, just return it
-        return contract;
-      }
-    } catch (error) {
-      console.log("Error connecting signer to contract, using fallback:", error);
-      return createFallbackContract(contractName, 
-                                   getContractAddress(chainId || 1, contractName) || '', 
-                                   null);
-    }
+    // Fall back to simulation if anything fails
+    return createFallbackContract(
+      contractName,
+      getContractAddress(currentChainId, contractName) || '',
+      null
+    );
   } catch (error) {
-    console.error(`Error getting ${contractName} contract with signer:`, error);
-    // On any error, return a fallback contract
-    return createFallbackContract(contractName, 
-                                 getContractAddress(chainId || 1, contractName) || '', 
-                                 null);
+    console.error(`Error in getSignerContract: ${error}`);
+    // Final fallback
+    return createFallbackContract(
+      contractName,
+      getContractAddress(chainId || 1, contractName) || '',
+      null
+    );
   }
 };
 

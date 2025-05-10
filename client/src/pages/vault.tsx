@@ -33,6 +33,9 @@ export default function VaultPage() {
   // Get vault ID from URL
   const vaultId = match && typeof match !== 'boolean' ? parseInt((match as RouteMatch).params.id) : undefined;
   
+  // Debug log to check vault ID extraction
+  console.log("Vault ID:", vaultId, "Match:", match);
+  
   // Check if user is authenticated
   const { data: user, isLoading: isLoadingUser, isError: isUserError } = useQuery({
     queryKey: ["/api/auth/me"],

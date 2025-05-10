@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { ethers } from 'ethers';
 
 // Define wallet types
 export type WalletType = 'l1x' | 'metamask' | null;
@@ -66,12 +65,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const autoConnectMetaMask = async () => {
     try {
       if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const accounts = await provider.listAccounts();
+        // In real implementation we would use ethers.js
+        // For now, just check if accounts are available
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         
-        if (accounts.length > 0) {
-          setProvider(provider);
-          setSigner(provider.getSigner());
+        if (accounts && accounts.length > 0) {
+          setProvider(window.ethereum);
+          setSigner({ address: accounts[0] });
           setWalletAddress(accounts[0]);
           setWalletType('metamask');
         } else {
@@ -153,16 +153,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Request account access
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send('eth_requestAccounts', []);
-      const signer = provider.getSigner();
-      const address = await signer.getAddress();
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const address = accounts[0];
       
       // Save connection details
       setWalletType('metamask');
       setWalletAddress(address);
-      setProvider(provider);
-      setSigner(signer);
+      setProvider(window.ethereum);
+      setSigner({ address });
       
       // Store in local storage
       localStorage.setItem(WALLET_TYPE_KEY, 'metamask');
@@ -170,9 +168,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       
       console.log('Connected to MetaMask:', address);
       
-      // Handle account changes
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
-      window.ethereum.on('chainChanged', handleChainChanged);
+      // Setup event listeners
+      setupEventListeners();
     } catch (error) {
       console.error('Error connecting to MetaMask:', error);
       setError(error instanceof Error ? error.message : 'Failed to connect to MetaMask');
@@ -182,30 +179,35 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Handle MetaMask account changes
-  const handleAccountsChanged = (accounts: string[]) => {
-    if (accounts.length === 0) {
-      // User disconnected their wallet
-      disconnectWallet();
-    } else if (accounts[0] !== walletAddress) {
-      // User switched accounts
-      setWalletAddress(accounts[0]);
-      localStorage.setItem(WALLET_ADDRESS_KEY, accounts[0]);
+  // Setup event listeners for MetaMask
+  const setupEventListeners = () => {
+    if (window.ethereum) {
+      // Handle account changes
+      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+        if (accounts.length === 0) {
+          // User disconnected their wallet
+          disconnectWallet();
+        } else if (accounts[0] !== walletAddress) {
+          // User switched accounts
+          setWalletAddress(accounts[0]);
+          localStorage.setItem(WALLET_ADDRESS_KEY, accounts[0]);
+        }
+      });
+      
+      // Handle chain changes
+      window.ethereum.on('chainChanged', () => {
+        // MetaMask recommends reloading the page on chain change
+        window.location.reload();
+      });
     }
-  };
-
-  // Handle MetaMask chain changes
-  const handleChainChanged = () => {
-    // MetaMask recommends reloading the page on chain change
-    window.location.reload();
   };
 
   // Disconnect wallet
   const disconnectWallet = () => {
     if (walletType === 'metamask' && window.ethereum) {
       // Remove event listeners
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum.removeListener('chainChanged', handleChainChanged);
+      window.ethereum.removeListener('accountsChanged', () => {});
+      window.ethereum.removeListener('chainChanged', () => {});
     }
     
     clearWalletState();

@@ -26,6 +26,18 @@ pub mod cross_chain;
 /// Price feed oracle service for real-time asset pricing
 pub mod price_feed;
 
+/// Event system for contract event emission
+pub mod events;
+
+/// Rebalance functionality for portfolio balancing
+pub mod rebalance;
+
+/// Wallet functionality for user wallet interactions
+pub mod wallet;
+
+/// XTalk protocol integration
+pub mod xtalk;
+
 /// Contract version information
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

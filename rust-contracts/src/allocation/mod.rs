@@ -69,6 +69,39 @@ impl AssetAllocation {
             self.target_percentage - self.current_percentage
         }
     }
+    
+    /// Calculates drift as a percentage of target (scaled by 100 for precision)
+    /// Returns (drift_percentage * 100) for more precise calculations
+    pub fn drift_percentage(&self) -> u32 {
+        if self.target_percentage == 0 {
+            return 0;
+        }
+        
+        let drift_amount = self.drift();
+        (drift_amount * 10000) / self.target_percentage
+    }
+    
+    /// Determines if the asset is overweight relative to target
+    pub fn is_overweight(&self) -> bool {
+        self.current_percentage > self.target_percentage
+    }
+    
+    /// Determines if the asset is underweight relative to target
+    pub fn is_underweight(&self) -> bool {
+        self.current_percentage < self.target_percentage
+    }
+    
+    /// Creates a drift result for event emission
+    pub fn create_drift_result(&self, threshold: u32) -> crate::events::DriftResult {
+        let drift_amount = self.drift();
+        crate::events::DriftResult {
+            asset_id: self.asset_id.clone(),
+            current_percentage: self.current_percentage,
+            target_percentage: self.target_percentage,
+            drift_amount,
+            exceeds_threshold: drift_amount > threshold,
+        }
+    }
 }
 
 /// Set of asset allocations for a portfolio
@@ -161,6 +194,49 @@ impl AllocationSet {
         false
     }
     
+    /// Checks if rebalancing is needed and emits appropriate events
+    pub fn check_and_emit_rebalance_events(&self, vault_id: &str) -> bool {
+        // Check if time-based rebalancing is needed
+        if self.rebalance_frequency_seconds > 0 {
+            let current_time = l1x_sdk::env::block_timestamp();
+            let elapsed = current_time.saturating_sub(self.last_rebalance);
+            
+            if elapsed >= self.rebalance_frequency_seconds {
+                // Emit scheduled rebalance event
+                let data = format!("{{\"elapsed_seconds\": {}, \"frequency\": {}}}", 
+                    elapsed, self.rebalance_frequency_seconds);
+                let event = crate::events::RebalanceEvent::new(
+                    crate::events::RebalanceEventType::ScheduledRebalance, 
+                    vault_id.to_string()
+                ).with_data(data);
+                event.emit();
+                
+                return true;
+            }
+        }
+        
+        // Check if drift-based rebalancing is needed
+        let mut needs_rebalance = false;
+        let mut drift_results = Vec::new();
+        
+        for allocation in &self.allocations {
+            let drift = allocation.drift();
+            let drift_result = allocation.create_drift_result(self.drift_threshold_bp);
+            
+            if drift > self.drift_threshold_bp {
+                needs_rebalance = true;
+                drift_results.push(drift_result);
+            }
+        }
+        
+        // Emit drift exceeded event if needed
+        if needs_rebalance && !drift_results.is_empty() {
+            crate::events::emit_drift_exceeded_event(vault_id, drift_results);
+        }
+        
+        needs_rebalance
+    }
+    
     /// Records a rebalance operation
     pub fn record_rebalance(&mut self, prices: &[(String, u128)]) {
         self.last_rebalance = l1x_sdk::env::block_timestamp();
@@ -176,6 +252,81 @@ impl AllocationSet {
             let price = price_map.get(allocation.asset_id.as_str()).copied();
             allocation.record_rebalance(price);
         }
+    }
+    
+    /// Performs auto-rebalancing calculation and returns transactions needed
+    pub fn calculate_rebalance_transactions(
+        &self,
+        current_values: &[(String, u128)],
+        total_value: u128
+    ) -> Vec<(String, String, u128)> {
+        if total_value == 0 || self.allocations.is_empty() {
+            return Vec::new();
+        }
+        
+        // Calculate target values based on allocations
+        let mut target_values = Vec::new();
+        
+        for allocation in &self.allocations {
+            let target_value = total_value * (allocation.target_percentage as u128) / 10000;
+            target_values.push((allocation.asset_id.clone(), target_value));
+        }
+        
+        // Convert current values to a map for easier lookup
+        let current_value_map: std::collections::HashMap<&str, u128> = current_values
+            .iter()
+            .map(|(asset_id, value)| (asset_id.as_str(), *value))
+            .collect();
+            
+        // Find assets to sell (current > target) and buy (current < target)
+        let mut sellers = Vec::new();
+        let mut buyers = Vec::new();
+        
+        for (asset_id, target_value) in &target_values {
+            let current_value = *current_value_map.get(asset_id.as_str()).unwrap_or(&0);
+            
+            if current_value > *target_value {
+                // Need to sell some of this asset
+                sellers.push((asset_id.clone(), current_value - target_value));
+            } else if current_value < *target_value {
+                // Need to buy some of this asset
+                buyers.push((asset_id.clone(), target_value - current_value));
+            }
+        }
+        
+        // Match sellers with buyers to create transactions
+        let mut transactions = Vec::new();
+        let mut i = 0;
+        let mut j = 0;
+        
+        while i < sellers.len() && j < buyers.len() {
+            let (sell_asset, mut sell_amount) = sellers[i].clone();
+            let (buy_asset, mut buy_amount) = buyers[j].clone();
+            
+            let amount_to_swap = sell_amount.min(buy_amount);
+            
+            if amount_to_swap > 0 {
+                transactions.push((sell_asset.clone(), buy_asset.clone(), amount_to_swap));
+                
+                // Update remaining amounts
+                sell_amount -= amount_to_swap;
+                buy_amount -= amount_to_swap;
+                
+                sellers[i] = (sell_asset, sell_amount);
+                buyers[j] = (buy_asset, buy_amount);
+                
+                // Move to next seller or buyer if fully processed
+                if sell_amount == 0 {
+                    i += 1;
+                }
+                
+                if buy_amount == 0 {
+                    j += 1;
+                }
+            }
+        }
+        
+        transactions
     }
     
     /// Validates that allocation percentages sum to 100%

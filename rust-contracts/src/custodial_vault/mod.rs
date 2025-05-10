@@ -305,20 +305,186 @@ impl CustodialVaultContract {
             .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
             
         if vault.status != VaultStatus::Active {
-            panic!("Cannot rebalance a non-active vault");
+            let error_msg = format!("Cannot rebalance a non-active vault: status is {:?}", vault.status);
+            crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+            panic!("{}", error_msg);
+        }
+        
+        // Parse prices and current values from JSON
+        let prices: Vec<(String, u128)> = match serde_json::from_str(&prices_json) {
+            Ok(p) => p,
+            Err(e) => {
+                let error_msg = format!("Failed to parse prices: {}", e);
+                crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+                panic!("{}", error_msg);
+            }
+        };
+        
+        // Emit rebalance initiated event
+        crate::events::emit_rebalance_initiated_event(&vault_id, "manual");
+        
+        // First, check if we actually need to rebalance
+        if !vault.allocations.check_and_emit_rebalance_events(&vault_id) {
+            // No rebalancing needed, but still record the check
+            vault.last_rebalance = l1x_sdk::env::block_timestamp();
+            state.save();
+            return format!("No rebalancing needed for vault {}", vault_id);
+        }
+        
+        // Calculate the rebalance transactions
+        let current_values = prices.clone(); // We're using prices as current values for simplicity
+        let transactions = vault.allocations.calculate_rebalance_transactions(
+            &current_values, 
+            vault.total_value
+        );
+        
+        if transactions.is_empty() {
+            vault.allocations.record_rebalance(&prices);
+            vault.last_rebalance = l1x_sdk::env::block_timestamp();
+            state.save();
+            
+            // Emit completed event with no transactions
+            crate::events::emit_rebalance_completed_event(&vault_id, 0, None);
+            
+            return format!("No rebalance transactions needed for vault {}", vault_id);
+        }
+        
+        // Create a rebalance operation
+        let rebalance_id = format!("rebalance-{}-{}", vault_id, l1x_sdk::env::block_timestamp());
+        let strategy = crate::rebalance::RebalanceStrategy::Threshold;
+        
+        let mut operation = crate::rebalance::RebalanceEngine::create_rebalance_operation(
+            rebalance_id, 
+            strategy, 
+            transactions.clone()
+        );
+        
+        // Execute the rebalance
+        match operation.execute() {
+            Ok(_) => {
+                // Record the rebalance
+                vault.allocations.record_rebalance(&prices);
+                vault.last_rebalance = l1x_sdk::env::block_timestamp();
+                
+                // Calculate total cost
+                let total_cost = operation.total_cost;
+                
+                // Emit completed event
+                crate::events::emit_rebalance_completed_event(
+                    &vault_id, 
+                    transactions.len(),
+                    total_cost
+                );
+                
+                state.save();
+                format!("Rebalanced vault {} with {} transactions", vault_id, transactions.len())
+            },
+            Err(e) => {
+                let error_msg = format!("Rebalance failed: {:?}", e);
+                crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+                panic!("{}", error_msg);
+            }
+        }
+    }
+    
+    /// Auto-rebalance a vault based on its settings
+    pub fn auto_rebalance(vault_id: String, prices_json: String) -> String {
+        let mut state = Self::load();
+        
+        let vault = state.vaults.get_mut(&vault_id)
+            .unwrap_or_else(|| panic!("Vault not found: {}", vault_id));
+            
+        if vault.status != VaultStatus::Active {
+            return format!("Cannot auto-rebalance inactive vault {}", vault_id);
         }
         
         // Parse prices from JSON
-        let prices: Vec<(String, u128)> = serde_json::from_str(&prices_json)
-            .unwrap_or_else(|_| panic!("Failed to parse prices"));
+        let prices: Vec<(String, u128)> = match serde_json::from_str(&prices_json) {
+            Ok(p) => p,
+            Err(e) => {
+                return format!("Failed to parse prices: {}", e);
+            }
+        };
+        
+        // Check if rebalancing is needed and emit events
+        if !vault.allocations.check_and_emit_rebalance_events(&vault_id) {
+            return format!("No rebalancing needed for vault {}", vault_id);
+        }
+        
+        // Determine trigger type
+        let trigger = if vault.allocations.rebalance_frequency_seconds > 0 {
+            let current_time = l1x_sdk::env::block_timestamp();
+            let elapsed = current_time.saturating_sub(vault.last_rebalance);
             
-        // Perform rebalancing
-        vault.allocations.record_rebalance(&prices);
-        vault.last_rebalance = l1x_sdk::env::block_timestamp();
+            if elapsed >= vault.allocations.rebalance_frequency_seconds {
+                "scheduled"
+            } else {
+                "drift"
+            }
+        } else {
+            "drift"
+        };
         
-        state.save();
+        // Emit rebalance initiated event
+        crate::events::emit_rebalance_initiated_event(&vault_id, trigger);
         
-        format!("Rebalanced vault {}", vault_id)
+        // Calculate the rebalance transactions
+        let current_values = prices.clone(); // We're using prices as current values for simplicity
+        let transactions = vault.allocations.calculate_rebalance_transactions(
+            &current_values, 
+            vault.total_value
+        );
+        
+        if transactions.is_empty() {
+            vault.allocations.record_rebalance(&prices);
+            vault.last_rebalance = l1x_sdk::env::block_timestamp();
+            state.save();
+            
+            // Emit completed event with no transactions
+            crate::events::emit_rebalance_completed_event(&vault_id, 0, None);
+            
+            return format!("No rebalance transactions needed for vault {}", vault_id);
+        }
+        
+        // Create a rebalance operation
+        let rebalance_id = format!("rebalance-{}-{}", vault_id, l1x_sdk::env::block_timestamp());
+        let strategy = match trigger {
+            "scheduled" => crate::rebalance::RebalanceStrategy::Scheduled,
+            _ => crate::rebalance::RebalanceStrategy::Threshold,
+        };
+        
+        let mut operation = crate::rebalance::RebalanceEngine::create_rebalance_operation(
+            rebalance_id, 
+            strategy, 
+            transactions.clone()
+        );
+        
+        // Execute the rebalance
+        match operation.execute() {
+            Ok(_) => {
+                // Record the rebalance
+                vault.allocations.record_rebalance(&prices);
+                vault.last_rebalance = l1x_sdk::env::block_timestamp();
+                
+                // Calculate total cost
+                let total_cost = operation.total_cost;
+                
+                // Emit completed event
+                crate::events::emit_rebalance_completed_event(
+                    &vault_id, 
+                    transactions.len(),
+                    total_cost
+                );
+                
+                state.save();
+                format!("Auto-rebalanced vault {} with {} transactions", vault_id, transactions.len())
+            },
+            Err(e) => {
+                let error_msg = format!("Auto-rebalance failed: {:?}", e);
+                crate::events::emit_rebalance_failed_event(&vault_id, &error_msg);
+                format!("{}", error_msg)
+            }
+        }
     }
     
     /// Checks if take profit should be executed

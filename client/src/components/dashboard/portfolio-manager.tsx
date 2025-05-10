@@ -32,6 +32,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Trash2, PlusCircle, DollarSign, PercentIcon, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Define the form schema
 const portfolioSchema = z.object({
@@ -42,10 +43,11 @@ const portfolioSchema = z.object({
       amount: z.number().optional(),
     })
   ).refine(data => {
+    // Only validate total percentage when submitting - we'll redistribute during editing
     const total = data.reduce((sum, allocation) => sum + allocation.percentage, 0);
-    return total <= 100;
+    return total === 100;
   }, {
-    message: "Total allocation must not exceed 100%",
+    message: "Total allocation must equal exactly 100%",
     path: ["allocations"],
   }),
 });
@@ -97,6 +99,7 @@ export default function PortfolioManager({
 }: PortfolioManagerProps) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
   // Fetch available assets
   const { data: assets = [], isLoading: isLoadingAssets } = useQuery<Asset[]>({
@@ -157,6 +160,69 @@ export default function PortfolioManager({
     }) || [];
   };
 
+  // Redistribute percentages to make room for a new allocation
+  const redistributePercentages = (newAssetPercentage = 10) => {
+    // If there's enough remaining percentage, no need to redistribute
+    if (remainingPercentage >= newAssetPercentage) return;
+    
+    // Calculate how much we need to reduce from existing allocations
+    const percentageToReduce = newAssetPercentage - remainingPercentage;
+    
+    // Get all current allocations
+    const currentAllocations = [...watchedAllocations];
+    
+    // Calculate total current allocation (should be close to 100%)
+    const totalBeforeReduction = currentAllocations.reduce(
+      (sum, allocation) => sum + allocation.percentage, 0
+    );
+    
+    // Reduce each allocation proportionally
+    let reducedSoFar = 0;
+    const updatedAllocations = currentAllocations.map((allocation, index) => {
+      // Calculate the fair reduction based on the proportion this allocation represents
+      const proportionalReduction = 
+        Math.floor((allocation.percentage / totalBeforeReduction) * percentageToReduce);
+      
+      // Ensure we don't reduce below 5% minimum
+      const actualReduction = Math.min(
+        proportionalReduction, 
+        allocation.percentage - 5 > 0 ? allocation.percentage - 5 : 0
+      );
+      
+      reducedSoFar += actualReduction;
+      
+      return {
+        ...allocation,
+        percentage: allocation.percentage - actualReduction
+      };
+    });
+    
+    // If we couldn't reduce enough, take more from the largest allocations
+    if (reducedSoFar < percentageToReduce) {
+      const remaining = percentageToReduce - reducedSoFar;
+      
+      // Sort by percentage (highest first) and reduce from largest allocations
+      updatedAllocations.sort((a, b) => b.percentage - a.percentage);
+      
+      let stillNeeded = remaining;
+      for (let i = 0; i < updatedAllocations.length && stillNeeded > 0; i++) {
+        if (updatedAllocations[i].percentage > 5) {
+          const canReduce = Math.min(stillNeeded, updatedAllocations[i].percentage - 5);
+          updatedAllocations[i].percentage -= canReduce;
+          stillNeeded -= canReduce;
+        }
+      }
+      
+      // Resort back by index if needed (this preserves original order)
+      // This step is optional as fieldArray will use the keys to maintain order
+    }
+    
+    // Update the form with new values
+    for (let i = 0; i < updatedAllocations.length; i++) {
+      form.setValue(`allocations.${i}.percentage`, updatedAllocations[i].percentage);
+    }
+  };
+
   // Handle adding a new allocation
   const handleAddAllocation = () => {
     // Find unused assets
@@ -168,10 +234,35 @@ export default function PortfolioManager({
       return;
     }
     
+    // Default new asset allocation percentage
+    const newAssetPercentage = 10;
+    
+    // If we're at or near 100%, redistribute to make room for the new asset
+    if (remainingPercentage < newAssetPercentage) {
+      redistributePercentages(newAssetPercentage);
+      
+      // Show toast notification about redistribution
+      toast({
+        title: "Allocations Adjusted",
+        description: "Existing allocations were automatically adjusted to make room for the new asset.",
+        variant: "default"
+      });
+    }
+    
+    // Find the asset we're adding for the toast
+    const newAsset = assets.find(a => a.id === unusedAssets[0].id);
+    
     // Add a new allocation with an unused asset
     append({ 
       assetId: unusedAssets[0].id, 
-      percentage: Math.min(remainingPercentage, 10) 
+      percentage: newAssetPercentage
+    });
+    
+    // Show toast for the added asset
+    toast({
+      title: "Asset Added",
+      description: `Added ${newAsset?.symbol || 'new asset'} with ${newAssetPercentage}% allocation`,
+      variant: "default"
     });
   };
 
@@ -321,7 +412,9 @@ export default function PortfolioManager({
                     <PercentIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
                       Total: {totalPercentage}% 
-                      {remainingPercentage > 0 && ` (${remainingPercentage}% remaining)`}
+                      {remainingPercentage > 0 
+                        ? ` (${remainingPercentage}% remaining)` 
+                        : " (adding will redistribute allocations)"}
                     </span>
                   </div>
                   
@@ -330,7 +423,7 @@ export default function PortfolioManager({
                     variant="outline"
                     size="sm"
                     onClick={handleAddAllocation}
-                    disabled={remainingPercentage <= 0 || isLoadingAssets}
+                    disabled={isLoadingAssets}
                   >
                     <PlusCircle className="h-4 w-4 mr-1" />
                     Add Asset

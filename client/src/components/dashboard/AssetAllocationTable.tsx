@@ -78,15 +78,12 @@ export function AssetAllocationTable() {
     });
   });
   
-  // Extract asset symbols for price fetching
-  const assetSymbols = assets ? assets.map(asset => asset.symbol) : [];
-  
-  // Fetch current prices
-  const { prices, loading: pricesLoading } = usePrices(assetSymbols, 30000);
+  // Fetch current prices with 24h history
+  const { priceDetails, loading: pricesLoading } = usePriceDetails(30000);
   
   // Calculate asset allocations when data changes
   useEffect(() => {
-    if (!isConnected || assetsLoading || vaultsLoading || pricesLoading || !assets?.length) {
+    if (!isConnected || assetsLoading || vaultsLoading || pricesLoading || !assets?.length || Object.keys(priceDetails).length === 0) {
       return;
     }
     
@@ -107,8 +104,8 @@ export function AssetAllocationTable() {
           
           // Calculate value in USD and add to portfolio total
           const asset = assets.find(a => a.id === allocation.assetId);
-          if (asset && prices[asset.symbol]) {
-            const assetValue = allocation.amount * prices[asset.symbol];
+          if (asset && priceDetails[asset.symbol]) {
+            const assetValue = allocation.amount * priceDetails[asset.symbol].current;
             portfolioTotal += assetValue;
           }
         });
@@ -122,8 +119,8 @@ export function AssetAllocationTable() {
       const assetIdNum = parseInt(assetId, 10);
       const asset = assets.find(a => a.id === assetIdNum);
       
-      if (asset && prices[asset.symbol]) {
-        const valueUSD = amount * prices[asset.symbol];
+      if (asset && priceDetails[asset.symbol]) {
+        const valueUSD = amount * priceDetails[asset.symbol].current;
         const percentOfPortfolio = (valueUSD / portfolioTotal) * 100;
         
         allocationData.push({
@@ -131,7 +128,7 @@ export function AssetAllocationTable() {
           amount,
           valueUSD,
           percentOfPortfolio,
-          price: prices[asset.symbol],
+          price: priceDetails[asset.symbol].current,
         });
       }
     });
@@ -145,7 +142,7 @@ export function AssetAllocationTable() {
     isConnected,
     assets,
     vaults,
-    prices,
+    priceDetails,
     allocationsQueries,
     assetsLoading,
     vaultsLoading,

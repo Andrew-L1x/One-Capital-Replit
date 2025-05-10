@@ -100,5 +100,5 @@ export function formatPrice(price: number | null | undefined): string {
  * Format percentage for display
  */
 export function formatPercentage(percentage: number): string {
-  return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(2)}%`;
+  return `${percentage >= 0 ? '+' : ''}${Math.round(percentage)}%`;
 }

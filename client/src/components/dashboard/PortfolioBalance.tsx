@@ -60,7 +60,7 @@ export function PortfolioBalance() {
                 <ArrowDownRight className="h-5 w-5 mr-1" />
               )}
               <span className="text-lg font-semibold">
-                {percentChange >= 0 ? "+" : ""}{percentChange.toFixed(2)}%
+                {percentChange >= 0 ? "+" : ""}{Math.round(percentChange)}%
               </span>
             </div>
             <div className="text-xs ml-2 text-muted-foreground">

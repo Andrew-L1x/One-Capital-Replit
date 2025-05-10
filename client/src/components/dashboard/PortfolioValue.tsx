@@ -54,7 +54,7 @@ export function PortfolioValue() {
                 ) : (
                   <ArrowDownRight className="h-3 w-3 mr-1" />
                 )}
-                {Math.abs(percentChange).toFixed(2)}%
+                {Math.round(Math.abs(percentChange))}%
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground flex items-center">

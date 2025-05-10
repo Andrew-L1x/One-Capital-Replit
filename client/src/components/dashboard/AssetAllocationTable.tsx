@@ -118,7 +118,7 @@ export function AssetAllocationTable() {
                 </TableCell>
                 <TableCell className="text-right">
                   <Badge variant="outline">
-                    {allocation.percentOfPortfolio.toFixed(2)}%
+                    {Math.round(allocation.percentOfPortfolio)}%
                   </Badge>
                 </TableCell>
               </TableRow>

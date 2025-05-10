@@ -381,7 +381,7 @@ export function CurrentHoldings() {
               <div className="flex items-center gap-3">
                 <div>
                   <span className="text-sm font-medium">
-                    Total: {form.watch("holdings")?.reduce((sum, h) => sum + (h.percentage || 0), 0)}%
+                    Total: {Math.round(form.watch("holdings")?.reduce((sum, h) => sum + (h.percentage || 0), 0))}%
                   </span>
                 </div>
                 <Button

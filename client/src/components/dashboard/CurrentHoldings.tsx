@@ -324,37 +324,9 @@ export function CurrentHoldings() {
                       )}
                     />
                     
-                    <FormField
-                      control={form.control}
-                      name={`holdings.${index}.amount`}
-                      render={({ field }) => (
-                        <FormItem className="w-36">
-                          <FormControl>
-                            <div className="relative">
-                              <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                              <Input
-                                type="number"
-                                placeholder="0.00"
-                                className="pl-8"
-                                step="0.001"
-                                {...field}
-                                onChange={(e) => {
-                                  const newAmount = parseFloat(e.target.value);
-                                  field.onChange(newAmount);
-                                  
-                                  // Auto-update percentage when amount changes
-                                  if (newAmount > 0 && portfolioValue > 0) {
-                                    const newPercentage = (newAmount / portfolioValue) * 100;
-                                    form.setValue(`holdings.${index}.percentage`, parseFloat(newPercentage.toFixed(2)));
-                                  }
-                                }}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="w-36 text-center">
+                      <span>Amount in tokens</span>
+                    </div>
                     
                     <div className="w-24 text-xs font-medium text-right">
                       {asset?.symbol && asset.symbol === "BTC" && (
@@ -364,7 +336,7 @@ export function CurrentHoldings() {
                         <span>{holding.amount > 0 ? (holding.amount / 3500).toFixed(3) : "0"} ETH</span>
                       )}
                       {asset?.symbol && !["BTC", "ETH"].includes(asset.symbol) && (
-                        <span>{holding.amount > 0 ? holding.amount.toFixed(3) : "0"} USD</span>
+                        <span>{holding.amount > 0 ? holding.amount.toFixed(3) : "0"} {asset.symbol}</span>
                       )}
                     </div>
                     
@@ -408,14 +380,7 @@ export function CurrentHoldings() {
               })}
             </div>
             
-            <div className="flex justify-between items-center pt-2 border-t">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">
-                  Current Value: ${portfolioValue.toFixed(3)}
-                </span>
-              </div>
-              
+            <div className="flex justify-between items-center pt-2 border-t">               
               <div className="flex items-center gap-3">
                 <div>
                   <span className="text-sm font-medium">

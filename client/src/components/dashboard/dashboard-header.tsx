@@ -34,7 +34,12 @@ export default function DashboardHeader() {
       <div className="container mx-auto p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">One Capital</h1>
+            <h1 
+              className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent cursor-pointer"
+              onClick={() => setLocation("/")}
+            >
+              One Capital
+            </h1>
             <div className="hidden sm:flex space-x-2">
               <Button variant="ghost" size="sm" onClick={() => setLocation("/dashboard")}>
                 Dashboard

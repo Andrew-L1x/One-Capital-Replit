@@ -19,12 +19,7 @@ export default function Home() {
     gcTime: 0,
   });
 
-  // If user is logged in, redirect to dashboard
-  useEffect(() => {
-    if (user) {
-      setLocation("/dashboard");
-    }
-  }, [user, setLocation]);
+  // Removed auto-redirect to allow viewing home page while logged in
 
   const handleLoginSuccess = () => {
     setLocation("/dashboard");
@@ -35,7 +30,7 @@ export default function Home() {
       {/* Top Navigation */}
       <header className="w-full py-4 px-6 border-b sticky top-0 bg-background z-50">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">One Capital</h1>
+          <h1 className="text-2xl font-bold cursor-pointer" onClick={() => setLocation("/")}>One Capital</h1>
           <nav className="hidden md:flex items-center space-x-6">
             <a href="#investment" className="text-sm font-medium hover:text-primary">Investing</a>
             <a href="#features" className="text-sm font-medium hover:text-primary">Features</a>
@@ -43,7 +38,7 @@ export default function Home() {
             <a href="#pricing" className="text-sm font-medium hover:text-primary">Pricing</a>
           </nav>
           <div className="flex items-center space-x-4">
-            {!isLoading && !user && (
+            {!isLoading && !user ? (
               <>
                 <Button variant="ghost" onClick={() => setLocation("/dashboard")}>
                   Try Demo
@@ -53,6 +48,12 @@ export default function Home() {
                   document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
                 }}>
                   Get Started
+                </Button>
+              </>
+            ) : user && (
+              <>
+                <Button variant="outline" onClick={() => setLocation("/dashboard")}>
+                  Go to Dashboard
                 </Button>
               </>
             )}

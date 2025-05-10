@@ -218,37 +218,78 @@ export default function Dashboard() {
           
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Portfolio Settings</CardTitle>
-                <CardDescription>
-                  Configure your portfolio and notification preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <span className="text-sm">Auto-rebalancing</span>
-                    <span className="font-medium text-green-600">Enabled</span>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="md:col-span-1">
+                <CardHeader>
+                  <CardTitle>Portfolio Settings</CardTitle>
+                  <CardDescription>
+                    Configure your portfolio and notification preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <span className="text-sm">Default Currency</span>
+                      <span className="font-medium">USD</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Transaction Notifications</span>
+                      <span className="font-medium">Enabled</span>
+                    </div>
+                    
+                    <div className="pt-4 mt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Note: These settings are simulated for demo purposes. 
+                        A future version will allow full customization of these options.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <span className="text-sm">Default Currency</span>
-                    <span className="font-medium">USD</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Transaction Notifications</span>
-                    <span className="font-medium">Enabled</span>
-                  </div>
-                  
-                  <div className="pt-4 mt-4 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Note: These settings are simulated for demo purposes. 
-                      A future version will allow full customization of these options.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              
+              {vaults.length > 0 && (
+                <Card className="md:col-span-1">
+                  <CardHeader>
+                    <CardTitle>Rebalance Settings</CardTitle>
+                    <CardDescription>
+                      Configure rebalancing options for your portfolio
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {vaults.map((vault) => (
+                        <div key={vault.id} className="border-b pb-4 last:border-0 last:pb-0">
+                          <h4 className="font-medium mb-2">{vault.name}</h4>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm">Frequency</span>
+                            <span className="font-medium">
+                              {vault.rebalanceFrequency ? 
+                                vault.rebalanceFrequency.charAt(0).toUpperCase() + vault.rebalanceFrequency.slice(1) : 
+                                "Manual"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="text-sm">Drift Threshold</span>
+                            <span className="font-medium">{vault.driftThreshold?.toString() || "5.0"}%</span>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => {
+                              setLocation(`/vaults/${vault.id}`);
+                            }}
+                          >
+                            <Settings className="h-4 w-4 mr-2" />
+                            Manage Vault Settings
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </main>

@@ -37,8 +37,22 @@ const l1xTestnet = {
     symbol: 'L1X',
   },
   rpcUrls: {
-    public: { http: ['https://rpc.testnet.l1x.foundation'] },
-    default: { http: ['https://rpc.testnet.l1x.foundation'] },
+    public: { 
+      http: [
+        'https://rpc.testnet.l1x.foundation',
+        'https://v2.testnet.l1x.foundation',
+        'https://testnet.l1x.foundation',
+        'https://v2-testnet-rpc.l1x.foundation'
+      ] 
+    },
+    default: { 
+      http: [
+        'https://rpc.testnet.l1x.foundation',
+        'https://v2.testnet.l1x.foundation',
+        'https://testnet.l1x.foundation',
+        'https://v2-testnet-rpc.l1x.foundation'
+      ] 
+    },
   },
   blockExplorers: {
     default: { name: 'L1X Explorer', url: 'https://l1xapp.com/testnet-explorer' },

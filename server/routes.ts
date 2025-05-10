@@ -1278,7 +1278,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get real-time prices for all assets
       const symbols = assets.filter(Boolean).map(asset => asset!.symbol);
-      const prices = await getPrices(symbols);
+      // Get the prices for all assets
+      const pricesWithHistory = await getPricesWithChange();
+      // Extract just the current prices for calculation
+      const prices: Record<string, number> = {};
+      Object.entries(pricesWithHistory).forEach(([symbol, data]) => {
+        prices[symbol] = data.current;
+      });
       
       // Calculate values
       let totalValue = 0;
@@ -1812,8 +1818,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Register API routes
-  app.use("/api", api);
+  // Configure CORS specifically for API routes
+  const apiCorsOptions = {
+    // Allow credentials (cookies, authorization headers, etc.)
+    credentials: true,
+    // Add specific headers needed for wallet connections
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'X-Requested-With', 
+      'x-api-key',
+      'x-signature',
+      'x-wallet-address',
+      'x-chain-id'
+    ],
+    // Allow all HTTP methods needed for wallet interactions
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    // Cache preflight requests for 1 hour
+    maxAge: 3600
+  };
+
+  // Register API routes with CORS
+  app.use("/api", cors(apiCorsOptions), api);
 
   const httpServer = createServer(app);
   
@@ -1823,6 +1849,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     path: '/ws',
     // Add ping-pong mechanism to detect broken connections
     clientTracking: true,
+    // Handle WebSocket headers for CORS verification
+    verifyClient: (info, callback) => {
+      const origin = info.req.headers.origin;
+      
+      // Allow requests with no origin (like mobile apps or direct WebSocket connections)
+      if (!origin) {
+        return callback(true);
+      }
+      
+      // List of allowed origins for WebSocket connections
+      const allowedWsOrigins = [
+        // Local development
+        'http://localhost:5000',
+        'http://127.0.0.1:5000',
+        // Replit domains
+        '.replit.app',
+        '.replit.dev',
+        // Wallet providers
+        'metamask.io',
+        '.metamask.io',
+        'walletconnect.com',
+        '.walletconnect.com',
+        // Dynamic Labs domains
+        'dynamic.xyz',
+        'app.dynamic.xyz',
+        '.dynamic.xyz'
+      ];
+      
+      // Check if origin is in allowed list or matches a pattern
+      const allowed = allowedWsOrigins.some(allowedOrigin => {
+        if (allowedOrigin.startsWith('.') && origin) {
+          // Check if origin ends with the allowed domain
+          return origin.endsWith(allowedOrigin.substring(1));
+        }
+        return allowedOrigin === origin;
+      });
+      
+      if (allowed) {
+        callback(true);
+      } else {
+        console.warn(`WebSocket connection from disallowed origin: ${origin}`);
+        callback(false, 403, 'Origin not allowed');
+      }
+    },
     perMessageDeflate: {
       zlibDeflateOptions: {
         chunkSize: 1024,

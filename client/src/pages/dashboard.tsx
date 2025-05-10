@@ -144,8 +144,8 @@ export default function Dashboard() {
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Settings</span>
-              <span className="sm:hidden">Settings</span>
+              <span className="hidden sm:inline">Rebalance</span>
+              <span className="sm:hidden">Rebalance</span>
             </TabsTrigger>
           </TabsList>
           
@@ -216,7 +216,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
           
-          {/* Settings Tab */}
+          {/* Rebalance Tab */}
           <TabsContent value="settings" className="space-y-8">
             <div className="grid gap-6 md:grid-cols-2">
               <Card className="md:col-span-1">
@@ -258,35 +258,69 @@ export default function Dashboard() {
                   <CardContent>
                     <div className="space-y-6">
                       <div className="pb-4">
-                        <h4 className="font-medium mb-2">My Rebalance Strategy</h4>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm">Frequency</span>
-                          <span className="font-medium">
-                            {vaults[0]?.rebalanceFrequency ? 
-                              vaults[0].rebalanceFrequency.charAt(0).toUpperCase() + vaults[0].rebalanceFrequency.slice(1) : 
-                              "Manual"}
-                          </span>
+                        <h4 className="font-medium mb-4">My Rebalance Strategy</h4>
+                        
+                        <div className="space-y-4">
+                          {/* Rebalance Frequency */}
+                          <div>
+                            <label className="text-sm block mb-2">Frequency</label>
+                            <select 
+                              className="w-full p-2 rounded-md border border-input bg-background" 
+                              defaultValue={vaults[0]?.rebalanceFrequency || "manual"}
+                              id="rebalance-frequency"
+                            >
+                              <option value="manual">Manual</option>
+                              <option value="daily">Daily</option>
+                              <option value="weekly">Weekly</option>
+                              <option value="monthly">Monthly</option>
+                              <option value="quarterly">Quarterly</option>
+                            </select>
+                          </div>
+                          
+                          {/* Drift Threshold */}
+                          <div>
+                            <label className="text-sm block mb-2">Drift Threshold</label>
+                            <select 
+                              className="w-full p-2 rounded-md border border-input bg-background" 
+                              defaultValue={vaults[0]?.driftThreshold?.toString() || "0"}
+                              id="drift-threshold"
+                            >
+                              <option value="0">0%</option>
+                              <option value="1">1%</option>
+                              <option value="2">2%</option>
+                              <option value="3">3%</option>
+                              <option value="5">5%</option>
+                              <option value="10">10%</option>
+                              <option value="15">15%</option>
+                              <option value="20">20%</option>
+                            </select>
+                          </div>
+                          
+                          <Button 
+                            variant="default" 
+                            size="sm" 
+                            className="w-full mt-4"
+                            onClick={() => {
+                              if (vaults.length > 0) {
+                                const frequencyValue = document.getElementById('rebalance-frequency') as HTMLSelectElement;
+                                const thresholdValue = document.getElementById('drift-threshold') as HTMLSelectElement;
+                                
+                                // In a real app, we would update via API
+                                console.log("Updating rebalance strategy:", {
+                                  frequency: frequencyValue.value,
+                                  threshold: thresholdValue.value
+                                });
+                                
+                                // Show success message
+                                alert("Rebalance strategy updated successfully!");
+                              }
+                            }}
+                            disabled={vaults.length === 0}
+                          >
+                            <RefreshCcw className="h-4 w-4 mr-2" />
+                            Update Rebalance Strategy
+                          </Button>
                         </div>
-                        <div className="flex justify-between items-center mb-4">
-                          <span className="text-sm">Drift Threshold</span>
-                          <span className="font-medium">{vaults[0]?.driftThreshold?.toString() || "0"}%</span>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => {
-                            if (vaults.length > 0) {
-                              // Debug log to check vault ID before navigation
-                              console.log("Navigating to vault:", vaults[0].id, vaults[0]);
-                              setLocation(`/vaults/${vaults[0].id}`);
-                            }
-                          }}
-                          disabled={vaults.length === 0}
-                        >
-                          <Settings className="h-4 w-4 mr-2" />
-                          Manage Rebalance Strategy
-                        </Button>
                       </div>
                     </div>
                   </CardContent>

@@ -11,6 +11,7 @@ import { PortfolioValue } from "@/components/dashboard/PortfolioValue";
 import { AssetAllocationTable } from "@/components/dashboard/AssetAllocationTable";
 import { CurrentPortfolio } from "@/components/dashboard/CurrentPortfolio";
 import { CrossChainSwap } from "@/components/dashboard/CrossChainSwap";
+import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import { 
   PlusCircle, 
@@ -250,38 +251,8 @@ export default function Dashboard() {
                 <div className="grid gap-6 md:grid-cols-2">
                   <CrossChainSwap />
                   
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Performance Summary</CardTitle>
-                      <CardDescription>
-                        Overview of your portfolio performance
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="text-sm">Total Assets</span>
-                          <span className="font-medium">
-                            {vaults.length > 0 ? `${vaults.length} Vaults` : "No vaults yet"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center border-b pb-2">
-                          <span className="text-sm">Rebalance Status</span>
-                          <span className="font-medium text-green-600">Up to date</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm">Last Updated</span>
-                          <span className="text-sm text-muted-foreground">
-                            {new Date().toLocaleDateString()}
-                          </span>
-                        </div>
-                        
-                        <Button variant="outline" className="w-full mt-4" onClick={() => setLocation("/vaults")}>
-                          View All Vaults
-                          <ArrowUpRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      </div>
-                    </CardContent>
+                  <Card className="md:col-span-1">
+                    <PerformanceMetrics />
                   </Card>
                 </div>
               </div>

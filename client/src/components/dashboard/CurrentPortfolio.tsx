@@ -3,6 +3,7 @@ import { useWallet } from '@/lib/walletContext';
 import { PortfolioValue } from './PortfolioValue';
 import { PortfolioChart } from './PortfolioChart';
 import { AssetAllocationTable } from './AssetAllocationTable';
+import { PerformanceMetrics } from './PerformanceMetrics';
 
 export function CurrentPortfolio() {
   const { isConnected } = useWallet();
@@ -35,6 +36,10 @@ export function CurrentPortfolio() {
         </div>
         <PortfolioChart />
       </div>
+      
+      <Card>
+        <PerformanceMetrics />
+      </Card>
       
       <AssetAllocationTable />
     </div>

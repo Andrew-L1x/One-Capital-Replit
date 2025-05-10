@@ -31,7 +31,7 @@ import { Vault, Asset } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<string>("allocation");
+  const [activeTab, setActiveTab] = useState<string>("portfolio");
 
   // Check if user is authenticated
   const { data: user, isLoading: isLoadingUser, isError: isUserError } = useQuery({

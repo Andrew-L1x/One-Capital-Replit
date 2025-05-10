@@ -409,6 +409,21 @@ export function CurrentHoldings() {
                   Add Asset
                 </Button>
               </div>
+              <div className="justify-self-end">
+                <Button 
+                  type="submit" 
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                      Saving...
+                    </>
+                  ) : "Save Changes"}
+                </Button>
+              </div>
             </div>
             
             {/* Asset selector dialog */}
@@ -543,19 +558,6 @@ export function CurrentHoldings() {
                 </Card>
               </div>
             )}
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : "Update Holdings"}
-            </Button>
           </form>
         </Form>
       </CardContent>

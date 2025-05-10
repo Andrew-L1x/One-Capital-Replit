@@ -324,7 +324,7 @@ export function CurrentHoldings() {
                       )}
                     />
                     
-                    <div className="w-36"></div>
+                    <div className="w-4"></div>
                     
                     <div className="w-24 text-xs font-medium text-right">
                       {asset?.symbol && asset.symbol === "BTC" && (

@@ -21,6 +21,76 @@ import bcrypt from "bcryptjs";
 
 const MemoryStore = memoryStoreCreator(session);
 
+/**
+ * Check if a vault needs rebalancing based on current allocations vs target
+ * 
+ * Rebalancing is needed when:
+ * 1. Any asset's current allocation deviates from its target by more than the drift threshold
+ * 2. The vault hasn't been rebalanced in the configured interval
+ */
+async function vaultNeedsRebalancing(vaultId: number): Promise<boolean> {
+  try {
+    // Get the vault settings
+    const vault = await storage.getVault(vaultId);
+    if (!vault) return false;
+    
+    // Get the drift threshold
+    const driftThreshold = parseFloat(vault.driftThreshold?.toString() || "5.0");
+    
+    // Get the last rebalanced date
+    const lastRebalanced = vault.lastRebalanced;
+    
+    // Get the rebalance frequency
+    const rebalanceFrequency = vault.rebalanceFrequency || "manual";
+    
+    // Check if needs rebalancing based on time
+    if (rebalanceFrequency !== "manual" && lastRebalanced) {
+      const now = new Date();
+      const lastRebalancedDate = new Date(lastRebalanced);
+      const daysSinceLastRebalance = Math.floor((now.getTime() - lastRebalancedDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Check based on frequency
+      if (
+        (rebalanceFrequency === "weekly" && daysSinceLastRebalance >= 7) ||
+        (rebalanceFrequency === "monthly" && daysSinceLastRebalance >= 30) ||
+        (rebalanceFrequency === "quarterly" && daysSinceLastRebalance >= 90) ||
+        (rebalanceFrequency === "yearly" && daysSinceLastRebalance >= 365)
+      ) {
+        return true;
+      }
+    }
+    
+    // Get allocations
+    const allocations = await storage.getAllocationsByVaultId(vaultId);
+    if (allocations.length === 0) return false;
+    
+    // TODO: In a real implementation, we would get current market prices
+    // and calculate the current percentage for each asset
+    // For simplicity, we'll just simulate drift for demo purposes
+    
+    // Check if any allocation exceeds drift threshold
+    for (const allocation of allocations) {
+      // Simulate current percentage with small random drift
+      const currentPercentage = parseFloat(allocation.targetPercentage.toString());
+      const randomDrift = (Math.random() - 0.5) * 10; // Random drift between -5% and +5%
+      const simulatedCurrentPercentage = currentPercentage + randomDrift;
+      
+      // Calculate the absolute deviation
+      const deviation = Math.abs(simulatedCurrentPercentage - currentPercentage);
+      
+      // If deviation exceeds threshold, rebalancing is needed
+      if (deviation > driftThreshold) {
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Error checking if vault needs rebalancing:", error);
+    return false;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session setup
   app.use(

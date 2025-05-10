@@ -13,6 +13,7 @@ import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart
 import AllocationCard from "@/components/dashboard/allocation-card";
 import AllocationList from "@/components/dashboard/allocation-list";
 import TakeProfitForm from "@/components/forms/take-profit-form";
+import RebalanceSettingsForm from "@/components/forms/rebalance-settings-form";
 import { Vault, Asset, Allocation, TakeProfitSetting, RebalanceHistory } from "@shared/schema";
 import { ArrowLeft, RefreshCw, Coins, Lock, Unlock } from "lucide-react";
 
@@ -349,6 +350,29 @@ export default function VaultPage() {
             initialData={takeProfitSettings as TakeProfitSetting | undefined}
             onSubmitSuccess={() => refetchTakeProfit()}
           />
+        </TabsContent>
+        
+        <TabsContent value="rebalance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rebalance Settings</CardTitle>
+              <CardDescription>
+                Configure automatic rebalancing for your portfolio
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RebalanceSettingsForm 
+                vault={vault}
+                onSuccess={() => {
+                  queryClient.invalidateQueries({ queryKey: [`/api/vaults/${vault.id}`] });
+                  toast({
+                    title: "Rebalance settings updated",
+                    description: "Your portfolio rebalance settings have been updated"
+                  });
+                }}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="history" className="space-y-6">

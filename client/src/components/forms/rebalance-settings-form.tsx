@@ -80,7 +80,7 @@ export default function RebalanceSettingsForm({ vault, onSuccess }: RebalanceSet
   // Mutation for manual rebalance
   const rebalanceMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/vaults/${vault.id}/rebalance`, "POST");
+      return apiRequest("POST", `/api/vaults/${vault.id}/rebalance`, {});
     },
     onSuccess: (data: any) => {
       const needsRebalance = data.needsRebalance;

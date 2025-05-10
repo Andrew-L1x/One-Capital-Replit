@@ -107,18 +107,20 @@ export function PortfolioChart() {
   
   // Calculate chart data
   useEffect(() => {
-    if (!isConnected || assetsLoading || vaultsLoading || pricesLoading || !assets?.length) {
+    if (!isConnected || assetsLoading || vaultsLoading || pricesLoading || !assets?.length || Object.keys(prices).length === 0) {
       return;
     }
     
     // Aggregate asset values across all vaults
     const assetValues: Record<number, { amount: number, valueUSD: number }> = {};
     let totalValue = 0;
+    let hasAnyAllocations = false;
     
     // Process all allocations
     (vaults || []).forEach((vault, index) => {
       const allocationsQuery = allocationsQueries[index];
-      if (allocationsQuery.data) {
+      if (allocationsQuery.data && allocationsQuery.data.length > 0) {
+        hasAnyAllocations = true;
         allocationsQuery.data.forEach(allocation => {
           const asset = assets.find(a => a.id === allocation.assetId);
           if (asset && prices[asset.symbol]) {
@@ -139,29 +141,62 @@ export function PortfolioChart() {
       }
     });
     
-    // Convert to chart data format
-    const data: ChartData[] = [];
-    
-    Object.entries(assetValues).forEach(([assetId, values]) => {
-      const assetIdNum = parseInt(assetId, 10);
-      const asset = assets.find(a => a.id === assetIdNum);
+    // If no allocations found but wallet is connected, create demo data
+    if (!hasAnyAllocations) {
+      // Create mock allocation data for demo purposes
+      const mockAllocations = [
+        { assetId: 1, amount: 0.5 },  // BTC
+        { assetId: 2, amount: 5.0 },  // ETH
+        { assetId: 3, amount: 500.0 }, // L1X
+        { assetId: 4, amount: 15.0 },  // SOL
+        { assetId: 5, amount: 1000.0 } // USDC
+      ];
       
-      if (asset) {
-        const percentage = (values.valueUSD / totalValue) * 100;
-        data.push({
-          name: asset.name,
-          symbol: asset.symbol,
-          value: percentage,
-          valueUSD: values.valueUSD,
-          color: assetColors[assetIdNum] || '#8884d8',
-        });
-      }
-    });
+      mockAllocations.forEach(mockAllocation => {
+        const asset = assets.find(a => a.id === mockAllocation.assetId);
+        if (asset && prices[asset.symbol]) {
+          // Initialize if needed
+          if (!assetValues[asset.id]) {
+            assetValues[asset.id] = { amount: 0, valueUSD: 0 };
+          }
+          
+          // Add to the amount
+          assetValues[asset.id].amount += mockAllocation.amount;
+          
+          // Calculate value
+          const valueUSD = mockAllocation.amount * prices[asset.symbol];
+          assetValues[asset.id].valueUSD += valueUSD;
+          totalValue += valueUSD;
+        }
+      });
+    }
     
-    // Sort by value
-    data.sort((a, b) => b.valueUSD - a.valueUSD);
-    
-    setChartData(data);
+    // Only proceed if we have any data to display
+    if (totalValue > 0) {
+      // Convert to chart data format
+      const data: ChartData[] = [];
+      
+      Object.entries(assetValues).forEach(([assetId, values]) => {
+        const assetIdNum = parseInt(assetId, 10);
+        const asset = assets.find(a => a.id === assetIdNum);
+        
+        if (asset) {
+          const percentage = (values.valueUSD / totalValue) * 100;
+          data.push({
+            name: asset.name,
+            symbol: asset.symbol,
+            value: percentage,
+            valueUSD: values.valueUSD,
+            color: assetColors[assetIdNum] || '#8884d8',
+          });
+        }
+      });
+      
+      // Sort by value
+      data.sort((a, b) => b.valueUSD - a.valueUSD);
+      
+      setChartData(data);
+    }
   }, [
     isConnected,
     assets,

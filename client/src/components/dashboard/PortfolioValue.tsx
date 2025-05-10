@@ -74,14 +74,18 @@ export function PortfolioValue() {
   
   // Calculate portfolio value when prices or allocations change
   useEffect(() => {
-    if (!isConnected || assetsLoading || pricesLoading || vaultsLoading) return;
+    if (!isConnected || assetsLoading || pricesLoading || vaultsLoading || !assets?.length || Object.keys(prices).length === 0) {
+      return;
+    }
     
     let totalValue = 0;
+    let hasAnyAllocations = false;
     
     // Calculate total value from allocations in all vaults
     (vaults || []).forEach((vault, index) => {
       const allocationsQuery = allocationsQueries[index];
-      if (allocationsQuery.data) {
+      if (allocationsQuery.data && allocationsQuery.data.length > 0) {
+        hasAnyAllocations = true;
         allocationsQuery.data.forEach((allocation) => {
           const asset = assets?.find(a => a.id === allocation.assetId);
           if (asset && prices[asset.symbol]) {
@@ -92,16 +96,39 @@ export function PortfolioValue() {
       }
     });
     
-    // For demonstration purposes, calculate a previous value 
-    // In a real app, we would store historical data
-    const previousValue = totalValue * (1 - (Math.random() * 0.1 - 0.05));
-    const percentChange = ((totalValue - previousValue) / previousValue) * 100;
+    // If no allocations found but wallet is connected, create demo data
+    if (!hasAnyAllocations) {
+      // Create mock allocation data for demo purposes
+      const mockAllocations = [
+        { assetId: 1, amount: 0.5 },  // BTC
+        { assetId: 2, amount: 5.0 },  // ETH
+        { assetId: 3, amount: 500.0 }, // L1X
+        { assetId: 4, amount: 15.0 },  // SOL
+        { assetId: 5, amount: 1000.0 } // USDC
+      ];
+      
+      mockAllocations.forEach(mockAllocation => {
+        const asset = assets.find(a => a.id === mockAllocation.assetId);
+        if (asset && prices[asset.symbol]) {
+          const assetValue = mockAllocation.amount * prices[asset.symbol];
+          totalValue += assetValue;
+        }
+      });
+    }
     
-    setPortfolio({
-      totalValue,
-      previousValue,
-      percentChange,
-    });
+    // Only update state if there's a meaningful change (prevents infinite renders)
+    if (totalValue !== portfolio.totalValue) {
+      // For demonstration purposes, calculate a previous value 
+      // In a real app, we would store historical data
+      const previousValue = totalValue * (1 - (Math.random() * 0.1 - 0.05));
+      const percentChange = previousValue !== 0 ? ((totalValue - previousValue) / previousValue) * 100 : 0;
+      
+      setPortfolio({
+        totalValue,
+        previousValue,
+        percentChange,
+      });
+    }
   }, [
     isConnected, 
     assetsLoading, 

@@ -90,11 +90,13 @@ export function AssetAllocationTable() {
     // First gather all allocations across vaults
     const assetAmounts: Record<number, number> = {};
     let portfolioTotal = 0;
+    let hasAnyAllocations = false;
     
     // Sum up allocations for each asset across all vaults
     (vaults || []).forEach((vault, index) => {
       const allocationsQuery = allocationsQueries[index];
-      if (allocationsQuery.data) {
+      if (allocationsQuery.data && allocationsQuery.data.length > 0) {
+        hasAnyAllocations = true;
         allocationsQuery.data.forEach(allocation => {
           // Add to the total amount for each asset
           if (!assetAmounts[allocation.assetId]) {
@@ -112,6 +114,27 @@ export function AssetAllocationTable() {
       }
     });
     
+    // If no allocations found but wallet is connected, create demo data
+    if (!hasAnyAllocations) {
+      // Create mock allocation data for demo purposes
+      const mockAllocations = [
+        { assetId: 1, amount: 0.5 },  // BTC
+        { assetId: 2, amount: 5.0 },  // ETH
+        { assetId: 3, amount: 500.0 }, // L1X
+        { assetId: 4, amount: 15.0 },  // SOL
+        { assetId: 5, amount: 1000.0 } // USDC
+      ];
+      
+      mockAllocations.forEach(mockAllocation => {
+        const asset = assets.find(a => a.id === mockAllocation.assetId);
+        if (asset && priceDetails[asset.symbol]) {
+          assetAmounts[mockAllocation.assetId] = mockAllocation.amount;
+          const assetValue = mockAllocation.amount * priceDetails[asset.symbol].current;
+          portfolioTotal += assetValue;
+        }
+      });
+    }
+    
     // Create combined asset allocation objects with values
     const allocationData: AssetWithAllocation[] = [];
     
@@ -121,7 +144,7 @@ export function AssetAllocationTable() {
       
       if (asset && priceDetails[asset.symbol]) {
         const valueUSD = amount * priceDetails[asset.symbol].current;
-        const percentOfPortfolio = (valueUSD / portfolioTotal) * 100;
+        const percentOfPortfolio = portfolioTotal > 0 ? (valueUSD / portfolioTotal) * 100 : 0;
         
         allocationData.push({
           asset,

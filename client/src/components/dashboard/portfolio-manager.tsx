@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Asset } from "@shared/schema";
 import { CurrentHoldings } from "@/components/dashboard/CurrentHoldings";
+import { HistoricalPerformance } from "@/components/dashboard/HistoricalPerformance";
 import { 
   Card, 
   CardContent, 
@@ -340,30 +341,7 @@ export default function PortfolioManager({
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Portfolio Allocation Preview</CardTitle>
-            <CardDescription>
-              Projected portfolio value based on your current allocation
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm">Projected Portfolio Value</span>
-                <span className="font-medium text-lg">
-                  ${calculateTotalValue().toFixed(2)}
-                </span>
-              </div>
-              
-              <div className="text-xs text-muted-foreground mt-2">
-                Note: This is a preview based on your current allocation settings.
-                <br />
-                For detailed performance metrics, use the <strong>Portfolio</strong> tab with live data.
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <HistoricalPerformance />
       </div>
     </div>
   );

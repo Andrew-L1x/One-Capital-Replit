@@ -1819,22 +1819,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize WebSocket server on a different path from Vite HMR
   const wss = new WebSocketServer({ 
     server: httpServer, 
-    path: '/ws'
+    path: '/ws',
+    // Add ping-pong mechanism to detect broken connections
+    clientTracking: true,
+    perMessageDeflate: {
+      zlibDeflateOptions: {
+        chunkSize: 1024,
+        memLevel: 7,
+        level: 3
+      },
+      zlibInflateOptions: {
+        chunkSize: 10 * 1024
+      },
+      // Below options are specified as default values
+      concurrencyLimit: 10, // Limits zlib concurrency for performance
+      threshold: 1024 // Size below which messages are not compressed
+    }
   });
   
   // Keep track of connected clients with their subscriptions
   const clients = new Map();
   
+  // For connection health checking - ping clients every 30 seconds
+  const pingInterval = setInterval(() => {
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.ping(() => {});
+      }
+    });
+  }, 30000);
+  
   // Handle WebSocket subscription requests
   function handleSubscription(ws: WebSocket, data: any) {
-    const { channel, vaultId, userId } = data;
+    const { channels, vaultId, userId } = data;
     
-    // Validate the channel
-    if (!['prices', 'vaults', 'rebalance', 'transactions'].includes(channel)) {
+    // Array of channels to subscribe to
+    const channelsToSubscribe = Array.isArray(channels) ? channels : [channels];
+    
+    // Validate the channels
+    const validChannels = channelsToSubscribe.filter(channel => 
+      ['prices', 'vaults', 'rebalance', 'transactions'].includes(channel)
+    );
+    
+    const invalidChannels = channelsToSubscribe.filter(channel => 
+      !['prices', 'vaults', 'rebalance', 'transactions'].includes(channel)
+    );
+    
+    if (invalidChannels.length > 0) {
       ws.send(JSON.stringify({
         type: 'error',
-        message: `Invalid channel: ${channel}`
+        message: `Invalid channels: ${invalidChannels.join(', ')}`
       }));
+    }
+    
+    if (validChannels.length === 0) {
       return;
     }
     
@@ -1844,21 +1882,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const clientData = clients.get(ws);
-    clientData.channels.push({
-      channel,
-      vaultId,
-      userId
+    
+    // Add each valid channel as a subscription
+    validChannels.forEach(channel => {
+      // Check if already subscribed to this channel + vaultId + userId combination
+      const existingSubscription = clientData.channels.find((sub: Subscription) =>
+        sub.channel === channel && 
+        sub.vaultId === vaultId && 
+        sub.userId === userId
+      );
+      
+      if (!existingSubscription) {
+        clientData.channels.push({
+          channel,
+          vaultId,
+          userId
+        });
+        
+        // Send confirmation for each channel
+        ws.send(JSON.stringify({
+          type: 'subscribed',
+          channel,
+          vaultId,
+          userId
+        }));
+        
+        console.log(`Client subscribed to ${channel}${vaultId ? ` for vault ${vaultId}` : ''}${userId ? ` for user ${userId}` : ''}`);
+      }
     });
-    
-    // Send confirmation
-    ws.send(JSON.stringify({
-      type: 'subscribed',
-      channel,
-      vaultId,
-      userId
-    }));
-    
-    console.log(`Client subscribed to ${channel}${vaultId ? ` for vault ${vaultId}` : ''}${userId ? ` for user ${userId}` : ''}`);
   }
   
   // Define subscription type
@@ -1878,14 +1929,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (!vaultId || sub.vaultId === vaultId) && 
           (!userId || sub.userId === userId)
         )) {
-          client.send(JSON.stringify({
-            type: 'update',
-            channel,
-            vaultId,
-            userId,
-            data,
-            timestamp: new Date().toISOString()
-          }));
+          try {
+            client.send(JSON.stringify({
+              type: 'update',
+              channel,
+              vaultId,
+              userId,
+              data,
+              timestamp: new Date().toISOString()
+            }));
+          } catch (err) {
+            console.error('Error sending message to client:', err);
+          }
         }
       }
     });
@@ -1921,22 +1976,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    // Handle ping response
+    ws.on('pong', () => {
+      // Client is still alive
+    });
+    
     // Handle disconnection
     ws.on('close', () => {
       console.log('WebSocket client disconnected');
       clients.delete(ws);
     });
+    
+    // Handle errors
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      clients.delete(ws);
+    });
   });
   
-  // Broadcast price updates every 15 seconds
+  // Send initial prices to all new connections
+  wss.on('connection', async (ws) => {
+    try {
+      const prices = await getPricesWithChange();
+      
+      // Send initial prices to the new client
+      ws.send(JSON.stringify({
+        type: 'update',
+        channel: 'prices',
+        data: { prices },
+        timestamp: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error('Error sending initial prices to new client:', error);
+    }
+  });
+  
+  // Broadcast price updates every 30 seconds (reduced frequency)
   setInterval(async () => {
     try {
       const prices = await getPricesWithChange();
-      broadcastToChannel('prices', prices);
+      broadcastToChannel('prices', { prices });
     } catch (error) {
       console.error('Error broadcasting price updates:', error);
     }
-  }, 15000);
+  }, 30000); // 30 seconds
+  
+  // Clean up on server shutdown
+  httpServer.on('close', () => {
+    clearInterval(pingInterval);
+  });
   
   console.log('WebSocket server initialized on path /ws');
   

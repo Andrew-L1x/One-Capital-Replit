@@ -125,18 +125,24 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
       console.log("Attempting to register with backend:", data.email);
       
       // Register directly with our backend
-      await apiRequest("POST", "/api/auth/register", {
-        username: data.username,
-        email: data.email,
-        password: data.password
+      await apiRequest("/api/auth/register", {
+        method: "POST",
+        data: {
+          username: data.username,
+          email: data.email,
+          password: data.password
+        }
       });
       
       console.log("Registration successful, logging in...");
       
       // Login immediately after successful registration with username
-      await apiRequest("POST", "/api/auth/login", {
-        username: data.username, // Using the username for login
-        password: data.password
+      await apiRequest("/api/auth/login", {
+        method: "POST",
+        data: {
+          username: data.username, // Using the username for login
+          password: data.password
+        }
       });
       
       console.log("Login successful after registration");

@@ -20,11 +20,21 @@ export default function useWebSocket(channels: string[] = ['prices'], vaultId?: 
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 5;
+  const RECONNECT_INTERVAL = 5000; // 5 seconds between reconnects
+  const BACKOFF_MULTIPLIER = 1.5; // Exponential backoff multiplier
 
   // Initialize WebSocket connection
   const connectWebSocket = useCallback(() => {
+    // Don't reconnect if we've reached the maximum attempts - will try again when user takes action
+    if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+      console.log(`Maximum reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Stopping automatic reconnection.`);
+      return;
+    }
+
     // Close existing connection if any
-    if (socketRef.current) {
+    if (socketRef.current && socketRef.current.readyState !== WebSocket.CLOSED) {
       socketRef.current.close();
     }
 
@@ -34,68 +44,111 @@ export default function useWebSocket(channels: string[] = ['prices'], vaultId?: 
       reconnectTimeoutRef.current = null;
     }
 
-    // Create new WebSocket connection
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
-    console.log(`Connecting to WebSocket at ${wsUrl}`);
-    const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
-
-    // WebSocket event handlers
-    socket.onopen = () => {
-      console.log('WebSocket connected');
-      setConnected(true);
+    try {
+      // Create new WebSocket connection
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
       
-      // Subscribe to channels
-      const subscriptionMessage = {
-        type: 'subscribe',
-        channels,
-        ...(vaultId ? { vaultId } : {})
+      console.log(`Connecting to WebSocket at ${wsUrl}`);
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
+
+      // WebSocket event handlers
+      socket.onopen = () => {
+        console.log('WebSocket connected');
+        setConnected(true);
+        reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
+        
+        // Subscribe to channels
+        try {
+          const subscriptionMessage = {
+            type: 'subscribe',
+            channels,
+            ...(vaultId ? { vaultId } : {})
+          };
+          
+          socket.send(JSON.stringify(subscriptionMessage));
+        } catch (err) {
+          console.error('Error sending subscription message:', err);
+        }
       };
-      
-      socket.send(JSON.stringify(subscriptionMessage));
-    };
 
-    socket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data) as WebSocketMessage;
-        setLastMessage(message);
-        setMessages((prev) => [...prev, message].slice(-50)); // Keep last 50 messages
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
+      socket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data) as WebSocketMessage;
+          setLastMessage(message);
+          setMessages((prev) => [...prev, message].slice(-20)); // Keep last 20 messages
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
 
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setConnected(false);
-    };
+      socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setConnected(false);
+        // Don't trigger reconnect here, let onclose handle it
+      };
 
-    socket.onclose = () => {
-      console.log('WebSocket disconnected, scheduling reconnect...');
-      setConnected(false);
+      socket.onclose = (event) => {
+        console.log(`WebSocket closed with code: ${event.code}, reason: ${event.reason}`);
+        setConnected(false);
+        
+        if (event.code === 1000) {
+          // Normal closure, don't reconnect
+          console.log('WebSocket closed normally');
+          return;
+        }
+        
+        // Use exponential backoff for reconnection
+        const backoffTime = RECONNECT_INTERVAL * Math.pow(BACKOFF_MULTIPLIER, reconnectAttemptsRef.current);
+        reconnectAttemptsRef.current++;
+        
+        console.log(`Scheduling reconnect attempt ${reconnectAttemptsRef.current} in ${backoffTime}ms`);
+        
+        // Schedule reconnect after calculated delay
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (document.visibilityState !== 'hidden') {
+            console.log(`Attempting to reconnect WebSocket (attempt ${reconnectAttemptsRef.current})`);
+            connectWebSocket();
+          }
+        }, backoffTime);
+      };
+    } catch (error) {
+      console.error('Error creating WebSocket:', error);
       
       // Schedule reconnect after a delay
+      const backoffTime = RECONNECT_INTERVAL * Math.pow(BACKOFF_MULTIPLIER, reconnectAttemptsRef.current);
+      reconnectAttemptsRef.current++;
+      
       reconnectTimeoutRef.current = setTimeout(() => {
         if (document.visibilityState !== 'hidden') {
-          console.log('Attempting to reconnect WebSocket...');
           connectWebSocket();
         }
-      }, 3000);
-    };
+      }, backoffTime);
+    }
   }, [channels, vaultId]);
 
   // Send message to the WebSocket server
   const sendMessage = useCallback((type: string, data: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({ type, ...data }));
-      return true;
+      try {
+        socketRef.current.send(JSON.stringify({ type, ...data }));
+        return true;
+      } catch (error) {
+        console.error('Error sending WebSocket message:', error);
+        return false;
+      }
     }
     return false;
   }, []);
 
-  // Connect on component mount and reconnect when visibility changes
+  // Manual reconnect function that users can call
+  const reconnect = useCallback(() => {
+    reconnectAttemptsRef.current = 0; // Reset attempts counter
+    connectWebSocket();
+  }, [connectWebSocket]);
+
+  // Connect on component mount
   useEffect(() => {
     connectWebSocket();
     
@@ -103,6 +156,7 @@ export default function useWebSocket(channels: string[] = ['prices'], vaultId?: 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && 
           (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)) {
+        reconnectAttemptsRef.current = 0; // Reset attempts counter on visibility change
         console.log('Page visible, reconnecting WebSocket...');
         connectWebSocket();
       }
@@ -124,17 +178,14 @@ export default function useWebSocket(channels: string[] = ['prices'], vaultId?: 
     };
   }, [connectWebSocket]);
 
-  // Reconnect if channels or vaultId change
-  useEffect(() => {
-    if (connected) {
-      connectWebSocket();
-    }
-  }, [channels, vaultId, connectWebSocket]);
+  // Don't reconnect if channels or vaultId change - too aggressive
+  // We'll just update the subscription on the next message
 
   return {
     connected,
     sendMessage,
     lastMessage,
     messages,
+    reconnect
   };
 }

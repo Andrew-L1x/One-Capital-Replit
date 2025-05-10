@@ -1,11 +1,11 @@
 [package]
-name = "l1x-contract"
+name = "one-capital-contracts"
 version = "0.1.0"
 edition = "2021"
-authors = ["The L1X Project Developers"]
+authors = ["One Capital Team"]
 license = "Apache-2.0"
 description = """
-L1X example contact
+One Capital Auto-Investing smart contracts for L1X blockchain
 """
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

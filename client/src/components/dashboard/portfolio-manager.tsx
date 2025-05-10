@@ -4,6 +4,7 @@ import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Asset } from "@shared/schema";
+import { CurrentHoldings } from "@/components/dashboard/CurrentHoldings";
 import { 
   Card, 
   CardContent, 
@@ -298,7 +299,12 @@ export default function PortfolioManager({
   const percentageOptions = Array.from({ length: 21 }, (_, i) => i * 5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Current Holdings Section */}
+      <div className="w-full">
+        <CurrentHoldings />
+      </div>
+      
       <div className="grid gap-6 md:grid-cols-2">
         {/* Portfolio Form */}
         <Card>

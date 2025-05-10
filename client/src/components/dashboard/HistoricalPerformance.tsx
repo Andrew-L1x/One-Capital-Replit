@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { usePortfolio } from "@/lib/portfolioContext";
-import { formatPrice } from "@/lib/usePriceDetails";
 
 // Color palette for different assets in the chart
 const COLORS = [
@@ -21,9 +19,10 @@ type TimeRange = "7d" | "30d" | "90d" | "1y";
 
 export function HistoricalPerformance() {
   const [activeTimeRange, setActiveTimeRange] = useState<TimeRange>("30d");
-  const { portfolioValue, percentChange, isLoading } = usePortfolio();
   const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [isGeneratingData, setIsGeneratingData] = useState(true);
+  const [percentChange, setPercentChange] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Generate sample historical data
   // In a real app, this would be fetched from an API
@@ -95,21 +94,22 @@ export function HistoricalPerformance() {
     generateData();
   }, [activeTimeRange]);
   
-  // Get price change percentage between start and end dates in the selected period
-  const getPerformanceMetrics = () => {
-    if (historicalData.length < 2) return { change: 0, isPositive: true };
+  // Calculate performance metrics when historical data changes
+  useEffect(() => {
+    if (historicalData.length < 2) {
+      setPercentChange(0);
+      return;
+    }
     
     const startValue = historicalData[0].portfolio;
     const endValue = historicalData[historicalData.length - 1].portfolio;
     const change = ((endValue - startValue) / startValue) * 100;
     
-    return {
-      change: parseFloat(change.toFixed(2)),
-      isPositive: change >= 0
-    };
-  };
+    setPercentChange(parseFloat(change.toFixed(2)));
+    setIsLoading(false);
+  }, [historicalData]);
   
-  const { change, isPositive } = getPerformanceMetrics();
+  const isPositive = percentChange >= 0;
 
   if (isLoading || isGeneratingData) {
     return (

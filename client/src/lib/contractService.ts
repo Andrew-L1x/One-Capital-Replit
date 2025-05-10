@@ -12,6 +12,11 @@ const toBigInt = (value: string | number): bigint => {
   return ethers.parseUnits(value.toString(), 'wei');
 };
 
+// Extract a number safely from bigint for display
+const fromBigInt = (value: bigint): string => {
+  return ethers.formatUnits(value, 'wei');
+};
+
 // Type definitions
 export interface VaultConfig {
   name: string;
@@ -142,10 +147,16 @@ export const getSignerContract = async (
       throw new Error('Provider not available');
     }
     
-    // Get signer
-    const signer = await provider.getSigner();
-    if (!signer) {
-      throw new Error('Signer not available');
+    // Get signer in ethers v6
+    let signer;
+    if ('getSigner' in provider) {
+      // Browser provider
+      signer = await (provider as ethers.BrowserProvider).getSigner();
+      if (!signer) {
+        throw new Error('Signer not available');
+      }
+    } else {
+      throw new Error('Provider does not support signing transactions');
     }
     
     // Get read-only contract first
@@ -204,15 +215,15 @@ export const getVault = async (vaultId: number): Promise<VaultConfig | null> => 
     
     const result = await contract.getVault(vaultId);
     
-    // Parse result
+    // Parse result with ethers v6 (using Number() instead of toNumber())
     return {
       name: result.name,
       description: result.description,
       owner: result.owner,
-      createdAt: result.createdAt.toNumber(),
-      lastRebalance: result.lastRebalance.toNumber(),
-      driftThresholdBasisPoints: result.driftThresholdBasisPoints.toNumber(),
-      rebalanceIntervalSeconds: result.rebalanceIntervalSeconds.toNumber(),
+      createdAt: Number(result.createdAt),
+      lastRebalance: Number(result.lastRebalance),
+      driftThresholdBasisPoints: Number(result.driftThresholdBasisPoints),
+      rebalanceIntervalSeconds: Number(result.rebalanceIntervalSeconds),
       isActive: result.isActive
     };
   } catch (error) {
@@ -235,13 +246,13 @@ export const getAllocations = async (vaultId: number): Promise<AssetAllocation[]
     
     const result = await contract.getAllocations(vaultId);
     
-    // Parse result
+    // Parse result with ethers v6 (using Number() instead of toNumber())
     return result.map((allocation: any) => ({
       assetAddress: allocation.assetAddress,
       assetSymbol: allocation.assetSymbol,
-      targetPercentage: allocation.targetPercentage.toNumber(),
-      currentPercentage: allocation.currentPercentage.toNumber(),
-      lastRebalanced: allocation.lastRebalanced.toNumber()
+      targetPercentage: Number(allocation.targetPercentage),
+      currentPercentage: Number(allocation.currentPercentage),
+      lastRebalanced: Number(allocation.lastRebalanced)
     }));
   } catch (error) {
     console.error(`Error getting allocations for vault ${vaultId}:`, error);
@@ -430,18 +441,18 @@ export const getSwapQuote = async (
       targetChain,
       sourceAsset,
       targetAsset,
-      ethers.BigNumber.from(amount)
+      toBigInt(amount)
     );
     
     // Parse result
     return {
       sourceAsset: result.sourceAsset,
       targetAsset: result.targetAsset,
-      sourceAmount: result.sourceAmount.toString(),
-      targetAmount: result.targetAmount.toString(),
-      fee: result.fee.toString(),
-      maxSlippageBps: result.maxSlippageBps.toNumber(),
-      validUntil: result.validUntil.toNumber()
+      sourceAmount: fromBigInt(result.sourceAmount),
+      targetAmount: fromBigInt(result.targetAmount),
+      fee: fromBigInt(result.fee),
+      maxSlippageBps: Number(result.maxSlippageBps),
+      validUntil: Number(result.validUntil)
     };
   } catch (error) {
     console.error('Error getting swap quote:', error);
@@ -479,10 +490,10 @@ export const initiateSwap = async (
       targetChain,
       sourceAsset,
       targetAsset,
-      ethers.BigNumber.from(amount),
+      toBigInt(amount),
       maxSlippageBps,
       targetAddress,
-      { value: value ? ethers.BigNumber.from(value) : ethers.BigNumber.from(0) }
+      { value: value ? toBigInt(value) : toBigInt(0) }
     );
     
     return await tx.wait();

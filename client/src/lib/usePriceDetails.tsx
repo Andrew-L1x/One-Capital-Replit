@@ -32,20 +32,14 @@ export function usePriceDetails(refreshInterval = 30000): {
       
       // Direct API request to ensure fresh data
       const response = await apiRequest('GET', '/api/prices');
-      let data = await response.json();
+      const data = await response.json();
       
       console.log("Fetched price details:", data);
       
+      // Ensure we've received actual data before proceeding
       if (Object.keys(data).length === 0) {
-        // If we get an empty object, use hardcoded sample data for demo
-        data = {
-          "BTC": {"current": 65421.37, "previous24h": 60207.73, "change24h": 5213.64, "changePercentage24h": 8.66},
-          "ETH": {"current": 3512.89, "previous24h": 3068.17, "change24h": 444.72, "changePercentage24h": 14.49},
-          "L1X": {"current": 28.76, "previous24h": 32.24, "change24h": -3.48, "changePercentage24h": -10.80},
-          "USDC": {"current": 1.00, "previous24h": 1.05, "change24h": -0.05, "changePercentage24h": -4.65},
-          "USDT": {"current": 1.00, "previous24h": 0.97, "change24h": 0.03, "changePercentage24h": 3.02}
-        };
-        console.log("Using sample price data");
+        console.error("No price data available from API. Please check the price feed connection.");
+        throw new Error("No price data received from API");
       }
       
       // Update the price detail cache

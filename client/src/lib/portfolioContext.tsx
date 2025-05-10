@@ -81,30 +81,24 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   
   // Calculate portfolio values when all data is available
   useEffect(() => {
-    // If price data isn't loaded yet or we're not connected, don't proceed
-    if (!isConnected || pricesLoading || Object.keys(priceDetails).length === 0) {
+    // Combine loading states into a single state to reduce re-renders
+    const dataLoading = pricesLoading || isLoadingVaults || isLoadingAssets || isLoadingAllocations;
+    
+    // If data is still loading or we're not connected, don't proceed
+    if (!isConnected || dataLoading || Object.keys(priceDetails).length === 0) {
       return;
     }
     
-    // Skip calculation if we're already calculating or if no data has changed
-    // This helps prevent the infinite update loop
-    if (isLoading && portfolioValue > 0 && assetAllocations.length > 0) {
-      return;
-    }
+    // Check if we have API data or should use mock data
+    const hasApiData = allocationsData.length > 0 && assets.length > 0;
     
-    // Set loading state
-    setIsLoading(true);
-    
-    try {
-      // Check if we have API data or should use mock data
-      const useApiData = !isLoadingVaults && !isLoadingAssets && !isLoadingAllocations && 
-                      allocationsData.length > 0 && assets.length > 0;
-      
+    // Create a calculation function to avoid issues with setState in useEffect
+    const calculatePortfolio = () => {
       let totalValue = 0;
       let totalPreviousValue = 0;
       const allocations: AssetWithAllocation[] = [];
       
-      if (useApiData) {
+      if (hasApiData) {
         // Use real data from API
         for (const allocation of allocationsData) {
           const asset = assets.find((a: any) => a.id === allocation.assetId);
@@ -167,13 +161,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         totalPreviousValue = totalValue * 0.95; // Simulate 5% growth by default
       }
       
-      // Calculate percent change
-      const change = totalPreviousValue > 0 
-        ? ((totalValue - totalPreviousValue) / totalPreviousValue) * 100 
-        : 0;
-      
       // Only continue with updates if we have actual data
       if (allocations.length > 0 && totalValue > 0) {
+        // Calculate percent change
+        const change = totalPreviousValue > 0 
+          ? ((totalValue - totalPreviousValue) / totalPreviousValue) * 100 
+          : 0;
+        
         // Update the percentages now that we know the total value
         allocations.forEach(allocation => {
           allocation.percentOfPortfolio = (allocation.valueUSD / totalValue) * 100;
@@ -182,28 +176,53 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
         // Sort allocations by value
         allocations.sort((a, b) => b.valueUSD - a.valueUSD);
         
-        // Update state with new values
-        setAssetAllocations(allocations);
-        setPortfolioValue(totalValue);
-        setPreviousValue(totalPreviousValue);
-        setPercentChange(change);
+        return {
+          allocations,
+          totalValue,
+          totalPreviousValue,
+          change
+        };
+      }
+      
+      return null;
+    };
+    
+    try {
+      // Only change loading state if we're not already loading
+      if (!isLoading) {
+        setIsLoading(true);
+      }
+      
+      // Calculate portfolio values
+      const result = calculatePortfolio();
+      
+      if (result) {
+        // Use a single batch update to reduce render cycles
+        setAssetAllocations(result.allocations);
+        setPortfolioValue(result.totalValue);
+        setPreviousValue(result.totalPreviousValue);
+        setPercentChange(result.change);
       }
     } catch (error) {
       console.error("Error calculating portfolio values:", error);
     } finally {
-      // Always clear loading state when done
       setIsLoading(false);
     }
   }, [
     isConnected, 
-    priceDetails, 
+    // Use a string representation of price details to avoid unnecessary recalculations
+    JSON.stringify(priceDetails), 
+    // Include loading states
     pricesLoading, 
-    vaults, 
-    assets, 
-    allocationsData, 
     isLoadingVaults, 
     isLoadingAssets, 
-    isLoadingAllocations
+    isLoadingAllocations,
+    // Include data dependencies as string representations to reduce render cycles
+    JSON.stringify(vaults), 
+    JSON.stringify(assets), 
+    JSON.stringify(allocationsData),
+    // Include current state values to prevent unnecessary updates
+    isLoading
   ]);
   
   // Context value that will be provided to consumers

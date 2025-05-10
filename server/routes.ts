@@ -1129,11 +1129,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Execute contract rebalance
       const result = await executeContractRebalance(vaultId, isCustodial);
       
+      // Create a rebalance history record for the event
+      const rebalanceRecord = await storage.createRebalanceHistory({
+        vaultId,
+        rebalancedAt: new Date().toISOString(),
+        rebalanceType: "manual", // This was triggered manually
+        details: result.details || result.message
+      });
+      
+      // Broadcast to WebSocket clients for real-time updates
+      try {
+        broadcastToChannel('rebalance', {
+          vaultId,
+          success: result.success,
+          message: result.message,
+          details: result.details,
+          timestamp: new Date().toISOString()
+        }, vaultId, userId);
+        
+        // Also broadcast to the vaults channel for UI updates
+        broadcastToChannel('vaults', {
+          action: 'updated',
+          vaultId,
+          lastRebalanced: new Date().toISOString()
+        }, vaultId, userId);
+        
+        console.log(`Rebalance event broadcast for vault ${vaultId}`);
+      } catch (wsError) {
+        console.error('Error broadcasting rebalance event:', wsError);
+        // Don't fail the API call if WebSocket broadcast fails
+      }
+      
       if (result.success) {
         return res.status(201).json({
           success: true,
           message: result.message,
-          details: result.details
+          details: result.details,
+          rebalanceRecord
         });
       } else {
         return res.status(400).json({
@@ -1783,6 +1815,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api", api);
 
   const httpServer = createServer(app);
-
+  
+  // Initialize WebSocket server on a different path from Vite HMR
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws'
+  });
+  
+  // Keep track of connected clients with their subscriptions
+  const clients = new Map();
+  
+  // Handle WebSocket subscription requests
+  function handleSubscription(ws: WebSocket, data: any) {
+    const { channel, vaultId, userId } = data;
+    
+    // Validate the channel
+    if (!['prices', 'vaults', 'rebalance', 'transactions'].includes(channel)) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: `Invalid channel: ${channel}`
+      }));
+      return;
+    }
+    
+    // Store client subscription
+    if (!clients.has(ws)) {
+      clients.set(ws, { channels: [] });
+    }
+    
+    const clientData = clients.get(ws);
+    clientData.channels.push({
+      channel,
+      vaultId,
+      userId
+    });
+    
+    // Send confirmation
+    ws.send(JSON.stringify({
+      type: 'subscribed',
+      channel,
+      vaultId,
+      userId
+    }));
+    
+    console.log(`Client subscribed to ${channel}${vaultId ? ` for vault ${vaultId}` : ''}${userId ? ` for user ${userId}` : ''}`);
+  }
+  
+  // Define subscription type
+  interface Subscription {
+    channel: string;
+    vaultId?: number;
+    userId?: number;
+  }
+  
+  // Broadcast updates to all relevant subscribers
+  function broadcastToChannel(channel: string, data: any, vaultId?: number, userId?: number) {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        const clientData = clients.get(client);
+        if (clientData && clientData.channels.some((sub: Subscription) => 
+          sub.channel === channel && 
+          (!vaultId || sub.vaultId === vaultId) && 
+          (!userId || sub.userId === userId)
+        )) {
+          client.send(JSON.stringify({
+            type: 'update',
+            channel,
+            vaultId,
+            userId,
+            data,
+            timestamp: new Date().toISOString()
+          }));
+        }
+      }
+    });
+  }
+  
+  // WebSocket connection handling
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    // Send initial connection confirmation
+    ws.send(JSON.stringify({
+      type: 'connection',
+      status: 'connected',
+      timestamp: new Date().toISOString()
+    }));
+    
+    // Handle incoming messages
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Received WebSocket message:', data);
+        
+        // Handle subscription requests
+        if (data.type === 'subscribe') {
+          handleSubscription(ws, data);
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid message format'
+        }));
+      }
+    });
+    
+    // Handle disconnection
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      clients.delete(ws);
+    });
+  });
+  
+  // Broadcast price updates every 15 seconds
+  setInterval(async () => {
+    try {
+      const prices = await getPricesWithChange();
+      broadcastToChannel('prices', prices);
+    } catch (error) {
+      console.error('Error broadcasting price updates:', error);
+    }
+  }, 15000);
+  
+  console.log('WebSocket server initialized on path /ws');
+  
   return httpServer;
 }

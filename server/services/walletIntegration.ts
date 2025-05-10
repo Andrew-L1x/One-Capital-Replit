@@ -36,6 +36,18 @@ export enum ConnectionStatus {
 }
 
 /**
+ * Supported blockchain networks with their chain IDs
+ */
+export enum Chain {
+  L1X = 'l1x', 
+  ETHEREUM = '1',
+  SOLANA = 'solana',
+  POLYGON = '137',
+  AVALANCHE = '43114',
+  BSC = '56'
+}
+
+/**
  * Wallet connection details
  */
 export interface WalletConnection {

@@ -32,7 +32,7 @@ const holdingsSchema = z.object({
     z.object({
       assetId: z.number(),
       amount: z.number().min(0),
-      percentage: z.number().min(0).max(100),
+      percentage: z.number().int().min(0).max(100),
     })
   ).refine(data => {
     // Validate total percentage equals 100%
@@ -223,6 +223,15 @@ export function CurrentHoldings() {
                                 min="0"
                                 max="100"
                                 step="1"
+                                onKeyDown={(e) => {
+                                  // Allow only number keys, backspace, delete, tab, arrows
+                                  const allowedKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+                                  const isNumber = /^[0-9]$/.test(e.key);
+                                  
+                                  if (!isNumber && !allowedKeys.includes(e.key)) {
+                                    e.preventDefault();
+                                  }
+                                }}
                                 {...field}
                                 onChange={(e) => {
                                   const newPercentage = parseFloat(e.target.value);
@@ -251,15 +260,20 @@ export function CurrentHoldings() {
                                         const adjustmentFactor = (totalOtherPercentage - difference) / totalOtherPercentage;
                                         const newValue = currentPercentage * adjustmentFactor;
                                         
-                                        // Update the percentage and corresponding amount
-                                        form.setValue(`holdings.${i}.percentage`, parseFloat(newValue.toFixed(2)));
-                                        const newAmount = (newValue / 100) * portfolioValue;
+                                        // Update the percentage as a whole number and corresponding amount
+                                        const roundedValue = Math.round(newValue);
+                                        form.setValue(`holdings.${i}.percentage`, roundedValue);
+                                        const newAmount = (roundedValue / 100) * portfolioValue;
                                         form.setValue(`holdings.${i}.amount`, parseFloat(newAmount.toFixed(2)));
                                       }
                                     });
                                     
+                                    // Make sure the percentage is a whole number
+                                    const roundedPercentage = Math.round(newPercentage);
+                                    field.onChange(roundedPercentage);
+                                    
                                     // Update this holding's amount
-                                    const newAmount = (newPercentage / 100) * portfolioValue;
+                                    const newAmount = (roundedPercentage / 100) * portfolioValue;
                                     form.setValue(`holdings.${index}.amount`, parseFloat(newAmount.toFixed(2)));
                                   }
                                 }}
@@ -397,9 +411,9 @@ export function CurrentHoldings() {
                     
                     // Create a copy of holdings with reduced percentages to make room for the new asset
                     const adjustedHoldings = currentHoldings.map(holding => {
-                      // Reduce each holding proportionally
+                      // Reduce each holding proportionally and round to whole numbers
                       const reductionFactor = (100 - newAssetPercentage) / currentTotalPercentage;
-                      const adjustedPercentage = parseFloat((holding.percentage * reductionFactor).toFixed(2));
+                      const adjustedPercentage = Math.round(holding.percentage * reductionFactor);
                       const adjustedAmount = parseFloat(((adjustedPercentage / 100) * portfolioValue).toFixed(2));
                       
                       return {

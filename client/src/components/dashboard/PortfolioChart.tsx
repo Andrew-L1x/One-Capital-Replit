@@ -32,7 +32,7 @@ const CustomTooltip = ({ active, payload }: any) => {
       <div className="bg-card border rounded shadow p-3">
         <p className="font-medium">{data.name} ({data.symbol})</p>
         <p>Value: ${data.valueUSD.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-        <p>Percentage: {data.value.toFixed(2)}%</p>
+        <p>Percentage: {Math.round(data.value)}%</p>
       </div>
     );
   }
@@ -127,7 +127,7 @@ export function PortfolioChart() {
               <Legend
                 formatter={(value, entry, index) => {
                   const item = chartData[index];
-                  return `${item.name} (${item.value.toFixed(1)}%)`;
+                  return `${item.name} (${Math.round(item.value)}%)`;
                 }}
               />
             </PieChart>

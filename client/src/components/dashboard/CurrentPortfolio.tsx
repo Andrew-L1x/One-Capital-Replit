@@ -1,8 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useWallet } from '@/lib/walletContext';
-import { PortfolioValue } from './PortfolioValue';
 import { PortfolioChart } from './PortfolioChart';
-import { AssetAllocationTable } from './AssetAllocationTable';
+import { CurrentHoldings } from './CurrentHoldings';
 import { Button } from '@/components/ui/button';
 
 export function CurrentPortfolio() {
@@ -38,14 +37,24 @@ export function CurrentPortfolio() {
   
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <PortfolioValue />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="w-full h-full">
+          <CurrentHoldings />
         </div>
-        <PortfolioChart />
+        <div className="w-full">
+          <Card>
+            <CardHeader>
+              <CardTitle>Portfolio Allocation</CardTitle>
+              <CardDescription>
+                Visual breakdown of your current assets
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-[400px]">
+              <PortfolioChart />
+            </CardContent>
+          </Card>
+        </div>
       </div>
-      
-      <AssetAllocationTable />
     </div>
   );
 }

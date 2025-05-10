@@ -47,8 +47,18 @@ export function HistoricalPerformance() {
       const ethStartPrice = 3512.89 * (1 - Math.random() * 0.2);
       const solStartPrice = 142.67 * (1 - Math.random() * 0.2);
       
+      // First data point to avoid the undefined error
+      data.push({
+        date: new Date(now).setDate(now.getDate() - days),
+        formattedDate: formatDate(new Date(now).setDate(now.getDate() - days)),
+        btc: btcStartPrice,
+        eth: ethStartPrice,
+        sol: solStartPrice,
+        portfolio: btcStartPrice * 0.4 + ethStartPrice * 0.4 + solStartPrice * 0.2,
+      });
+      
       // Generate historical prices with realistic, slightly volatile movements
-      for (let i = days; i >= 0; i--) {
+      for (let i = days - 1; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
         
@@ -61,9 +71,9 @@ export function HistoricalPerformance() {
         const solChange = 1 + (Math.random() * 2 - 1) * volatilityFactor;
         
         // Calculate prices for this day
-        const btcPrice = i === 0 ? 65421.37 : data[data.length - 1].btc * btcChange;
-        const ethPrice = i === 0 ? 3512.89 : data[data.length - 1].eth * ethChange;
-        const solPrice = i === 0 ? 142.67 : data[data.length - 1].sol * solChange;
+        const btcPrice = data[data.length - 1].btc * btcChange;
+        const ethPrice = data[data.length - 1].eth * ethChange;
+        const solPrice = data[data.length - 1].sol * solChange;
         
         // Calculate portfolio value based on allocation percentages (here we assume a simple 40/40/20 split)
         const portfolioValue = btcPrice * 0.4 + ethPrice * 0.4 + solPrice * 0.2;

@@ -6,14 +6,29 @@ export interface AssetPrice {
   symbol: string;
   price: number;
   lastUpdated: Date;
+  previous24h?: number;
+  change24h?: number;
+  changePercentage24h?: number;
+}
+
+interface PriceDetail {
+  current: number;
+  previous24h: number;
+  change24h: number;
+  changePercentage24h: number;
 }
 
 interface PriceMap {
   [symbol: string]: number;
 }
 
+interface PriceDetailMap {
+  [symbol: string]: PriceDetail;
+}
+
 // Cache for prices
 let priceCache: PriceMap = {};
+let priceDetailCache: PriceDetailMap = {};
 let lastFetchTime = 0;
 const CACHE_DURATION = 60000; // 1 minute cache
 
@@ -31,11 +46,27 @@ export async function fetchAllPrices(): Promise<PriceMap> {
     
     // Fetch from API
     const response = await apiRequest('GET', '/api/prices');
-    const prices = await response.json();
+    const priceData = await response.json();
     
     // Update cache
-    if (prices && typeof prices === 'object') {
-      priceCache = prices as PriceMap;
+    if (priceData && typeof priceData === 'object') {
+      const newPriceCache: PriceMap = {};
+      const newPriceDetailCache: PriceDetailMap = {};
+      
+      // Extract current prices and store detailed price info
+      Object.entries(priceData).forEach(([symbol, data]: [string, any]) => {
+        if (data && typeof data === 'object' && 'current' in data) {
+          // New format with price history
+          newPriceCache[symbol] = data.current;
+          newPriceDetailCache[symbol] = data as PriceDetail;
+        } else {
+          // Old format (just a number)
+          newPriceCache[symbol] = data as number;
+        }
+      });
+      
+      priceCache = newPriceCache;
+      priceDetailCache = newPriceDetailCache;
       lastFetchTime = now;
       return priceCache;
     }
@@ -80,6 +111,50 @@ export async function fetchPriceBySymbol(symbol: string): Promise<number | null>
 /**
  * Custom hook to subscribe to price updates
  */
+/**
+ * Custom hook to get price details including historical data
+ */
+export function usePriceDetails(refreshInterval = 30000): {
+  priceDetails: PriceDetailMap;
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+} {
+  const [priceDetails, setPriceDetails] = useState<PriceDetailMap>({});
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  
+  const fetchPriceDetailsData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch all prices which will update priceDetailCache
+      await fetchAllPrices();
+      setPriceDetails(priceDetailCache);
+    } catch (err) {
+      console.error('Error in usePriceDetails hook:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error fetching price details'));
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fetch prices on mount
+  useEffect(() => {
+    fetchPriceDetailsData();
+    
+    // Set up interval for regular price updates
+    const intervalId = setInterval(fetchPriceDetailsData, refreshInterval);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [refreshInterval]);
+  
+  return { priceDetails, loading, error, refetch: fetchPriceDetailsData };
+}
+
 export function usePrices(symbols: string[] = [], refreshInterval = 30000): {
   prices: PriceMap;
   loading: boolean;

@@ -1097,7 +1097,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   api.get("/prices", async (_req: Request, res: Response) => {
     try {
       const prices = await getAllAssetPrices();
-      return res.json(prices);
+      
+      // For the performance metrics, we'll add 24h price change data
+      // In a real app, this would come from historical data in the database
+      // For demo purposes, we'll generate some realistic price variations
+      
+      const pricesWithHistory: Record<string, any> = {};
+      
+      for (const [symbol, price] of Object.entries(prices)) {
+        // Generate a realistic 24h change (between -15% and +15%)
+        const changePercentage = (Math.random() * 30 - 15);
+        const previousPrice = price / (1 + (changePercentage / 100));
+        
+        pricesWithHistory[symbol] = {
+          current: price,
+          previous24h: previousPrice,
+          change24h: price - previousPrice,
+          changePercentage24h: changePercentage
+        };
+      }
+      
+      return res.json(pricesWithHistory);
     } catch (error) {
       console.error("Error fetching all asset prices:", error);
       return res.status(500).json({ message: "Error fetching prices" });

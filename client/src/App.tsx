@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PortfolioProvider } from "@/lib/portfolioContext";
+import { WalletProvider } from "@/lib/walletContext";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
@@ -86,14 +87,16 @@ function App() {
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <DynamicWagmiConnector>
-            <PortfolioProvider>
-              <TooltipProvider>
-                <Toaster />
-                <MainLayout>
-                  <Router />
-                </MainLayout>
-              </TooltipProvider>
-            </PortfolioProvider>
+            <WalletProvider>
+              <PortfolioProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <MainLayout>
+                    <Router />
+                  </MainLayout>
+                </TooltipProvider>
+              </PortfolioProvider>
+            </WalletProvider>
           </DynamicWagmiConnector>
         </QueryClientProvider>
       </WagmiProvider>

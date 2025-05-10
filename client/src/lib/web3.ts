@@ -11,7 +11,8 @@ export enum ChainId {
   ETHEREUM_MAINNET = 1,
   ETHEREUM_GOERLI = 5,
   L1X_MAINNET = 1776,
-  L1X_TESTNET = 1777,
+  L1X_TESTNET = 14649, // Updated to v2 testnet
+  L1X_TESTNET_V1 = 1777 // Keep old value for compatibility
 }
 
 // Get chain name
@@ -24,7 +25,9 @@ export const getChainName = (chainId: ChainId): string => {
     case ChainId.L1X_MAINNET:
       return "L1X Mainnet";
     case ChainId.L1X_TESTNET:
-      return "L1X Testnet";
+      return "L1X V2 Testnet";
+    case ChainId.L1X_TESTNET_V1:
+      return "L1X V1 Testnet";
     default:
       return "Unknown Chain";
   }
@@ -82,7 +85,7 @@ export const getL1XProvider = async (): Promise<Web3Provider | null> => {
       await window.ethereum.request({
         method: 'wallet_addEthereumChain',
         params: [{
-          chainId: '0x3939', // Chain ID for L1X testnet
+          chainId: '0x3929', // Chain ID for L1X v2 testnet (14649 in hex)
           chainName: 'L1X V2 Testnet',
           nativeCurrency: {
             name: 'L1X',
@@ -111,6 +114,25 @@ export const getEthersProvider = async (): Promise<ethers.BrowserProvider | null
   }
   
   return new ethers.BrowserProvider(window.ethereum);
+};
+
+// Generic provider access function - main entry point used by other modules
+export const getProvider = async (): Promise<ethers.Provider | null> => {
+  try {
+    // First try to get L1X provider from wallet
+    const provider = await getL1XProvider();
+    
+    if (provider) {
+      // Convert Web3Provider to ethers.BrowserProvider
+      return new ethers.BrowserProvider(provider as any);
+    }
+    
+    // Fall back to direct provider
+    return getL1XDirectProvider();
+  } catch (error) {
+    console.error("Error getting provider:", error);
+    return null;
+  }
 };
 
 // Get chain-specific provider

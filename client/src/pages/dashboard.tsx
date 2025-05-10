@@ -241,6 +241,13 @@ export default function Dashboard() {
             {/* Real-time current portfolio with chart and table */}
             <CurrentPortfolio />
             
+            {/* Add Performance Metrics */}
+            {vaults.length > 0 && (
+              <div className="mt-8">
+                <PerformanceMetrics />
+              </div>
+            )}
+            
             {/* Add Cross-Chain Swap section if vaults exist */}
             {vaults.length > 0 && (
               <div className="mt-8">
@@ -248,12 +255,8 @@ export default function Dashboard() {
                   <ArrowRightLeft className="h-5 w-5 mr-2" />
                   Cross-Chain Operations
                 </h3>
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-1">
                   <CrossChainSwap />
-                  
-                  <Card className="md:col-span-1">
-                    <PerformanceMetrics />
-                  </Card>
                 </div>
               </div>
             )}

@@ -14,6 +14,7 @@ import { CrossChainSwap } from "@/components/dashboard/CrossChainSwap";
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import { PortfolioBalance } from "@/components/dashboard/PortfolioBalance";
 import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
+import TakeProfitForm from "@/components/forms/take-profit-form";
 import { 
   PlusCircle, 
   ArrowUpRight, 
@@ -250,6 +251,30 @@ export default function Dashboard() {
               {vaults.length > 0 && (
                 <Card className="md:col-span-1">
                   <CardHeader>
+                    <CardTitle>My Take Profit Strategy</CardTitle>
+                    <CardDescription>
+                      Configure when and how to take profits from your portfolio
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {vaults[0]?.id && (
+                        <TakeProfitForm 
+                          vaultId={vaults[0].id}
+                          initialData={undefined}
+                          onSubmitSuccess={() => {
+                            // Success handling
+                          }}
+                        />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {vaults.length > 0 && (
+                <Card className="md:col-span-1">
+                  <CardHeader>
                     <CardTitle>My Rebalance Strategy</CardTitle>
                     <CardDescription>
                       Configure your portfolio rebalancing strategy
@@ -258,8 +283,6 @@ export default function Dashboard() {
                   <CardContent>
                     <div className="space-y-6">
                       <div className="pb-4">
-                        <h4 className="font-medium mb-4">My Rebalance Strategy</h4>
-                        
                         <div className="space-y-4">
                           {/* Rebalance Frequency */}
                           <div>

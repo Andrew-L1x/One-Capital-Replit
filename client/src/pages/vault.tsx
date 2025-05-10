@@ -428,7 +428,13 @@ export default function VaultPage() {
         <TabsContent value="settings" className="space-y-6">
           <TakeProfitForm 
             vaultId={vault.id}
-            initialData={takeProfitSettings as TakeProfitSetting | undefined}
+            initialData={takeProfitSettings ? {
+              id: takeProfitSettings.id,
+              type: takeProfitSettings.type || 'manual',
+              thresholdPercentage: parseFloat(takeProfitSettings.percentage?.toString() || '0'),
+              frequency: takeProfitSettings.interval as string || undefined,
+              percentageToSell: 20 // Default percentage to sell
+            } : undefined}
             onSubmitSuccess={() => refetchTakeProfit()}
           />
         </TabsContent>

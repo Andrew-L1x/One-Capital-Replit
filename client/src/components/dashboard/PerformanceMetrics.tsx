@@ -344,23 +344,23 @@ export function PerformanceMetrics() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : assetAllocations.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto max-w-full -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full min-w-[320px]">
                 <thead>
                   <tr className="border-b">
                     <th className="py-2 text-left font-medium text-muted-foreground">Asset</th>
                     <th className="py-2 text-right font-medium text-muted-foreground">Amount</th>
-                    <th className="py-2 text-right font-medium text-muted-foreground">24h Change</th>
-                    <th className="py-2 text-right font-medium text-muted-foreground">Allocation %</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">24h</th>
+                    <th className="py-2 text-right font-medium text-muted-foreground">%</th>
                   </tr>
                 </thead>
                 <tbody>
                   {assetAllocations.map((asset) => (
                     <tr key={asset.id} className="border-b border-muted hover:bg-muted/50 transition-colors">
                       <td className="py-2">
-                        <div className="flex items-center">
+                        <div className="flex flex-col sm:flex-row sm:items-center">
                           <span className="font-semibold">{asset.symbol}</span>
-                          <span className="ml-2 text-muted-foreground text-sm">{asset.name}</span>
+                          <span className="sm:ml-2 text-muted-foreground text-xs">{asset.name}</span>
                         </div>
                       </td>
                       <td className="py-2 text-right">

@@ -212,8 +212,8 @@ export function CurrentHoldings() {
                 const asset = assets.find(a => a.id === holding.assetId);
 
                 return (
-                  <div key={index} className="flex items-center space-x-3 mb-3 pb-3 border-b">
-                    <div className="flex-1 font-medium">
+                  <div key={index} className="flex flex-wrap items-center gap-2 mb-3 pb-3 border-b">
+                    <div className="flex-1 min-w-[100px] font-medium">
                       {asset?.symbol || "Unknown"} 
                       <span className="text-xs text-muted-foreground ml-1">({asset?.name})</span>
                     </div>
@@ -222,7 +222,7 @@ export function CurrentHoldings() {
                       control={form.control}
                       name={`holdings.${index}.percentage`}
                       render={({ field }) => (
-                        <FormItem className="w-24">
+                        <FormItem className="w-20">
                           <FormControl>
                             <div className="relative">
                               <Input
@@ -324,9 +324,7 @@ export function CurrentHoldings() {
                       )}
                     />
                     
-                    <div className="w-4"></div>
-                    
-                    <div className="w-24 text-xs font-medium text-right">
+                    <div className="text-xs font-medium text-right">
                       {asset?.symbol && asset.symbol === "BTC" && (
                         <span>{holding.amount > 0 ? (holding.amount / 65000).toFixed(3) : "0"} BTC</span>
                       )}

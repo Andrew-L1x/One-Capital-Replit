@@ -85,38 +85,40 @@ export function AssetAllocationTable() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Token</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">% of Portfolio</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {assetAllocations.map(allocation => (
-              <TableRow key={allocation.asset.id}>
-                <TableCell className="font-medium">
-                  <div className="flex flex-col">
-                    <span>{allocation.asset.name}</span>
-                    <span className="text-xs text-muted-foreground">{allocation.asset.symbol}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  {allocation.amount.toLocaleString(undefined, { 
-                    maximumFractionDigits: 8,
-                    minimumFractionDigits: 2 
-                  })}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="outline">
-                    {Math.round(allocation.percentOfPortfolio)}%
-                  </Badge>
-                </TableCell>
+        <div className="overflow-x-auto max-w-full">
+          <Table className="min-w-[300px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Token</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead className="text-right">% of Portfolio</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {assetAllocations.map(allocation => (
+                <TableRow key={allocation.asset.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex flex-col">
+                      <span>{allocation.asset.name}</span>
+                      <span className="text-xs text-muted-foreground">{allocation.asset.symbol}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {allocation.amount.toLocaleString(undefined, { 
+                      maximumFractionDigits: 8,
+                      minimumFractionDigits: 2 
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="outline">
+                      {Math.round(allocation.percentOfPortfolio)}%
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
         
         <div className="mt-4 pt-4 border-t flex justify-between items-center">
           <span className="font-semibold">Total Portfolio Value:</span>

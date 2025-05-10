@@ -11,7 +11,7 @@ import {
   insertPriceFeedSchema,
   insertRebalanceHistorySchema
 } from "@shared/schema";
-import { getPrice, getPrices, getPricesWithChange } from "./services/priceFeed";
+import { getPriceForAsset, getPricesWithChange } from "./services/priceFeed";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import session from "express-session";
@@ -1238,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Symbol is required" });
       }
       
-      const price = await getPrice(symbol);
+      const price = await getPriceForAsset(symbol);
       if (price === null) {
         return res.status(404).json({ message: `Price not found for symbol: ${symbol}` });
       }

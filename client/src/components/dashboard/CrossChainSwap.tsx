@@ -114,13 +114,13 @@ export function CrossChainSwap() {
   // Update local prices when selected assets or prices change
   useEffect(() => {
     if (prices && fromAsset && prices[fromAsset]) {
-      setFromPrice(prices[fromAsset]);
+      setFromPrice(prices[fromAsset].current);
     } else {
       setFromPrice(null);
     }
     
     if (prices && toAsset && prices[toAsset]) {
-      setToPrice(prices[toAsset]);
+      setToPrice(prices[toAsset].current);
     } else {
       setToPrice(null);
     }
@@ -154,22 +154,19 @@ export function CrossChainSwap() {
       const defaultVaultId = vaults.length > 0 ? vaults[0].id : 1;
       
       // This would call the backend to initiate the cross-chain swap
-      const response = await apiRequest(
-        'POST',
-        `/api/vaults/${defaultVaultId}/cross-chain-swap`,
-        {
+      const response = await apiRequest(`/api/vaults/${defaultVaultId}/cross-chain-swap`, {
+        method: 'POST',
+        data: {
           fromAsset: values.fromAsset,
           toAsset: values.toAsset,
           amount: parseFloat(values.amount),
           targetChainId: values.targetChain,
-        },
-      );
-      
-      const result = await response.json();
+        }
+      });
       
       toast({
         title: "Swap Initiated",
-        description: `Your cross-chain swap has been initiated. ${result.txHash ? `Transaction ID: ${result.txHash.substring(0, 10)}...` : ''}`,
+        description: `Your cross-chain swap has been initiated. ${response?.txHash ? `Transaction ID: ${response.txHash.substring(0, 10)}...` : ''}`,
       });
       
       // Reset form after successful submission

@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
@@ -17,86 +16,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWallet } from '@/lib/walletContext';
-import { formatPrice, usePriceDetails } from '@/lib/usePriceDetails';
-
-interface AssetWithAllocation {
-  asset: {
-    id: number;
-    name: string;
-    symbol: string;
-    type: string;
-  };
-  amount: number;
-  valueUSD: number;
-  percentOfPortfolio: number;
-  price: number;
-}
+import { formatPrice } from '@/lib/usePriceDetails';
+import { usePortfolio } from '@/lib/portfolioContext';
 
 export function AssetAllocationTable() {
   const { isConnected } = useWallet();
-  const [assetAllocations, setAssetAllocations] = useState<AssetWithAllocation[]>([]);
-  const [totalPortfolioValue, setTotalPortfolioValue] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Fetch current prices with 24h history
-  const { priceDetails, loading: pricesLoading } = usePriceDetails(30000);
-  
-  // Calculate asset allocations when data changes
-  useEffect(() => {
-    if (!isConnected || pricesLoading || Object.keys(priceDetails).length === 0) {
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    // Define demo portfolio for our demonstration
-    const mockPortfolio = [
-      { id: 1, name: "Bitcoin", symbol: "BTC", type: "crypto", amount: 0.5 },
-      { id: 2, name: "Ethereum", symbol: "ETH", type: "crypto", amount: 5.0 },
-      { id: 3, name: "Layer One X", symbol: "L1X", type: "crypto", amount: 500.0 },
-      { id: 4, name: "Solana", symbol: "SOL", type: "crypto", amount: 15.0 },
-      { id: 5, name: "USD Coin", symbol: "USDC", type: "stablecoin", amount: 1000.0 }
-    ];
-    
-    // Calculate total portfolio value
-    let portfolioTotal = 0;
-    mockPortfolio.forEach(asset => {
-      if (priceDetails[asset.symbol]) {
-        const assetValue = asset.amount * priceDetails[asset.symbol].current;
-        portfolioTotal += assetValue;
-      }
-    });
-    
-    // Create allocation data objects with values
-    const allocationData: AssetWithAllocation[] = [];
-    
-    mockPortfolio.forEach(asset => {
-      if (priceDetails[asset.symbol]) {
-        const valueUSD = asset.amount * priceDetails[asset.symbol].current;
-        const percentOfPortfolio = portfolioTotal > 0 ? (valueUSD / portfolioTotal) * 100 : 0;
-        
-        allocationData.push({
-          asset: {
-            id: asset.id,
-            name: asset.name,
-            symbol: asset.symbol,
-            type: asset.type
-          },
-          amount: asset.amount,
-          valueUSD,
-          percentOfPortfolio,
-          price: priceDetails[asset.symbol].current,
-        });
-      }
-    });
-    
-    // Sort by value (descending)
-    allocationData.sort((a, b) => b.valueUSD - a.valueUSD);
-    
-    setAssetAllocations(allocationData);
-    setTotalPortfolioValue(portfolioTotal);
-    setIsLoading(false);
-  }, [isConnected, priceDetails, pricesLoading]);
+  const { portfolioValue, assetAllocations, isLoading } = usePortfolio();
   
   // Empty state for when wallet is not connected
   if (!isConnected) {
@@ -116,7 +41,7 @@ export function AssetAllocationTable() {
   }
   
   // Loading state
-  if (isLoading || pricesLoading) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -204,7 +129,7 @@ export function AssetAllocationTable() {
         <div className="mt-4 pt-4 border-t flex justify-between items-center">
           <span className="font-semibold">Total Portfolio Value:</span>
           <span className="font-bold text-lg">
-            {formatPrice(totalPortfolioValue)}
+            {formatPrice(portfolioValue)}
           </span>
         </div>
       </CardContent>

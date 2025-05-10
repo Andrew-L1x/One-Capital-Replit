@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWallet } from '@/lib/walletContext';
-import { usePriceDetails } from '@/lib/usePriceDetails';
+import { usePortfolio } from '@/lib/portfolioContext';
 
 interface ChartData {
   name: string;
@@ -42,60 +42,18 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function PortfolioChart() {
   const { isConnected } = useWallet();
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { assetAllocations, isLoading } = usePortfolio();
   
-  // Fetch current prices with 24h history
-  const { priceDetails, loading: pricesLoading } = usePriceDetails(30000);
-  
-  // Calculate portfolio distribution
-  useEffect(() => {
-    if (!isConnected || pricesLoading || Object.keys(priceDetails).length === 0) {
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    // Define demo portfolio values
-    const mockPortfolio = [
-      { symbol: 'BTC', name: 'Bitcoin', amount: 0.5 },
-      { symbol: 'ETH', name: 'Ethereum', amount: 5.0 },
-      { symbol: 'L1X', name: 'Layer One X', amount: 500.0 },
-      { symbol: 'SOL', name: 'Solana', amount: 15.0 },
-      { symbol: 'USDC', name: 'USD Coin', amount: 1000.0 }
-    ];
-    
-    // Calculate total portfolio value
-    let totalValue = 0;
-    mockPortfolio.forEach(asset => {
-      if (priceDetails[asset.symbol]) {
-        totalValue += asset.amount * priceDetails[asset.symbol].current;
-      }
-    });
-    
-    if (totalValue > 0) {
-      // Create chart data
-      const data: ChartData[] = mockPortfolio
-        .filter(asset => priceDetails[asset.symbol]) // Only include assets with price data
-        .map(asset => {
-          const valueUSD = asset.amount * priceDetails[asset.symbol].current;
-          const percentage = (valueUSD / totalValue) * 100;
-          
-          return {
-            name: asset.name,
-            symbol: asset.symbol,
-            value: percentage,
-            valueUSD: valueUSD,
-            color: stringToColor(asset.symbol)
-          };
-        })
-        .sort((a, b) => b.valueUSD - a.valueUSD); // Sort by value (highest first)
-      
-      setChartData(data);
-    }
-    
-    setIsLoading(false);
-  }, [isConnected, priceDetails, pricesLoading]);
+  // Transform asset allocations into chart data
+  const chartData = useMemo(() => {
+    return assetAllocations.map(allocation => ({
+      name: allocation.asset.name,
+      symbol: allocation.asset.symbol,
+      value: allocation.percentOfPortfolio,
+      valueUSD: allocation.valueUSD,
+      color: stringToColor(allocation.asset.symbol)
+    }));
+  }, [assetAllocations]);
   
   // Empty state when wallet is not connected
   if (!isConnected) {
@@ -113,7 +71,7 @@ export function PortfolioChart() {
   }
   
   // Loading state
-  if (isLoading || pricesLoading) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>

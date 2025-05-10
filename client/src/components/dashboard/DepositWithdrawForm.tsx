@@ -288,7 +288,7 @@ export function DepositWithdrawForm() {
                       <SelectContent>
                         {assets.map((asset) => (
                           <SelectItem key={asset.id} value={asset.symbol}>
-                            {asset.symbol} - {asset.name} ({formatPrice(asset.value)})
+                            {asset.symbol} - {asset.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

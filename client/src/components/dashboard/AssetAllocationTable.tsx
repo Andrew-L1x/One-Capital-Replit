@@ -91,7 +91,6 @@ export function AssetAllocationTable() {
               <TableHead>Token</TableHead>
               <TableHead className="text-right">Price (USD)</TableHead>
               <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Value (USD)</TableHead>
               <TableHead className="text-right">% of Portfolio</TableHead>
             </TableRow>
           </TableHeader>
@@ -112,9 +111,6 @@ export function AssetAllocationTable() {
                     maximumFractionDigits: 8,
                     minimumFractionDigits: 2 
                   })}
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  {formatPrice(allocation.valueUSD)}
                 </TableCell>
                 <TableCell className="text-right">
                   <Badge variant="outline">

@@ -162,28 +162,38 @@ export default function AllocationList({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Asset Allocations</CardTitle>
-        <CardDescription>Current portfolio allocation</CardDescription>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg">Asset Allocations</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">Current portfolio allocation</CardDescription>
       </CardHeader>
       <CardContent>
         {allocations.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {allocations.map((allocation) => (
               <div 
                 key={allocation.id} 
-                className="p-4 border rounded-lg flex items-center justify-between"
+                className="p-2 sm:p-4 border rounded-lg"
               >
-                <div className="flex-grow pr-4">
-                  <p className="font-medium">{getAssetName(allocation.assetId)}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-sm sm:text-base truncate max-w-[150px] sm:max-w-none">
+                    {getAssetName(allocation.assetId)}
+                  </p>
                   
+                  {!editMode[allocation.id] && (
+                    <Badge variant="secondary" className="text-xs">
+                      {parseFloat(allocation.targetPercentage.toString()).toFixed(2)}%
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   {editMode[allocation.id] ? (
-                    <div className="mt-1 relative">
+                    <div className="relative w-full sm:w-40">
                       <Input 
                         type="number"
                         value={editValues[allocation.id]}
                         onChange={(e) => handleInputChange(allocation.id, e.target.value)}
-                        className="pr-8 w-32"
+                        className="pr-8 w-full h-8 text-sm"
                         min="0.01"
                         max="100"
                         step="0.01"
@@ -192,65 +202,64 @@ export default function AllocationList({
                         %
                       </div>
                     </div>
-                  ) : (
-                    <Badge variant="secondary" className="mt-1">
-                      {parseFloat(allocation.targetPercentage.toString()).toFixed(2)}%
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  {editMode[allocation.id] ? (
+                  ) : null}
+                  
+                  <div className="flex items-center space-x-2 ml-auto">
+                    {editMode[allocation.id] ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleSave(allocation)}
+                        disabled={saving[allocation.id]}
+                        className="h-8 text-xs w-[70px]"
+                      >
+                        {saving[allocation.id] ? (
+                          "Saving..."
+                        ) : (
+                          <>
+                            <Save className="h-3 w-3 mr-1" />
+                            Save
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(allocation)}
+                        className="h-8 text-xs w-[70px]"
+                      >
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                    
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => handleSave(allocation)}
-                      disabled={saving[allocation.id]}
+                      onClick={() => handleDelete(allocation)}
+                      disabled={deleting[allocation.id]}
+                      className="h-8 text-xs w-[70px]"
                     >
-                      {saving[allocation.id] ? (
-                        "Saving..."
+                      {deleting[allocation.id] ? (
+                        "..."
                       ) : (
                         <>
-                          <Save className="h-4 w-4 mr-1" />
-                          Save
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Remove
                         </>
                       )}
                     </Button>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEdit(allocation)}
-                    >
-                      <Edit2 className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                  )}
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDelete(allocation)}
-                    disabled={deleting[allocation.id]}
-                  >
-                    {deleting[allocation.id] ? (
-                      "Deleting..."
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Remove
-                      </>
-                    )}
-                  </Button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No assets allocated yet</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Add assets using the form on the right
+          <div className="text-center py-6">
+            <p className="text-muted-foreground text-sm">No assets allocated yet</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Add assets using the form below
             </p>
           </div>
         )}

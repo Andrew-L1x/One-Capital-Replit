@@ -121,36 +121,41 @@ export default function AllocationCard({
     }
   };
 
+  // Determine the button text based on whether this is the first allocation or not
+  const buttonText = allocations.length === 0 
+    ? (isSubmitting ? "Creating..." : "Create Initial Deposit") 
+    : (isSubmitting ? "Adding..." : "Add Allocation");
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Add Asset Allocation</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base sm:text-lg">Add Asset Allocation</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground mb-2">
-            Current Total Allocation: {totalAllocation.toFixed(2)}%
+        <div className="mb-3 flex justify-between text-xs sm:text-sm">
+          <p className="text-muted-foreground">
+            Current: {totalAllocation.toFixed(2)}%
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground">
             Remaining: {(100 - totalAllocation).toFixed(2)}%
           </p>
         </div>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 sm:space-y-4">
             <FormField
               control={form.control}
               name="assetId"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Asset</FormLabel>
+                <FormItem className="space-y-1 sm:space-y-2">
+                  <FormLabel className="text-xs sm:text-sm">Asset</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
                     disabled={availableAssets.length === 0}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-8 sm:h-10 text-sm">
                         <SelectValue placeholder="Select an asset" />
                       </SelectTrigger>
                     </FormControl>
@@ -162,7 +167,7 @@ export default function AllocationCard({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -171,8 +176,8 @@ export default function AllocationCard({
               control={form.control}
               name="targetPercentage"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target Percentage</FormLabel>
+                <FormItem className="space-y-1 sm:space-y-2">
+                  <FormLabel className="text-xs sm:text-sm">Target Percentage</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
@@ -181,13 +186,14 @@ export default function AllocationCard({
                         step="0.01"
                         min="0.01"
                         max="100"
+                        className="h-8 sm:h-10 text-sm pr-8"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                         %
                       </div>
                     </div>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
@@ -195,9 +201,9 @@ export default function AllocationCard({
             <Button
               type="submit"
               disabled={isSubmitting || availableAssets.length === 0 || totalAllocation >= 100}
-              className="w-full"
+              className="w-full h-8 sm:h-10 text-sm"
             >
-              {isSubmitting ? "Adding..." : "Add Allocation"}
+              {buttonText}
             </Button>
             
             {availableAssets.length === 0 && (

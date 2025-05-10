@@ -40,8 +40,10 @@ export default function Home() {
             {!isLoading ? (
               !user ? (
                 <>
-                  <Button variant="ghost" onClick={() => setLocation("/dashboard")}>
-                    Try Demo
+                  <Button variant="ghost" onClick={() => {
+                    document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+                  }}>
+                    Sign up
                   </Button>
                   <Button onClick={() => {
                     // Scroll to login section
@@ -51,8 +53,10 @@ export default function Home() {
                   </Button>
                 </>
               ) : (
-                <Button variant="outline" onClick={() => setLocation("/dashboard")}>
-                  Go to Dashboard
+                <Button variant="outline" onClick={() => {
+                  document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+                }}>
+                  Sign up / Login
                 </Button>
               )
             ) : null}
@@ -78,8 +82,10 @@ export default function Home() {
                   }}>
                     Get Started <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button size="lg" variant="outline" onClick={() => setLocation("/dashboard")}>
-                    View Demo
+                  <Button size="lg" variant="outline" onClick={() => {
+                    document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+                  }}>
+                    Sign up / Login
                   </Button>
                 </div>
               </div>
@@ -475,8 +481,10 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4 mt-8">
-                  <Button variant="outline" onClick={() => setLocation("/dashboard")}>
-                    Try Demo Account
+                  <Button variant="outline" onClick={() => {
+                    document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+                  }}>
+                    Sign up / Login
                   </Button>
                 </div>
               </div>

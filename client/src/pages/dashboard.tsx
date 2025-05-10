@@ -25,7 +25,8 @@ import {
   DollarSign,
   ChevronUp,
   ChevronDown,
-  ArrowRightLeft
+  ArrowRightLeft,
+  LineChart
 } from "lucide-react";
 import { Vault, Asset } from "@shared/schema";
 
@@ -138,9 +139,9 @@ export default function Dashboard() {
               <span>Vaults</span>
             </TabsTrigger>
             <TabsTrigger value="portfolio">
-              <Circle className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Overview</span>
-              <span className="sm:hidden">Overview</span>
+              <LineChart className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Portfolio</span>
+              <span className="sm:hidden">Portfolio</span>
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
@@ -236,7 +237,7 @@ export default function Dashboard() {
             )}
           </TabsContent>
           
-          {/* Portfolio Overview Tab */}
+          {/* Portfolio Tab */}
           <TabsContent value="portfolio" className="space-y-8">
             {/* Real-time current portfolio with chart and table */}
             <CurrentPortfolio />

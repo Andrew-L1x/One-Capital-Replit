@@ -108,13 +108,17 @@ export const rebalanceHistory = pgTable("rebalance_history", {
   id: serial("id").primaryKey(),
   vaultId: integer("vault_id").notNull().references(() => vaults.id, { onDelete: "cascade" }),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
-  transactions: json("transactions").notNull(),
+  transactions: json("transactions"), // Could be null if using details instead
+  type: text("type").default("manual").notNull(), // "manual", "scheduled", "drift"
+  details: text("details"), // JSON string with additional details about the rebalance
   status: text("status").notNull(), // "pending", "completed", "failed"
 });
 
 export const insertRebalanceHistorySchema = createInsertSchema(rebalanceHistory).pick({
   vaultId: true,
   transactions: true,
+  type: true,
+  details: true,
   status: true,
 });
 

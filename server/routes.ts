@@ -1065,6 +1065,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update vault rebalance settings
+  api.put("/vaults/:id/rebalance-settings", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const userId = (req.user as any).id;
+      const vaultId = parseInt(req.params.id);
+      
+      if (isNaN(vaultId)) {
+        return res.status(400).json({ message: "Invalid vault ID" });
+      }
+      
+      const vault = await storage.getVault(vaultId);
+      
+      if (!vault) {
+        return res.status(404).json({ message: "Vault not found" });
+      }
+      
+      if (vault.userId !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const updateData = {
+        driftThreshold: req.body.driftThreshold !== undefined ? req.body.driftThreshold : vault.driftThreshold,
+        rebalanceFrequency: req.body.rebalanceFrequency || vault.rebalanceFrequency
+      };
+      
+      const updatedVault = await storage.updateVault(vaultId, updateData);
+      return res.json(updatedVault);
+    } catch (error) {
+      console.error("Error updating rebalance settings:", error);
+      return res.status(500).json({ message: "Error updating rebalance settings" });
+    }
+  });
+  
   // Trigger rebalance
   api.post("/vaults/:vaultId/rebalance", async (req: Request, res: Response) => {
     try {
@@ -1096,6 +1133,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Vault has no allocations" });
       }
       
+      // Check if rebalance is needed based on drift threshold
+      const needsRebalance = await vaultNeedsRebalancing(vaultId);
+      
       // Mock rebalance transactions
       const transactions = allocations.map(allocation => ({
         assetId: allocation.assetId,
@@ -1110,15 +1150,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]
       }));
       
-      // Create rebalance history
+      // Create rebalance history with details
       const rebalanceData = {
         vaultId,
-        transactions,
-        status: "completed"
+        type: "manual", // manual rebalance triggered by user
+        status: "completed",
+        transactions, // Add the transactions as required by the schema
+        details: JSON.stringify({
+          driftThreshold: vault.driftThreshold?.toString() || "5.00",
+          needsRebalance,
+          rebalanceFrequency: vault.rebalanceFrequency || "manual"
+        })
       };
       
+      // Update the vault's last rebalanced date
+      await storage.updateVault(vaultId, {
+        lastRebalanced: new Date()
+      });
+      
       const history = await storage.createRebalanceHistory(rebalanceData);
-      return res.status(201).json(history);
+      return res.status(201).json({
+        history,
+        needsRebalance,
+        message: needsRebalance 
+          ? "Rebalance was necessary and has been completed successfully" 
+          : "Rebalance completed, but was not necessary based on drift threshold"
+      });
     } catch (error) {
       return res.status(500).json({ message: "Error triggering rebalance" });
     }

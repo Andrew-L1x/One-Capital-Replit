@@ -215,6 +215,33 @@ export default function VaultPage() {
     );
   }
 
+  // Safety check - don't proceed if vault is undefined
+  if (!vault) {
+    return (
+      <div className="container mx-auto p-4 py-8">
+        <div className="flex items-center mb-8">
+          <Button variant="ghost" onClick={handleBackToDashboard}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Vault Not Found</CardTitle>
+            <CardDescription>
+              The vault you're looking for doesn't exist or you don't have access to it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleBackToDashboard}>
+              Return to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   return (
     <div className="container mx-auto p-4 py-8">
       <div className="flex items-center justify-between mb-8">

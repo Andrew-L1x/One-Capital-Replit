@@ -136,9 +136,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   passport.deserializeUser(async (id: number, done) => {
     try {
+      // For development purposes, if the ID is 1 (our test user), reconstruct the user object
+      if (id === 1) {
+        const testUser = {
+          id: 1,
+          username: "test_user",
+          email: "test@example.com",
+          walletAddress: "0x1234...5678",
+          firebaseUid: "test-firebase-uid",
+          createdAt: new Date(),
+        };
+        return done(null, testUser);
+      }
+      
+      // For other users, try to load from the database
       const user = await storage.getUser(id);
+      if (!user) {
+        // User not found
+        return done(new Error(`User with ID ${id} not found`), null);
+      }
+      
       done(null, user);
     } catch (err) {
+      console.error("Error deserializing user:", err);
       done(err);
     }
   });

@@ -3,33 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWallet } from '@/lib/walletContext';
-import { usePrices } from '@/lib/priceService';
-import { useQuery } from '@tanstack/react-query';
-
-interface Asset {
-  id: number;
-  name: string;
-  symbol: string;
-  type: string;
-}
-
-interface Vault {
-  id: number;
-  name: string;
-  userId: number;
-  description: string;
-  type: string;
-  rebalanceThreshold: number;
-  rebalanceInterval: string;
-}
-
-interface Allocation {
-  id: number;
-  vaultId: number;
-  assetId: number;
-  targetPercentage: number;
-  amount: number;
-}
+import { usePriceDetails } from '@/lib/usePriceDetails';
 
 interface ChartData {
   name: string;
@@ -69,149 +43,59 @@ const CustomTooltip = ({ active, payload }: any) => {
 export function PortfolioChart() {
   const { isConnected } = useWallet();
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch assets
-  const { data: assets, isLoading: assetsLoading } = useQuery<Asset[]>({
-    queryKey: ['/api/assets'],
-    enabled: isConnected,
-  });
+  // Fetch current prices with 24h history
+  const { priceDetails, loading: pricesLoading } = usePriceDetails(30000);
   
-  // Fetch vaults
-  const { data: vaults, isLoading: vaultsLoading } = useQuery<Vault[]>({
-    queryKey: ['/api/vaults'],
-    enabled: isConnected,
-  });
-  
-  // Fetch allocations for each vault
-  const allocationsQueries = (vaults || []).map(vault => {
-    return useQuery<Allocation[]>({
-      queryKey: [`/api/vaults/${vault.id}/allocations`],
-      enabled: isConnected && !!vaults?.length,
-    });
-  });
-  
-  // Get asset symbols
-  const assetSymbols = assets ? assets.map(asset => asset.symbol) : [];
-  
-  // Fetch prices
-  const { prices, loading: pricesLoading } = usePrices(assetSymbols, 30000);
-  
-  // Generate colors for each asset
-  const assetColors = useMemo(() => {
-    if (!assets) return {};
-    return assets.reduce((acc, asset) => {
-      acc[asset.id] = stringToColor(asset.symbol);
-      return acc;
-    }, {} as Record<number, string>);
-  }, [assets]);
-  
-  // Calculate chart data
+  // Calculate portfolio distribution
   useEffect(() => {
-    if (!isConnected || assetsLoading || vaultsLoading || pricesLoading || !assets?.length || Object.keys(prices).length === 0) {
+    if (!isConnected || pricesLoading || Object.keys(priceDetails).length === 0) {
       return;
     }
     
-    // Aggregate asset values across all vaults
-    const assetValues: Record<number, { amount: number, valueUSD: number }> = {};
-    let totalValue = 0;
-    let hasAnyAllocations = false;
+    setIsLoading(true);
     
-    // Process all allocations
-    (vaults || []).forEach((vault, index) => {
-      const allocationsQuery = allocationsQueries[index];
-      if (allocationsQuery.data && allocationsQuery.data.length > 0) {
-        hasAnyAllocations = true;
-        allocationsQuery.data.forEach(allocation => {
-          const asset = assets.find(a => a.id === allocation.assetId);
-          if (asset && prices[asset.symbol]) {
-            // Initialize if needed
-            if (!assetValues[asset.id]) {
-              assetValues[asset.id] = { amount: 0, valueUSD: 0 };
-            }
-            
-            // Add to the amount
-            assetValues[asset.id].amount += allocation.amount;
-            
-            // Calculate value
-            const valueUSD = allocation.amount * prices[asset.symbol];
-            assetValues[asset.id].valueUSD += valueUSD;
-            totalValue += valueUSD;
-          }
-        });
+    // Define demo portfolio values
+    const mockPortfolio = [
+      { symbol: 'BTC', name: 'Bitcoin', amount: 0.5 },
+      { symbol: 'ETH', name: 'Ethereum', amount: 5.0 },
+      { symbol: 'L1X', name: 'Layer One X', amount: 500.0 },
+      { symbol: 'SOL', name: 'Solana', amount: 15.0 },
+      { symbol: 'USDC', name: 'USD Coin', amount: 1000.0 }
+    ];
+    
+    // Calculate total portfolio value
+    let totalValue = 0;
+    mockPortfolio.forEach(asset => {
+      if (priceDetails[asset.symbol]) {
+        totalValue += asset.amount * priceDetails[asset.symbol].current;
       }
     });
     
-    // If no allocations found but wallet is connected, create demo data
-    if (!hasAnyAllocations) {
-      // Create mock allocation data for demo purposes
-      const mockAllocations = [
-        { assetId: 1, amount: 0.5 },  // BTC
-        { assetId: 2, amount: 5.0 },  // ETH
-        { assetId: 3, amount: 500.0 }, // L1X
-        { assetId: 4, amount: 15.0 },  // SOL
-        { assetId: 5, amount: 1000.0 } // USDC
-      ];
-      
-      mockAllocations.forEach(mockAllocation => {
-        const asset = assets.find(a => a.id === mockAllocation.assetId);
-        if (asset && prices[asset.symbol]) {
-          // Initialize if needed
-          if (!assetValues[asset.id]) {
-            assetValues[asset.id] = { amount: 0, valueUSD: 0 };
-          }
-          
-          // Add to the amount
-          assetValues[asset.id].amount += mockAllocation.amount;
-          
-          // Calculate value
-          const valueUSD = mockAllocation.amount * prices[asset.symbol];
-          assetValues[asset.id].valueUSD += valueUSD;
-          totalValue += valueUSD;
-        }
-      });
-    }
-    
-    // Only proceed if we have any data to display
     if (totalValue > 0) {
-      // Convert to chart data format
-      const data: ChartData[] = [];
-      
-      Object.entries(assetValues).forEach(([assetId, values]) => {
-        const assetIdNum = parseInt(assetId, 10);
-        const asset = assets.find(a => a.id === assetIdNum);
-        
-        if (asset) {
-          const percentage = (values.valueUSD / totalValue) * 100;
-          data.push({
+      // Create chart data
+      const data: ChartData[] = mockPortfolio
+        .filter(asset => priceDetails[asset.symbol]) // Only include assets with price data
+        .map(asset => {
+          const valueUSD = asset.amount * priceDetails[asset.symbol].current;
+          const percentage = (valueUSD / totalValue) * 100;
+          
+          return {
             name: asset.name,
             symbol: asset.symbol,
             value: percentage,
-            valueUSD: values.valueUSD,
-            color: assetColors[assetIdNum] || '#8884d8',
-          });
-        }
-      });
-      
-      // Sort by value
-      data.sort((a, b) => b.valueUSD - a.valueUSD);
+            valueUSD: valueUSD,
+            color: stringToColor(asset.symbol)
+          };
+        })
+        .sort((a, b) => b.valueUSD - a.valueUSD); // Sort by value (highest first)
       
       setChartData(data);
     }
-  }, [
-    isConnected,
-    assets,
-    vaults,
-    prices,
-    allocationsQueries,
-    assetsLoading,
-    vaultsLoading,
-    pricesLoading,
-    assetColors,
-  ]);
-  
-  // Determine loading state
-  const isLoading = assetsLoading || vaultsLoading || pricesLoading || 
-    allocationsQueries.some(query => query.isLoading);
+    
+    setIsLoading(false);
+  }, [isConnected, priceDetails, pricesLoading]);
   
   // Empty state when wallet is not connected
   if (!isConnected) {
@@ -229,7 +113,7 @@ export function PortfolioChart() {
   }
   
   // Loading state
-  if (isLoading) {
+  if (isLoading || pricesLoading) {
     return (
       <Card>
         <CardHeader>

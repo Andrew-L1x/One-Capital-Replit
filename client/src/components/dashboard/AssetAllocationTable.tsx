@@ -18,35 +18,14 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWallet } from '@/lib/walletContext';
 import { formatPrice, usePriceDetails } from '@/lib/usePriceDetails';
-import { useQuery } from '@tanstack/react-query';
-
-interface Asset {
-  id: number;
-  name: string;
-  symbol: string;
-  type: string;
-}
-
-interface Vault {
-  id: number;
-  name: string;
-  userId: number;
-  description: string;
-  type: string;
-  rebalanceThreshold: number;
-  rebalanceInterval: string;
-}
-
-interface Allocation {
-  id: number;
-  vaultId: number;
-  assetId: number;
-  targetPercentage: number;
-  amount: number;
-}
 
 interface AssetWithAllocation {
-  asset: Asset;
+  asset: {
+    id: number;
+    name: string;
+    symbol: string;
+    type: string;
+  };
   amount: number;
   valueUSD: number;
   percentOfPortfolio: number;
@@ -57,98 +36,53 @@ export function AssetAllocationTable() {
   const { isConnected } = useWallet();
   const [assetAllocations, setAssetAllocations] = useState<AssetWithAllocation[]>([]);
   const [totalPortfolioValue, setTotalPortfolioValue] = useState<number>(0);
-  
-  // Fetch the user's assets
-  const { data: assets, isLoading: assetsLoading } = useQuery<Asset[]>({
-    queryKey: ['/api/assets'],
-    enabled: isConnected,
-  });
-  
-  // Fetch the user's vaults
-  const { data: vaults, isLoading: vaultsLoading } = useQuery<Vault[]>({
-    queryKey: ['/api/vaults'],
-    enabled: isConnected,
-  });
-  
-  // Fetch asset allocations for each vault
-  const allocationsQueries = (vaults || []).map(vault => {
-    return useQuery<Allocation[]>({
-      queryKey: [`/api/vaults/${vault.id}/allocations`],
-      enabled: isConnected && !!vaults?.length,
-    });
-  });
+  const [isLoading, setIsLoading] = useState(true);
   
   // Fetch current prices with 24h history
   const { priceDetails, loading: pricesLoading } = usePriceDetails(30000);
   
   // Calculate asset allocations when data changes
   useEffect(() => {
-    if (!isConnected || assetsLoading || vaultsLoading || pricesLoading || !assets?.length || Object.keys(priceDetails).length === 0) {
+    if (!isConnected || pricesLoading || Object.keys(priceDetails).length === 0) {
       return;
     }
     
-    // First gather all allocations across vaults
-    const assetAmounts: Record<number, number> = {};
-    let portfolioTotal = 0;
-    let hasAnyAllocations = false;
+    setIsLoading(true);
     
-    // Sum up allocations for each asset across all vaults
-    (vaults || []).forEach((vault, index) => {
-      const allocationsQuery = allocationsQueries[index];
-      if (allocationsQuery.data && allocationsQuery.data.length > 0) {
-        hasAnyAllocations = true;
-        allocationsQuery.data.forEach(allocation => {
-          // Add to the total amount for each asset
-          if (!assetAmounts[allocation.assetId]) {
-            assetAmounts[allocation.assetId] = 0;
-          }
-          assetAmounts[allocation.assetId] += allocation.amount;
-          
-          // Calculate value in USD and add to portfolio total
-          const asset = assets.find(a => a.id === allocation.assetId);
-          if (asset && priceDetails[asset.symbol]) {
-            const assetValue = allocation.amount * priceDetails[asset.symbol].current;
-            portfolioTotal += assetValue;
-          }
-        });
+    // Define demo portfolio for our demonstration
+    const mockPortfolio = [
+      { id: 1, name: "Bitcoin", symbol: "BTC", type: "crypto", amount: 0.5 },
+      { id: 2, name: "Ethereum", symbol: "ETH", type: "crypto", amount: 5.0 },
+      { id: 3, name: "Layer One X", symbol: "L1X", type: "crypto", amount: 500.0 },
+      { id: 4, name: "Solana", symbol: "SOL", type: "crypto", amount: 15.0 },
+      { id: 5, name: "USD Coin", symbol: "USDC", type: "stablecoin", amount: 1000.0 }
+    ];
+    
+    // Calculate total portfolio value
+    let portfolioTotal = 0;
+    mockPortfolio.forEach(asset => {
+      if (priceDetails[asset.symbol]) {
+        const assetValue = asset.amount * priceDetails[asset.symbol].current;
+        portfolioTotal += assetValue;
       }
     });
     
-    // If no allocations found but wallet is connected, create demo data
-    if (!hasAnyAllocations) {
-      // Create mock allocation data for demo purposes
-      const mockAllocations = [
-        { assetId: 1, amount: 0.5 },  // BTC
-        { assetId: 2, amount: 5.0 },  // ETH
-        { assetId: 3, amount: 500.0 }, // L1X
-        { assetId: 4, amount: 15.0 },  // SOL
-        { assetId: 5, amount: 1000.0 } // USDC
-      ];
-      
-      mockAllocations.forEach(mockAllocation => {
-        const asset = assets.find(a => a.id === mockAllocation.assetId);
-        if (asset && priceDetails[asset.symbol]) {
-          assetAmounts[mockAllocation.assetId] = mockAllocation.amount;
-          const assetValue = mockAllocation.amount * priceDetails[asset.symbol].current;
-          portfolioTotal += assetValue;
-        }
-      });
-    }
-    
-    // Create combined asset allocation objects with values
+    // Create allocation data objects with values
     const allocationData: AssetWithAllocation[] = [];
     
-    Object.entries(assetAmounts).forEach(([assetId, amount]) => {
-      const assetIdNum = parseInt(assetId, 10);
-      const asset = assets.find(a => a.id === assetIdNum);
-      
-      if (asset && priceDetails[asset.symbol]) {
-        const valueUSD = amount * priceDetails[asset.symbol].current;
+    mockPortfolio.forEach(asset => {
+      if (priceDetails[asset.symbol]) {
+        const valueUSD = asset.amount * priceDetails[asset.symbol].current;
         const percentOfPortfolio = portfolioTotal > 0 ? (valueUSD / portfolioTotal) * 100 : 0;
         
         allocationData.push({
-          asset,
-          amount,
+          asset: {
+            id: asset.id,
+            name: asset.name,
+            symbol: asset.symbol,
+            type: asset.type
+          },
+          amount: asset.amount,
           valueUSD,
           percentOfPortfolio,
           price: priceDetails[asset.symbol].current,
@@ -161,20 +95,8 @@ export function AssetAllocationTable() {
     
     setAssetAllocations(allocationData);
     setTotalPortfolioValue(portfolioTotal);
-  }, [
-    isConnected,
-    assets,
-    vaults,
-    priceDetails,
-    allocationsQueries,
-    assetsLoading,
-    vaultsLoading,
-    pricesLoading,
-  ]);
-  
-  // Determine loading state
-  const isLoading = assetsLoading || vaultsLoading || pricesLoading || 
-    allocationsQueries.some(query => query.isLoading);
+    setIsLoading(false);
+  }, [isConnected, priceDetails, pricesLoading]);
   
   // Empty state for when wallet is not connected
   if (!isConnected) {
@@ -194,7 +116,7 @@ export function AssetAllocationTable() {
   }
   
   // Loading state
-  if (isLoading) {
+  if (isLoading || pricesLoading) {
     return (
       <Card>
         <CardHeader>

@@ -1116,50 +1116,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Vault has no allocations" });
       }
       
-      // Check if rebalance is needed based on drift threshold
-      const needsRebalance = await vaultNeedsRebalancing(vaultId);
+      // Determine if this is a custodial vault (in a real implementation this would be 
+      // determined by the vault type from the database)
+      const isCustodial = req.body.isCustodial !== undefined 
+        ? Boolean(req.body.isCustodial) 
+        : true;
       
-      // Mock rebalance transactions
-      const transactions = allocations.map(allocation => ({
-        assetId: allocation.assetId,
-        targetPercentage: allocation.targetPercentage.toString(),
-        actions: [
-          {
-            type: "swap",
-            from: "MOCK_TOKEN",
-            to: "MOCK_TOKEN",
-            amount: "100.0"
-          }
-        ]
-      }));
+      // Import the contract rebalance service dynamically (to avoid circular dependencies)
+      const { executeContractRebalance } = await import('./services/contractRebalance');
       
-      // Create rebalance history with details
-      const rebalanceData = {
-        vaultId,
-        type: "manual", // manual rebalance triggered by user
-        status: "completed",
-        transactions, // Add the transactions as required by the schema
-        details: JSON.stringify({
-          driftThreshold: vault.driftThreshold?.toString() || "5.00",
-          needsRebalance,
-          rebalanceFrequency: vault.rebalanceFrequency || "manual"
-        })
-      };
+      // Execute contract rebalance
+      const result = await executeContractRebalance(vaultId, isCustodial);
       
-      // Update the vault's last rebalanced date
-      await storage.updateVault(vaultId, {
-        lastRebalanced: new Date()
-      });
-      
-      const history = await storage.createRebalanceHistory(rebalanceData);
-      return res.status(201).json({
-        history,
-        needsRebalance,
-        message: needsRebalance 
-          ? "Rebalance was necessary and has been completed successfully" 
-          : "Rebalance completed, but was not necessary based on drift threshold"
-      });
+      if (result.success) {
+        return res.status(201).json({
+          success: true,
+          message: result.message,
+          details: result.details
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: result.message
+        });
+      }
     } catch (error) {
+      console.error("Error triggering rebalance:", error);
       return res.status(500).json({ message: "Error triggering rebalance" });
     }
   });

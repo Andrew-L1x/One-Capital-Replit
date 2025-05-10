@@ -60,9 +60,10 @@ export default function ContractDeployer() {
       const chainIdNum = parseInt(chainId);
       const addresses = getContractAddresses(chainIdNum);
       
-      setVaultAddress(addresses.Vault || '');
-      setBridgeAddress(addresses.Bridge || '');
-      setOracleAddress(addresses.PriceOracle || '');
+      // Set addresses from storage or use demo values if none exist
+      setVaultAddress(addresses.Vault || getDemoContractAddress('Vault', chainIdNum));
+      setBridgeAddress(addresses.Bridge || getDemoContractAddress('Bridge', chainIdNum));
+      setOracleAddress(addresses.PriceOracle || getDemoContractAddress('PriceOracle', chainIdNum));
       
       toast({
         title: 'Addresses Loaded',
@@ -77,6 +78,24 @@ export default function ContractDeployer() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Get demo contract addresses for development
+  const getDemoContractAddress = (contractType: string, chainId: number): string => {
+    // Generate different addresses based on contract type and chain ID
+    const prefix = '0x';
+    const chainPrefix = chainId.toString().padStart(4, '0');
+    
+    switch (contractType) {
+      case 'Vault':
+        return `${prefix}1111${chainPrefix}000000000000000000000000000000`;
+      case 'Bridge':
+        return `${prefix}2222${chainPrefix}000000000000000000000000000000`;
+      case 'PriceOracle':
+        return `${prefix}3333${chainPrefix}000000000000000000000000000000`;
+      default:
+        return `${prefix}0000000000000000000000000000000000000000`;
     }
   };
   

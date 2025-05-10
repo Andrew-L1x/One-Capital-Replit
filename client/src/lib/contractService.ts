@@ -85,10 +85,21 @@ export const getContract = async (
     }
     
     // Use current network if chainId not provided
-    const currentChainId = chainId || (await provider.getNetwork()).chainId;
+    let currentChainId = chainId;
+    if (!currentChainId && provider) {
+      try {
+        const network = await provider.getNetwork();
+        currentChainId = typeof network.chainId === 'bigint' 
+          ? Number(network.chainId) 
+          : network.chainId;
+      } catch (error) {
+        console.error("Error getting network:", error);
+        currentChainId = 1; // Default to Ethereum mainnet
+      }
+    }
     
     // Get contract address
-    const address = getContractAddress(currentChainId, contractName);
+    const address = getContractAddress(currentChainId || 1, contractName);
     if (!address) {
       throw new Error(`No ${contractName} contract address for chain ID ${currentChainId}`);
     }

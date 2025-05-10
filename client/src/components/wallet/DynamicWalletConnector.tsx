@@ -57,6 +57,12 @@ export default function DynamicWalletConnector({
       return;
     }
     
+    // We have both URLs for testing
+    const testnetRpcUrls = [
+      'https://v2-testnet-rpc.l1x.foundation',
+      'https://v2.testnet.l1x.foundation'
+    ];
+    
     try {
       setStatus('connecting');
       await windowWithEthereum.ethereum!.request({
@@ -69,7 +75,7 @@ export default function DynamicWalletConnector({
             symbol: 'L1X',
             decimals: 18
           },
-          rpcUrls: ['https://v2-testnet-rpc.l1x.foundation/'],
+          rpcUrls: testnetRpcUrls,
           blockExplorerUrls: ['https://l1xapp.com/testnet-explorer']
         }]
       });

@@ -104,7 +104,12 @@ export async function getBalance(address: string, chainId: number = 1) {
   if (!publicClient || !address) return null;
   
   try {
-    const balance = await publicClient.getBalance({ address });
+    // Ensure the address is formatted correctly with 0x prefix
+    const formattedAddress = address.startsWith('0x') 
+      ? address as `0x${string}` 
+      : `0x${address}` as `0x${string}`;
+      
+    const balance = await publicClient.getBalance({ address: formattedAddress });
     return balance;
   } catch (error) {
     console.error('Error getting balance:', error);
@@ -121,9 +126,14 @@ export async function sendTransaction(to: string, value: bigint) {
   if (!account) throw new Error('No account connected');
   
   try {
+    // Ensure the destination address is formatted correctly with 0x prefix
+    const formattedTo = to.startsWith('0x') 
+      ? to as `0x${string}` 
+      : `0x${to}` as `0x${string}`;
+      
     const hash = await walletClient.sendTransaction({
       account,
-      to,
+      to: formattedTo,
       value,
     });
     

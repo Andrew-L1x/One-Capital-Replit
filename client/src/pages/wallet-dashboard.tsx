@@ -4,10 +4,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ArrowRight, BarChart3, Wallet } from 'lucide-react';
-import WalletConnector from '@/components/wallet/WalletConnector';
+import DynamicWalletConnector from '@/components/wallet/DynamicWalletConnector';
 import useWebSocket from '@/hooks/useWebSocket';
 import useRealTimePrices from '@/hooks/useRealTimePrices';
-import { WalletType, Chain } from '../lib/walletTypes';
 
 /**
  * Wallet dashboard page showing wallet connection, real-time updates,
@@ -106,11 +105,8 @@ export default function WalletDashboard() {
             </TabsList>
             
             <TabsContent value="wallet" className="space-y-4">
-              <WalletConnector 
-                onConnect={handleWalletConnect}
-                onDisconnect={handleWalletDisconnect}
+              <DynamicWalletConnector 
                 onTransaction={handleTransaction}
-                defaultWalletType={WalletType.L1X}
               />
               
               <Card className="mt-6">

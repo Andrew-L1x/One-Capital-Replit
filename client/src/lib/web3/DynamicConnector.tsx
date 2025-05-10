@@ -3,8 +3,6 @@ import { DynamicContextProvider } from '@dynamic-labs/sdk-react-core';
 import { EthereumWalletConnectors } from '@dynamic-labs/ethereum';
 import { SolanaWalletConnectors } from '@dynamic-labs/solana';
 import { BitcoinWalletConnectors } from '@dynamic-labs/bitcoin';
-import { EthersV6Provider } from '@dynamic-labs/ethers-v6';
-import { WagmiProvider } from '@dynamic-labs/wagmi-connector';
 import { config } from './config';
 
 interface DynamicConnectorProviderProps {
@@ -13,7 +11,7 @@ interface DynamicConnectorProviderProps {
 
 export function DynamicConnectorProvider({ children }: DynamicConnectorProviderProps) {
   // In a real application, you would use an environment variable here
-  const environmentId = "YOUR_DYNAMIC_ENVIRONMENT_ID"; 
+  const environmentId = "e24ef9b0-333d-4618-8677-c155bcc3ad3b"; 
 
   return (
     <DynamicContextProvider
@@ -23,11 +21,6 @@ export function DynamicConnectorProvider({ children }: DynamicConnectorProviderP
           EthereumWalletConnectors,
           SolanaWalletConnectors,
           BitcoinWalletConnectors,
-        ],
-        walletConnectorExtensions: [
-          EthersV6Provider,
-          // Provide wagmi configuration
-          { connector: WagmiProvider, configuration: { wagmiConfig: config } }
         ],
       }}
     >

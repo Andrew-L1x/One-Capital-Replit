@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { useWallet } from '@/lib/walletContext';
 import { PortfolioChart } from './PortfolioChart';
 import { CurrentHoldings } from './CurrentHoldings';
+import { DepositWithdrawForm } from './DepositWithdrawForm';
 import { Button } from '@/components/ui/button';
 
 export function CurrentPortfolio() {
@@ -45,6 +46,9 @@ export function CurrentPortfolio() {
           <PortfolioChart />
         </div>
       </div>
+      
+      {/* Deposit and Withdraw Section */}
+      <DepositWithdrawForm />
     </div>
   );
 }

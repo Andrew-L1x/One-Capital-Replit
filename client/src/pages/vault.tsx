@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/queryClient";
 import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import AllocationCard from "@/components/dashboard/allocation-card";
 import AllocationList from "@/components/dashboard/allocation-list";
+import { DepositWithdrawForm } from "@/components/dashboard/DepositWithdrawForm";
 import TakeProfitForm from "@/components/forms/take-profit-form";
 import RebalanceSettingsForm from "@/components/forms/rebalance-settings-form";
 import { Vault, Asset, Allocation, TakeProfitSetting, RebalanceHistory } from "@shared/schema";
@@ -389,6 +390,11 @@ export default function VaultPage() {
               allocations={allocations}
               onAllocationAdded={handleAllocationUpdated}
             />
+          </div>
+          
+          {/* Add Deposit and Withdraw Form */}
+          <div className="mt-6">
+            <DepositWithdrawForm />
           </div>
         </TabsContent>
         

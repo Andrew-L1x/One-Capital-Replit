@@ -74,11 +74,7 @@ const availableChains: Chain[] = [
   { id: "avalanche", name: "Avalanche", logo: "/chain-logos/avalanche.png" },
 ];
 
-interface CrossChainSwapProps {
-  vaultId: number;
-}
-
-export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
+export function CrossChainSwap() {
   const [isLoading, setIsLoading] = useState(false);
   const [fromPrice, setFromPrice] = useState<number | null>(null);
   const [toPrice, setToPrice] = useState<number | null>(null);
@@ -151,7 +147,7 @@ export function CrossChainSwap({ vaultId }: CrossChainSwapProps) {
       // This would call the backend to initiate the cross-chain swap
       const response = await apiRequest(
         'POST',
-        `/api/vaults/${vaultId}/cross-chain-swap`,
+        `/api/cross-chain-swap`,
         {
           fromAsset: values.fromAsset,
           toAsset: values.toAsset,

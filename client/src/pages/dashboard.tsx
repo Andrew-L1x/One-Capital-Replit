@@ -248,7 +248,7 @@ export default function Dashboard() {
                   Cross-Chain Operations
                 </h3>
                 <div className="grid gap-6 md:grid-cols-2">
-                  <CrossChainSwap vaultId={vaults[0].id} />
+                  <CrossChainSwap />
                   
                   <Card>
                     <CardHeader>

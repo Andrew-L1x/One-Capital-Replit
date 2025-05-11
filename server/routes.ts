@@ -284,12 +284,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  api.post("/auth/login", (req: Request, res: Response, next: NextFunction) => {
+  api.post("/auth/login", async (req: Request, res: Response, next: NextFunction) => {
     console.log("POST /auth/login - Login attempt", { 
       email: req.body.username || 'no-email-provided',
       hasPassword: !!req.body.password
     });
     
+    // Special handling for demo user - bypass normal authentication
+    if (req.body.username === 'demo@example.com' && req.body.password === 'password123') {
+      console.log("POST /auth/login - Direct login for demo user with password123");
+      
+      try {
+        // Get the demo user from the database if possible
+        const demoUser = await storage.getUserByEmail('demo@example.com');
+        
+        if (demoUser) {
+          req.login(demoUser, (err) => {
+            if (err) {
+              console.error("POST /auth/login - Error logging in demo user:", err);
+              return next(err);
+            }
+            
+            const { password, ...demoUserWithoutPassword } = demoUser;
+            console.log("POST /auth/login - Demo user login successful (from database)");
+            return res.json(demoUserWithoutPassword);
+          });
+        } else {
+          // Use hardcoded demo user if not in database
+          const hardcodedDemoUser = {
+            id: 9,
+            username: "demo",
+            email: "demo@example.com",
+            createdAt: new Date()
+          };
+          
+          req.login(hardcodedDemoUser, (err) => {
+            if (err) {
+              console.error("POST /auth/login - Error logging in hardcoded demo user:", err);
+              return next(err);
+            }
+            
+            console.log("POST /auth/login - Demo user login successful (hardcoded)");
+            return res.json(hardcodedDemoUser);
+          });
+        }
+        return; // Early return for demo user
+      } catch (error) {
+        console.error("POST /auth/login - Error handling demo user:", error);
+        // Continue with normal authentication flow if there's an error
+      }
+    }
+    
+    // Normal authentication flow for all other users
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error("POST /auth/login - Authentication error:", err);
@@ -307,19 +353,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return next(err);
         }
         
-        // If the login is successful but the user has email demo@example.com,
-        // log them in as the demo user with ID 9 regardless of password
-        if (user.email === 'demo@example.com') {
-          console.log("POST /auth/login - Successful login for demo user");
-          return res.json({
-            id: 9,
-            username: "demo",
-            email: "demo@example.com",
-            createdAt: new Date().toISOString()
-          });
-        }
-        
-        // Normal login flow for other users
         // Remove password from response
         const { password, ...userWithoutPassword } = user;
         console.log("POST /auth/login - Successful login", { 

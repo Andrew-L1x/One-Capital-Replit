@@ -112,14 +112,15 @@ export default function PortfolioManager({
 
   // Calculate total portfolio value
   const calculateTotalValue = () => {
+    // Using a flat amount since we don't have real values yet
     return watchedAllocations?.reduce((total, allocation) => {
       const asset = assets.find(a => a.id === allocation.assetId);
       if (!asset) return total;
       
-      const price = MOCK_PRICES[asset.symbol] || 1;
+      // Just use the percentage of a standard portfolio size
       const amount = (allocation.percentage / 100) * 10000; // Assuming $10,000 portfolio for demo
       
-      return total + (amount);
+      return total + amount;
     }, 0) || 0;
   };
 

@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { usePriceDetails } from './usePriceDetails';
 import { useWallet } from './walletContext';
 
-// Define the mock portfolio data structure
-export interface MockAsset {
+// Define the portfolio asset data structure
+export interface PortfolioAsset {
   id: number;
   name: string;
   symbol: string;
@@ -13,7 +13,7 @@ export interface MockAsset {
 }
 
 export interface AssetWithAllocation {
-  asset: MockAsset;
+  asset: PortfolioAsset;
   amount: number;
   valueUSD: number;
   percentOfPortfolio: number;
@@ -21,7 +21,6 @@ export interface AssetWithAllocation {
 }
 
 interface PortfolioContextType {
-  mockPortfolio: MockAsset[];
   portfolioValue: number;
   previousValue: number;
   percentChange: number;
@@ -32,7 +31,6 @@ interface PortfolioContextType {
 
 // Create the context with default values
 const PortfolioContext = createContext<PortfolioContextType>({
-  mockPortfolio: [],
   portfolioValue: 0,
   previousValue: 0,
   percentChange: 0,
@@ -50,7 +48,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   
   // Get vault allocations to calculate portfolio values (from API)
   const { data: vaults = [], isLoading: isLoadingVaults } = useQuery<any[]>({
-    queryKey: ['/api/vaults']
+    queryKey: ['/api/vaults'],
+    enabled: isConnected
   });
   
   // Get assets to map symbols to names (from API)
@@ -61,7 +60,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   // Prepare asset allocations for all vaults (from API)
   const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
     queryKey: [vaults.length > 0 ? `/api/vaults/${vaults[0]?.id}/allocations` : null],
-    enabled: vaults.length > 0
+    enabled: vaults.length > 0 && isConnected
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -69,9 +68,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const [previousValue, setPreviousValue] = useState(0);
   const [percentChange, setPercentChange] = useState(0);
   const [assetAllocations, setAssetAllocations] = useState<AssetWithAllocation[]>([]);
-  
-  // An empty portfolio will be used when no wallet is connected
-  const mockPortfolio: MockAsset[] = [];
   
   // Calculate portfolio values when all data is available
   useEffect(() => {
@@ -140,8 +136,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
           }
         }
       } else if (!isNewUser) {
-        // If we have a wallet connection but no API data, we don't show mock data
-        // This ensures we only display real authenticated data from wallets
+        // If we have a wallet connection but no API data, show empty portfolio
+        // This ensures we only display real authenticated data
         console.log("Connected wallet with no portfolio data - showing empty portfolio");
         return {
           allocations: [],
@@ -223,7 +219,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   
   // Context value that will be provided to consumers
   const value = {
-    mockPortfolio,
     portfolioValue,
     previousValue,
     percentChange,

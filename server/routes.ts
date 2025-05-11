@@ -1261,7 +1261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get associated assets
-      const assets: Record<number, Asset> = {};
+      const assets: Record<number, any> = {};
       for (const allocation of allocations) {
         const asset = await storage.getAsset(allocation.assetId);
         if (asset) {
@@ -1318,8 +1318,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Store asset price
           assetPrices[asset.symbol] = previousPrice;
           
+          // Get the allocation amount derived from percentage
+          const allocationAmount = parseFloat(allocation.targetPercentage);
+          
           // Add to portfolio value
-          portfolioValue += allocation.amount * previousPrice;
+          portfolioValue += allocationAmount * previousPrice;
         }
         
         // Create data point

@@ -289,6 +289,7 @@ async function savePricesToDatabase(prices: Record<string, PriceData>): Promise<
         assetId: asset.id,
         price: price.current.toString(), // Convert to string for database
         timestamp: new Date(),
+        source: (COINGECKO_API_KEY ? 'coingecko' : 'simulation'), // Track data source
       };
       
       await storage.createPriceFeed(priceFeed);

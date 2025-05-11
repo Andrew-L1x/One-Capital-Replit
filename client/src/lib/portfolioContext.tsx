@@ -41,7 +41,25 @@ const PortfolioContext = createContext<PortfolioContextType>({
 
 // Provider component that wraps the app
 export function PortfolioProvider({ children }: { children: ReactNode }) {
-  const { isConnected } = useWallet();
+  const { isConnected: walletConnected } = useWallet();
+  
+  // Get authenticated user info
+  const { data: user } = useQuery<any>({
+    queryKey: ['/api/auth/me'],
+  });
+  
+  // Consider user authenticated if they have wallet connected OR they're logged in via auth
+  const isAuthenticated = walletConnected || !!user;
+  
+  // Add debug logging to see authentication status
+  useEffect(() => {
+    console.log("Auth status:", { 
+      walletConnected, 
+      userExists: !!user, 
+      userData: user,
+      isAuthenticated 
+    });
+  }, [walletConnected, user, isAuthenticated]);
   
   // Fetch price information with 24h history
   const { priceDetails, loading: pricesLoading } = usePriceDetails(30000);
@@ -49,7 +67,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   // Get vault allocations to calculate portfolio values (from API)
   const { data: vaults = [], isLoading: isLoadingVaults } = useQuery<any[]>({
     queryKey: ['/api/vaults'],
-    enabled: isConnected
+    enabled: isAuthenticated, // Changed condition to include password-based auth
   });
   
   // Get assets to map symbols to names (from API)
@@ -63,7 +81,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   
   const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
     queryKey: ['/api/vaults', activeVaultId, 'allocations'],
-    enabled: !!activeVaultId && isConnected
+    enabled: !!activeVaultId && isAuthenticated, // Changed condition to include password-based auth
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -77,16 +95,16 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     // Combine loading states into a single state to reduce re-renders
     const dataLoading = pricesLoading || isLoadingVaults || isLoadingAssets || isLoadingAllocations;
     
-    // If data is still loading or we're not connected, don't proceed
-    if (!isConnected || dataLoading || Object.keys(priceDetails).length === 0) {
+    // If data is still loading or we're not authenticated, don't proceed
+    if (!isAuthenticated || dataLoading || Object.keys(priceDetails).length === 0) {
       return;
     }
     
     // Check if we have valid API data
     const hasApiData = allocationsData.length > 0 && assets.length > 0;
     
-    // Check if we have vaults but no allocations - this means a new user with no portfolio
-    const isNewUser = vaults.length === 0 || (vaults.length > 0 && allocationsData.length === 0);
+    // Check if we have vaults but no allocations - this means a new user with no portfolio or invalid data state
+    const hasValidData = vaults.length > 0 && allocationsData.length > 0;
     
     // Create a calculation function to avoid issues with setState in useEffect
     const calculatePortfolio = () => {
@@ -94,9 +112,9 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       let totalPreviousValue = 0;
       const allocations: AssetWithAllocation[] = [];
       
-      // For new users, return empty portfolio with $0.00 value
-      if (isNewUser) {
-        console.log("New user detected - showing empty portfolio");
+      // Return empty portfolio if we don't have valid data
+      if (!hasValidData) {
+        console.log("No valid portfolio data found");
         return {
           allocations: [],
           totalValue: 0,
@@ -138,10 +156,10 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             });
           }
         }
-      } else if (!isNewUser) {
-        // If we have a wallet connection but no API data, show empty portfolio
+      } else if (isAuthenticated) {
+        // If we have an authenticated user but no API data, show empty portfolio
         // This ensures we only display real authenticated data
-        console.log("Connected wallet with no portfolio data - showing empty portfolio");
+        console.log("Authenticated user with no portfolio data - showing empty portfolio");
         return {
           allocations: [],
           totalValue: 0,
@@ -204,7 +222,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [
-    isConnected, 
+    isAuthenticated, 
     // Use a string representation of price details to avoid unnecessary recalculations
     JSON.stringify(priceDetails), 
     // Include loading states

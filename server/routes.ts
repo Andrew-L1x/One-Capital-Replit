@@ -684,19 +684,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Allocation routes
   api.get("/vaults/:vaultId/allocations", async (req: Request, res: Response) => {
     try {
+      console.log("GET /vaults/:vaultId/allocations - Request received", { 
+        vaultId: req.params.vaultId,
+        isAuthenticated: req.isAuthenticated(),
+        user: req.user 
+      });
+      
       if (!req.isAuthenticated()) {
+        console.log("GET /vaults/:vaultId/allocations - User not authenticated");
         return res.status(401).json({ message: "Not authenticated" });
       }
       
       const userId = (req.user as any).id;
       const vaultId = parseInt(req.params.vaultId);
       
+      console.log(`GET /vaults/${vaultId}/allocations - User authenticated`, { userId });
+      
       if (isNaN(vaultId)) {
+        console.log(`GET /vaults/${vaultId}/allocations - Invalid vault ID`);
         return res.status(400).json({ message: "Invalid vault ID" });
       }
       
       // Use real database storage
       const vault = await storage.getVault(vaultId);
+      console.log(`GET /vaults/${vaultId}/allocations - Vault lookup result:`, { vault });
       
       if (!vault) {
         console.log(`Vault not found: ID ${vaultId}`);
@@ -704,12 +715,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (vault.userId !== userId) {
-        console.log(`Access denied to vault ${vaultId} for user ${userId}`);
+        console.log(`Access denied to vault ${vaultId} for user ${userId}. Vault belongs to user ${vault.userId}`);
         return res.status(403).json({ message: "Access denied" });
       }
       
       const allocations = await storage.getAllocationsByVaultId(vaultId);
-      console.log(`Fetched ${allocations.length} allocations for vault ${vaultId}`);
+      console.log(`Fetched ${allocations.length} allocations for vault ${vaultId}`, {
+        allocations,
+        vault,
+        userId
+      });
       return res.json(allocations);
     } catch (error) {
       return res.status(500).json({ message: "Error fetching allocations" });

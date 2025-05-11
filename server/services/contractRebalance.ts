@@ -8,7 +8,7 @@
 import axios from 'axios';
 import { Vault, Allocation, InsertRebalanceHistory } from '@shared/schema';
 import { storage } from '../storage';
-import { getPrice, getPrices } from './priceFeed';
+import { getPriceForAsset, getPricesWithChange } from './priceFeed';
 
 // L1X contract endpoint configuration 
 // (would be environment variables in production)
@@ -65,7 +65,11 @@ export async function executeContractRebalance(
     
     // Get prices for all assets
     const symbols = assets.map(asset => asset?.symbol || '').filter(symbol => symbol);
-    const pricesMap = await getPrices(symbols);
+    const prices = await getPricesWithChange();
+    const pricesMap = symbols.reduce((acc, symbol) => {
+      acc[symbol] = prices[symbol]?.current || 0;
+      return acc;
+    }, {} as Record<string, number>);
     
     // Format prices for the contract
     const pricesJson = formatPricesForContract(symbols, pricesMap);

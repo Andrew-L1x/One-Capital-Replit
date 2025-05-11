@@ -7,7 +7,7 @@
 
 import axios from 'axios';
 import { storage } from '../storage';
-import { getPrice } from './priceFeed';
+import { getPriceForAsset } from './priceFeed';
 
 // Supported chains
 export enum Chain {
@@ -67,8 +67,10 @@ async function calculateSwapOutput(
 ): Promise<{ outputAmount: string; priceImpact: number }> {
   try {
     // Get prices
-    const fromPrice = await getPrice(fromAsset);
-    const toPrice = await getPrice(toAsset);
+    const fromPriceData = await getPriceForAsset(fromAsset);
+    const toPriceData = await getPriceForAsset(toAsset);
+    const fromPrice = fromPriceData?.current;
+    const toPrice = toPriceData?.current;
     
     if (!fromPrice || !toPrice) {
       throw new Error(`Price not available for ${!fromPrice ? fromAsset : toAsset}`);

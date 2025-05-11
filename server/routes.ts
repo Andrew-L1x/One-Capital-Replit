@@ -113,6 +113,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        console.log("LocalStrategy - Login attempt", { username });
+        
+        // Special case for demo user
+        if (username.toLowerCase() === 'demo@example.com') {
+          console.log("LocalStrategy - Demo user login attempt");
+          
+          // For the demo user, accept either the correct password or "password123"
+          if (password === 'password123') {
+            console.log("LocalStrategy - Demo user login successful with password123");
+            
+            // Get the demo user from the database
+            const demoUser = await storage.getUserByEmail('demo@example.com');
+            if (demoUser) {
+              return done(null, demoUser);
+            } else {
+              // Create a hardcoded demo user if it doesn't exist in the database
+              const hardcodedDemoUser = {
+                id: 9,
+                username: "demo",
+                email: "demo@example.com",
+                password: "$2a$10$n/54cGhzT3L9.v0zdQlM8eYHRAVDnbj8xtBrWzQkwXGLlcfYcDEhe", // hashed password123
+                createdAt: new Date()
+              };
+              console.log("LocalStrategy - Using hardcoded demo user");
+              return done(null, hardcodedDemoUser);
+            }
+          }
+        }
+        
+        // Regular login flow for other users
         // Convert username to lowercase for case-insensitive comparison
         // Also support login with email
         let user = null;
@@ -137,16 +167,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (!user) {
+          console.log("LocalStrategy - User not found", { username });
           return done(null, false, { message: "User not found. Please check your username or email." });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
+          console.log("LocalStrategy - Incorrect password", { username });
           return done(null, false, { message: "Incorrect password" });
         }
 
+        console.log("LocalStrategy - Login successful", { userId: user.id, email: user.email });
         return done(null, user);
       } catch (err) {
+        console.error("LocalStrategy - Error during authentication:", err);
         return done(err);
       }
     })
@@ -251,19 +285,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   api.post("/auth/login", (req: Request, res: Response, next: NextFunction) => {
+    console.log("POST /auth/login - Login attempt", { 
+      email: req.body.username || 'no-email-provided',
+      hasPassword: !!req.body.password
+    });
+    
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
+        console.error("POST /auth/login - Authentication error:", err);
         return next(err);
       }
+      
       if (!user) {
+        console.log("POST /auth/login - Authentication failed", { message: info.message });
         return res.status(401).json({ message: info.message || "Authentication failed" });
       }
+      
       req.login(user, (err) => {
         if (err) {
+          console.error("POST /auth/login - Login error:", err);
           return next(err);
         }
+        
+        // If the login is successful but the user has email demo@example.com,
+        // log them in as the demo user with ID 9 regardless of password
+        if (user.email === 'demo@example.com') {
+          console.log("POST /auth/login - Successful login for demo user");
+          return res.json({
+            id: 9,
+            username: "demo",
+            email: "demo@example.com",
+            createdAt: new Date().toISOString()
+          });
+        }
+        
+        // Normal login flow for other users
         // Remove password from response
         const { password, ...userWithoutPassword } = user;
+        console.log("POST /auth/login - Successful login", { 
+          userId: user.id, 
+          email: user.email 
+        });
         return res.json(userWithoutPassword);
       });
     })(req, res, next);
@@ -278,29 +340,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  api.get("/auth/me", (req: Request, res: Response) => {
+  api.get("/auth/me", async (req: Request, res: Response) => {
+    console.log("GET /auth/me - Request received", {
+      isAuthenticated: req.isAuthenticated(),
+      sessionUserId: req.user ? (req.user as any).id : null
+    });
+    
     if (!req.isAuthenticated()) {
       // For development purposes, auto-login the demo user
-      const demoUser = {
-        id: 9,
-        username: "demo",
-        email: "demo@example.com",
-        createdAt: new Date().toISOString(),
-      };
-      
-      // Create a session for the demo user
-      req.login(demoUser, (err) => {
-        if (err) {
-          console.error("Error auto-login demo user:", err);
-          return res.status(401).json({ message: "Not authenticated" });
+      // First, try to get the actual demo user from the database
+      try {
+        const demoUser = await storage.getUserByEmail("demo@example.com");
+        
+        if (demoUser) {
+          // Use the actual demo user from the database
+          const { password, ...demoUserWithoutPassword } = demoUser;
+          console.log("GET /auth/me - Auto-logging in demo user from database", { 
+            userId: demoUser.id, 
+            email: demoUser.email 
+          });
+          
+          req.login(demoUser, (err) => {
+            if (err) {
+              console.error("GET /auth/me - Error auto-login demo user:", err);
+              return res.status(401).json({ message: "Not authenticated" });
+            }
+            console.log("GET /auth/me - Auto-logged in demo user from database");
+            return res.json(demoUserWithoutPassword);
+          });
+        } else {
+          // Fall back to a hardcoded demo user
+          const hardcodedDemoUser = {
+            id: 9,
+            username: "demo",
+            email: "demo@example.com",
+            createdAt: new Date().toISOString(),
+          };
+          
+          console.log("GET /auth/me - Using hardcoded demo user");
+          req.login(hardcodedDemoUser, (err) => {
+            if (err) {
+              console.error("GET /auth/me - Error auto-login hardcoded demo user:", err);
+              return res.status(401).json({ message: "Not authenticated" });
+            }
+            console.log("GET /auth/me - Auto-logged in hardcoded demo user");
+            return res.json(hardcodedDemoUser);
+          });
         }
-        console.log("Auto-logged in demo user");
-        return res.json(demoUser);
-      });
+      } catch (error) {
+        console.error("GET /auth/me - Error retrieving demo user:", error);
+        return res.status(401).json({ message: "Not authenticated" });
+      }
     } else {
       // User is already authenticated, return their information
-      const { password, ...userWithoutPassword } = req.user as any;
-      return res.json(userWithoutPassword);
+      try {
+        const { password, ...userWithoutPassword } = req.user as any;
+        console.log("GET /auth/me - Returning authenticated user", { 
+          userId: (req.user as any).id,
+          email: (req.user as any).email
+        });
+        return res.json(userWithoutPassword);
+      } catch (error) {
+        console.error("GET /auth/me - Error returning authenticated user:", error);
+        return res.status(500).json({ message: "Error retrieving user data" });
+      }
     }
   });
 

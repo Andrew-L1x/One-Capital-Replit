@@ -441,7 +441,9 @@ export default function Home() {
                     <span>Scheduled and Threshold Take Profit</span>
                   </li>
                 </ul>
-                <Button className="w-full bg-primary">Get Started</Button>
+                <Button className="w-full bg-primary" onClick={() => {
+                  document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+                }}>Get Started</Button>
               </Card>
             </div>
           </div>

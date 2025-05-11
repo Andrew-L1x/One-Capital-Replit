@@ -60,7 +60,32 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Handle array-style query keys by joining them to form a proper URL path
+    let url: string;
+    
+    if (Array.isArray(queryKey) && queryKey.length > 1) {
+      // Filter out null/undefined values
+      const validSegments = queryKey.filter(segment => segment !== null && segment !== undefined);
+      
+      // If the first segment already starts with a slash, use it as the base
+      if (typeof validSegments[0] === 'string' && validSegments[0].startsWith('/')) {
+        // Join all segments with slashes, ensuring proper URL format
+        url = validSegments.reduce((path, segment, index) => {
+          if (index === 0) return segment as string;
+          return `${path}/${segment}`;
+        }, '');
+      } else {
+        // Simple join if not starting with slash
+        url = validSegments.join('/');
+      }
+    } else {
+      // Default to the first element if it's not an array format
+      url = queryKey[0] as string;
+    }
+    
+    console.log(`Fetching from URL: ${url}`);
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { usePortfolio } from "@/lib/portfolioContext";
-import { useQuery } from "@tanstack/react-query";
+import { useHistoricalPerformance, formatPercentage } from "@/lib/usePriceDetails";
 import { useWallet } from "@/lib/walletContext";
 
 // Color palette for different assets in the chart
@@ -24,14 +24,13 @@ export function HistoricalPerformance() {
   const [activeTimeRange, setActiveTimeRange] = useState<TimeRange>("30d");
   const [percentChange, setPercentChange] = useState(0);
   const { isConnected } = useWallet();
-  const { priceDetails, assetAllocations } = usePortfolio();
+  const { assetAllocations } = usePortfolio();
 
-  // Fetch historical price data from API
-  const { data: historicalData = [], isLoading: isLoadingHistory } = useQuery<any[]>({
-    queryKey: [`/api/prices/history/${activeTimeRange}`],
-    enabled: isConnected,
-    refetchInterval: 60000, // Refresh every minute
-  });
+  // Fetch historical price data using custom hook
+  const { 
+    historicalData,
+    isLoading: isLoadingHistory
+  } = useHistoricalPerformance(activeTimeRange);
 
   // Calculate performance metrics when historical data changes
   useEffect(() => {
@@ -159,7 +158,7 @@ export function HistoricalPerformance() {
                 <Tooltip 
                   formatter={(value: any) => [`$${parseFloat(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`, '']}
                   labelFormatter={(label) => {
-                    const item = historicalData.find(d => d.formattedDate === label);
+                    const item = historicalData.find((d: any) => d.formattedDate === label);
                     if (!item) return label;
                     return new Date(item.date).toLocaleDateString();
                   }}

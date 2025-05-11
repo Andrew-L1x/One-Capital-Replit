@@ -221,107 +221,108 @@ export default function Dashboard() {
           <TabsContent value="settings" className="space-y-8">
             <div className="grid gap-6 md:grid-cols-2">
               
-              {vaults.length > 0 && (
-                <Card className="md:col-span-1">
-                  <CardHeader>
-                    <CardTitle>My Rebalance Strategy</CardTitle>
-                    <CardDescription>
-                      Configure your portfolio rebalancing strategy
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="pb-4">
-                        <div className="space-y-4">
-                          {/* Rebalance Frequency */}
-                          <div>
-                            <label className="text-sm block mb-2">Frequency</label>
-                            <select 
-                              className="w-full p-2 rounded-md border border-input bg-background" 
-                              defaultValue={vaults[0]?.rebalanceFrequency || "manual"}
-                              id="rebalance-frequency"
-                            >
-                              <option value="manual">Manual</option>
-                              <option value="daily">Daily</option>
-                              <option value="weekly">Weekly</option>
-                              <option value="monthly">Monthly</option>
-                              <option value="quarterly">Quarterly</option>
-                            </select>
-                          </div>
-                          
-                          {/* Drift Threshold */}
-                          <div>
-                            <label className="text-sm block mb-2">Drift Threshold</label>
-                            <select 
-                              className="w-full p-2 rounded-md border border-input bg-background" 
-                              defaultValue={vaults[0]?.driftThreshold?.toString() || "0"}
-                              id="drift-threshold"
-                            >
-                              <option value="0">0%</option>
-                              <option value="1">1%</option>
-                              <option value="2">2%</option>
-                              <option value="3">3%</option>
-                              <option value="5">5%</option>
-                              <option value="10">10%</option>
-                              <option value="15">15%</option>
-                              <option value="20">20%</option>
-                            </select>
-                          </div>
-                          
-                          <Button 
-                            variant="default" 
-                            size="sm" 
-                            className="w-full mt-4"
-                            onClick={() => {
-                              if (vaults.length > 0) {
-                                const frequencyValue = document.getElementById('rebalance-frequency') as HTMLSelectElement;
-                                const thresholdValue = document.getElementById('drift-threshold') as HTMLSelectElement;
-                                
-                                // In a real app, we would update via API
-                                console.log("Updating rebalance strategy:", {
-                                  frequency: frequencyValue.value,
-                                  threshold: thresholdValue.value
-                                });
-                                
-                                // Show success message
-                                alert("Rebalance strategy updated successfully!");
-                              }
-                            }}
-                            disabled={vaults.length === 0}
+              <Card className="md:col-span-1">
+                <CardHeader>
+                  <CardTitle>My Rebalance Strategy</CardTitle>
+                  <CardDescription>
+                    Configure your portfolio rebalancing strategy
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="pb-4">
+                      <div className="space-y-4">
+                        {/* Rebalance Frequency */}
+                        <div>
+                          <label className="text-sm block mb-2">Frequency</label>
+                          <select 
+                            className="w-full p-2 rounded-md border border-input bg-background" 
+                            defaultValue={vaults[0]?.rebalanceFrequency || "manual"}
+                            id="rebalance-frequency"
                           >
-                            <RefreshCcw className="h-4 w-4 mr-2" />
-                            Update Rebalance Strategy
-                          </Button>
+                            <option value="manual">Manual</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="quarterly">Quarterly</option>
+                          </select>
                         </div>
+                        
+                        {/* Drift Threshold */}
+                        <div>
+                          <label className="text-sm block mb-2">Drift Threshold</label>
+                          <select 
+                            className="w-full p-2 rounded-md border border-input bg-background" 
+                            defaultValue={vaults[0]?.driftThreshold?.toString() || "0"}
+                            id="drift-threshold"
+                          >
+                            <option value="0">0%</option>
+                            <option value="1">1%</option>
+                            <option value="2">2%</option>
+                            <option value="3">3%</option>
+                            <option value="5">5%</option>
+                            <option value="10">10%</option>
+                            <option value="15">15%</option>
+                            <option value="20">20%</option>
+                          </select>
+                        </div>
+                        
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="w-full mt-4"
+                          onClick={() => {
+                            const frequencyValue = document.getElementById('rebalance-frequency') as HTMLSelectElement;
+                            const thresholdValue = document.getElementById('drift-threshold') as HTMLSelectElement;
+                            
+                            // In a real app, we would update via API
+                            console.log("Updating rebalance strategy:", {
+                              frequency: frequencyValue.value,
+                              threshold: thresholdValue.value
+                            });
+                            
+                            // Show success message
+                            alert("Rebalance strategy updated successfully!");
+                          }}
+                        >
+                          <RefreshCcw className="h-4 w-4 mr-2" />
+                          Update Rebalance Strategy
+                        </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </CardContent>
+              </Card>
               
-              {vaults.length > 0 && (
-                <Card className="md:col-span-1">
-                  <CardHeader>
-                    <CardTitle>My Take Profit Strategy</CardTitle>
-                    <CardDescription>
-                      Configure when and how to take profits from your portfolio
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {vaults[0]?.id && (
-                        <TakeProfitForm 
-                          vaultId={vaults[0].id}
-                          initialData={undefined}
-                          onSubmitSuccess={() => {
-                            // Success handling
-                          }}
-                        />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <Card className="md:col-span-1">
+                <CardHeader>
+                  <CardTitle>My Take Profit Strategy</CardTitle>
+                  <CardDescription>
+                    Configure when and how to take profits from your portfolio
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {vaults.length > 0 && vaults[0]?.id ? (
+                      <TakeProfitForm 
+                        vaultId={vaults[0].id}
+                        initialData={undefined}
+                        onSubmitSuccess={() => {
+                          // Success handling
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-muted-foreground mb-4">Create a vault to set up your take profit strategy</p>
+                        <Button onClick={handleCreateVault}>
+                          <PlusCircle className="h-4 w-4 mr-2" />
+                          Create Vault
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
             
             {/* Portfolio Settings at the bottom */}

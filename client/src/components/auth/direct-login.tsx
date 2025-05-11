@@ -351,11 +351,20 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
+              Quick Access
             </span>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-2">
+          <Button 
+            variant="default" 
+            type="button" 
+            onClick={handleDemoLogin}
+            disabled={isSubmitting}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Demo Login (No Sign Up Required)
+          </Button>
           <Button variant="outline" type="button" disabled>
             Google (Coming Soon)
           </Button>

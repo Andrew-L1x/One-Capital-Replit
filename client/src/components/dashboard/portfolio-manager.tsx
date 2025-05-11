@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Asset } from "@shared/schema";
 import { CurrentHoldings } from "@/components/dashboard/CurrentHoldings";
 import { HistoricalPerformance } from "@/components/dashboard/HistoricalPerformance";
+import { PortfolioChart } from "@/components/dashboard/PortfolioChart";
 import { 
   Card, 
   CardContent, 
@@ -31,7 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+
 import { Trash2, PlusCircle, DollarSign, PercentIcon, RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -56,37 +57,8 @@ const portfolioSchema = z.object({
 
 type PortfolioFormValues = z.infer<typeof portfolioSchema>;
 
-// Define colors for pie chart
-const COLORS = [
-  '#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A374DB',
-  '#FF6B6B', '#4ECDC4', '#35A7FF', '#FFC857', '#7B68EE',
-  '#FF7F50', '#6A0572', '#AB83A1'
-];
-
-// Mock prices for digital assets
-const MOCK_PRICES: Record<string, number> = {
-  BTC: 60000,
-  ETH: 2500,
-  ADA: 0.50,
-  BNB: 350,
-  USDT: 1,
-  USDC: 1,
-  L1X: 0.50,
-  DOGE: 0.12,
-  XRP: 0.55,
-  SOL: 110,
-  TRX: 0.08,
-  SUI: 1.25,
-  LINK: 15
-};
-
-// Mock portfolio performance data
-const MOCK_PERFORMANCE = {
-  totalValue: 0, // Will be calculated dynamically
-  oneDayChange: 2.3,
-  sevenDayChange: 5.7,
-  thirtyDayChange: -1.2
-};
+// Portfolio Manager component
+// This component manages the portfolio allocation logic and UI
 
 interface PortfolioManagerProps {
   vaultId?: number;
@@ -307,40 +279,10 @@ export default function PortfolioManager({
       </div>
       
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        {/* Pie Chart and Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Portfolio Visualization</CardTitle>
-            <CardDescription>
-              Visual representation of your asset allocation
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={getPieChartData()}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {getPieChartData().map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: any) => [`${value}%`, 'Allocation']} 
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Portfolio Chart with Real Data */}
+        <PortfolioChart />
         
+        {/* Historical Performance */}
         <HistoricalPerformance />
       </div>
     </div>

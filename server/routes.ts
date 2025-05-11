@@ -269,24 +269,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   api.get("/auth/me", (req: Request, res: Response) => {
     if (!req.isAuthenticated()) {
-      // For development purposes, auto-login a test user
-      const testUser = {
-        id: 1,
-        username: "test_user",
-        email: "test@example.com",
-        walletAddress: "0x1234...5678",
-        firebaseUid: "test-firebase-uid",
+      // For development purposes, auto-login the demo user
+      const demoUser = {
+        id: 9,
+        username: "demo",
+        email: "demo@example.com",
         createdAt: new Date().toISOString(),
       };
       
-      // Create a session for the test user
-      req.login(testUser, (err) => {
+      // Create a session for the demo user
+      req.login(demoUser, (err) => {
         if (err) {
-          console.error("Error auto-login test user:", err);
+          console.error("Error auto-login demo user:", err);
           return res.status(401).json({ message: "Not authenticated" });
         }
-        console.log("Auto-logged in test user");
-        return res.json(testUser);
+        console.log("Auto-logged in demo user");
+        return res.json(demoUser);
       });
     } else {
       // User is already authenticated, return their information

@@ -284,6 +284,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Demo login endpoint for direct login with demo user
+  api.post("/auth/demo-login", async (req: Request, res: Response) => {
+    console.log("POST /auth/demo-login - Demo login bypass");
+    
+    try {
+      // Create a session for the demo user with ID 9
+      const demoUser = {
+        id: 9,
+        username: "demo",
+        email: "demo@example.com",
+        createdAt: new Date()
+      };
+      
+      req.login(demoUser, (err) => {
+        if (err) {
+          console.error("POST /auth/demo-login - Login error:", err);
+          return res.status(500).json({ message: "Error logging in demo user" });
+        }
+        
+        console.log("POST /auth/demo-login - Demo login successful");
+        return res.json(demoUser);
+      });
+    } catch (error) {
+      console.error("POST /auth/demo-login - Error:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  });
+
   api.post("/auth/login", async (req: Request, res: Response, next: NextFunction) => {
     console.log("POST /auth/login - Login attempt", { 
       email: req.body.username || 'no-email-provided',

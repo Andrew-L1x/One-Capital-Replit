@@ -117,6 +117,44 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
     }
   };
 
+  // Demo login handler - uses the dedicated demo login endpoint
+  const handleDemoLogin = async () => {
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      console.log("Attempting demo login");
+      
+      // Use the special demo-login endpoint that bypasses normal authentication
+      await apiRequest("/api/auth/demo-login", {
+        method: "POST"
+      });
+      
+      // Update auth state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      
+      toast({
+        title: "Demo login successful",
+        description: "You are now logged in with the demo account.",
+      });
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err: any) {
+      console.error("Demo login error:", err);
+      setError(err.message || "Failed to login with demo account.");
+      
+      toast({
+        title: "Demo login failed",
+        description: err.message || "Failed to login with demo account.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleRegister = async (data: RegisterFormValues) => {
     setIsSubmitting(true);
     setError(null);

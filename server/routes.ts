@@ -171,6 +171,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return done(null, testUser);
       }
       
+      // For development purposes, if the ID is 9 (our demo user), reconstruct the user object
+      if (id === 9) {
+        const demoUser = {
+          id: 9,
+          username: "demo",
+          email: "demo@example.com",
+          createdAt: new Date(),
+        };
+        return done(null, demoUser);
+      }
+      
       // For other users, try to load from the database
       const user = await storage.getUser(id);
       if (!user) {

@@ -70,9 +70,12 @@ export function CurrentHoldings() {
     queryKey: ["/api/vaults"],
   });
   
+  // Get first available vault ID
+  const activeVaultId = vaults && vaults.length > 0 ? vaults[0].id : null;
+  
   const { data: allocations = [], isLoading: isLoadingAllocations } = useQuery<Allocation[]>({
-    queryKey: ["/api/vaults/1/allocations"],
-    enabled: !!vaults && vaults.length > 0,
+    queryKey: ["/api/vaults", activeVaultId, "allocations"],
+    enabled: !!activeVaultId,
   });
 
   // Prepare initial form values based on current holdings

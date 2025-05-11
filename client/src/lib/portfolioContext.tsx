@@ -58,9 +58,12 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   });
   
   // Prepare asset allocations for all vaults (from API)
+  // Get the first vault ID as the active vault
+  const activeVaultId = vaults.length > 0 ? vaults[0]?.id : null;
+  
   const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
-    queryKey: [vaults.length > 0 ? `/api/vaults/${vaults[0]?.id}/allocations` : null],
-    enabled: vaults.length > 0 && isConnected
+    queryKey: ['/api/vaults', activeVaultId, 'allocations'],
+    enabled: !!activeVaultId && isConnected
   });
   
   const [isLoading, setIsLoading] = useState(true);

@@ -386,7 +386,9 @@ export default function Home() {
                     <span>Scheduled and Threshold Take Profit</span>
                   </li>
                 </ul>
-                <Button className="w-full">Get Started</Button>
+                <Button className="w-full" onClick={() => {
+                  document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+                }}>Get Started</Button>
               </Card>
               
               <Card className="p-6 border-2 border-primary shadow-lg relative">

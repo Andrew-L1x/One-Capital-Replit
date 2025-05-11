@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { usePortfolio } from "@/lib/portfolioContext";
+import { useQuery } from "@tanstack/react-query";
+import { useWallet } from "@/lib/walletContext";
 
 // Color palette for different assets in the chart
 const COLORS = [
@@ -19,81 +22,17 @@ type TimeRange = "7d" | "30d" | "90d" | "1y";
 
 export function HistoricalPerformance() {
   const [activeTimeRange, setActiveTimeRange] = useState<TimeRange>("30d");
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
-  const [isGeneratingData, setIsGeneratingData] = useState(true);
   const [percentChange, setPercentChange] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isConnected } = useWallet();
+  const { priceDetails, assetAllocations } = usePortfolio();
 
-  // Generate sample historical data
-  // In a real app, this would be fetched from an API
-  useEffect(() => {
-    const generateData = () => {
-      setIsGeneratingData(true);
-      
-      // Current date
-      const now = new Date();
-      const data: any[] = [];
-      
-      let days = 0;
-      switch (activeTimeRange) {
-        case "7d": days = 7; break;
-        case "30d": days = 30; break;
-        case "90d": days = 90; break;
-        case "1y": days = 365; break;
-      }
-      
-      const btcStartPrice = 65421.37 * (1 - Math.random() * 0.2);
-      const ethStartPrice = 3512.89 * (1 - Math.random() * 0.2);
-      const solStartPrice = 142.67 * (1 - Math.random() * 0.2);
-      
-      // First data point to avoid the undefined error
-      data.push({
-        date: new Date(now).setDate(now.getDate() - days),
-        formattedDate: formatDate(new Date(now).setDate(now.getDate() - days)),
-        btc: btcStartPrice,
-        eth: ethStartPrice,
-        sol: solStartPrice,
-        portfolio: btcStartPrice * 0.4 + ethStartPrice * 0.4 + solStartPrice * 0.2,
-      });
-      
-      // Generate historical prices with realistic, slightly volatile movements
-      for (let i = days - 1; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        
-        // Random price movement factor (more volatility for longer timeframes)
-        const volatilityFactor = activeTimeRange === "1y" ? 0.03 : activeTimeRange === "90d" ? 0.02 : 0.01;
-        
-        // Create price movements that are somewhat correlated but not identical
-        const btcChange = 1 + (Math.random() * 2 - 1) * volatilityFactor;
-        const ethChange = 1 + (Math.random() * 2 - 1) * volatilityFactor;
-        const solChange = 1 + (Math.random() * 2 - 1) * volatilityFactor;
-        
-        // Calculate prices for this day
-        const btcPrice = data[data.length - 1].btc * btcChange;
-        const ethPrice = data[data.length - 1].eth * ethChange;
-        const solPrice = data[data.length - 1].sol * solChange;
-        
-        // Calculate portfolio value based on allocation percentages (here we assume a simple 40/40/20 split)
-        const portfolioValue = btcPrice * 0.4 + ethPrice * 0.4 + solPrice * 0.2;
-        
-        data.push({
-          date: date.getTime(),
-          formattedDate: formatDate(date.getTime()),
-          btc: btcPrice,
-          eth: ethPrice,
-          sol: solPrice,
-          portfolio: portfolioValue,
-        });
-      }
-      
-      setHistoricalData(data);
-      setIsGeneratingData(false);
-    };
-    
-    generateData();
-  }, [activeTimeRange]);
-  
+  // Fetch historical price data from API
+  const { data: historicalData = [], isLoading: isLoadingHistory } = useQuery<any[]>({
+    queryKey: [`/api/prices/history/${activeTimeRange}`],
+    enabled: isConnected,
+    refetchInterval: 60000, // Refresh every minute
+  });
+
   // Calculate performance metrics when historical data changes
   useEffect(() => {
     if (historicalData.length < 2) {
@@ -101,17 +40,43 @@ export function HistoricalPerformance() {
       return;
     }
     
-    const startValue = historicalData[0].portfolio;
-    const endValue = historicalData[historicalData.length - 1].portfolio;
-    const change = ((endValue - startValue) / startValue) * 100;
-    
-    setPercentChange(parseFloat(change.toFixed(2)));
-    setIsLoading(false);
+    try {
+      // Get the first and last data points
+      const startValue = historicalData[0]?.portfolioValue || 0;
+      const endValue = historicalData[historicalData.length - 1]?.portfolioValue || 0;
+      
+      if (startValue > 0 && endValue > 0) {
+        const change = ((endValue - startValue) / startValue) * 100;
+        setPercentChange(parseFloat(change.toFixed(2)));
+      } else {
+        setPercentChange(0);
+      }
+    } catch (error) {
+      console.error("Error calculating performance change:", error);
+      setPercentChange(0);
+    }
   }, [historicalData]);
   
   const isPositive = percentChange >= 0;
+  const isLoading = isLoadingHistory || !isConnected;
 
-  if (isLoading || isGeneratingData) {
+  // If not connected, show appropriate message
+  if (!isConnected) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Historical Performance</CardTitle>
+          <CardDescription>Connect your wallet to view performance data</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[400px] flex items-center justify-center">
+          <p className="text-muted-foreground">Wallet not connected</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If loading, show loading state
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -125,6 +90,27 @@ export function HistoricalPerformance() {
       </Card>
     );
   }
+
+  // If no data or empty portfolio, show appropriate message
+  if (historicalData.length === 0 || assetAllocations.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Historical Performance</CardTitle>
+          <CardDescription>Portfolio performance over time</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[400px] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-2">No historical data available</p>
+            <p className="text-sm text-muted-foreground">Create a portfolio to track performance</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Get the asset symbols we want to display on the chart
+  const assetSymbols = assetAllocations.slice(0, 3).map(alloc => alloc.asset.symbol);
 
   return (
     <Card>
@@ -164,14 +150,6 @@ export function HistoricalPerformance() {
                   dataKey="formattedDate" 
                   tickMargin={10}
                   tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => {
-                    // Only show some of the dates based on the time range
-                    if (activeTimeRange === "7d") return value;
-                    if (activeTimeRange === "30d" && historicalData.indexOf(historicalData.find(d => d.formattedDate === value)!) % 5 === 0) return value;
-                    if (activeTimeRange === "90d" && historicalData.indexOf(historicalData.find(d => d.formattedDate === value)!) % 15 === 0) return value;
-                    if (activeTimeRange === "1y" && historicalData.indexOf(historicalData.find(d => d.formattedDate === value)!) % 30 === 0) return value;
-                    return "";
-                  }}
                 />
                 <YAxis 
                   tickFormatter={(value) => `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
@@ -189,40 +167,25 @@ export function HistoricalPerformance() {
                 <Legend />
                 <Line 
                   type="monotone" 
-                  dataKey="portfolio" 
+                  dataKey="portfolioValue" 
                   name="Portfolio" 
                   stroke={COLORS[0]} 
                   strokeWidth={3}
                   dot={false}
                   activeDot={{ r: 8 }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="btc" 
-                  name="BTC" 
-                  stroke={COLORS[1]} 
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 6 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="eth" 
-                  name="ETH" 
-                  stroke={COLORS[2]} 
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 6 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="sol" 
-                  name="SOL" 
-                  stroke={COLORS[3]} 
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 6 }}
-                />
+                {assetSymbols.map((symbol, index) => (
+                  <Line 
+                    key={symbol}
+                    type="monotone" 
+                    dataKey={`assets.${symbol}`}
+                    name={symbol} 
+                    stroke={COLORS[index + 1]} 
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 6 }}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </div>

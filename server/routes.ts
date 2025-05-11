@@ -1231,9 +1231,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API route to get historical price data for portfolio
+  api.get("/prices/history/:timeRange", async (req: Request, res: Response) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const userId = (req.user as any).id;
+      const timeRange = req.params.timeRange as '7d' | '30d' | '90d' | '1y';
+      
+      if (!timeRange || !['7d', '30d', '90d', '1y'].includes(timeRange)) {
+        return res.status(400).json({ message: "Valid time range is required (7d, 30d, 90d, 1y)" });
+      }
+      
+      // Get user's vaults
+      const vaults = await storage.getVaultsByUserId(userId);
+      if (!vaults || vaults.length === 0) {
+        return res.json([]);
+      }
+      
+      // Use the user's primary vault for historical data
+      const vault = vaults[0];
+      
+      // Get allocations for the vault
+      const allocations = await storage.getAllocationsByVaultId(vault.id);
+      if (!allocations || allocations.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get associated assets
+      const assets: Record<number, Asset> = {};
+      for (const allocation of allocations) {
+        const asset = await storage.getAsset(allocation.assetId);
+        if (asset) {
+          assets[asset.id] = asset;
+        }
+      }
+      
+      // Calculate days to go back based on time range
+      let daysToGoBack = 0;
+      switch (timeRange) {
+        case '7d': daysToGoBack = 7; break;
+        case '30d': daysToGoBack = 30; break;
+        case '90d': daysToGoBack = 90; break;
+        case '1y': daysToGoBack = 365; break;
+      }
+      
+      // Get current price info
+      const currentPrices = await getPricesWithChange();
+      
+      // Generate historical data points
+      const historicalData = [];
+      const now = new Date();
+      
+      // Start from the earliest date and move forward
+      for (let i = daysToGoBack; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        
+        // Format date for display
+        const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+        
+        // Calculate portfolio value and individual asset values for this day
+        let portfolioValue = 0;
+        const assetPrices: Record<string, number> = {};
+        
+        // For each asset in the portfolio
+        for (const allocation of allocations) {
+          const asset = assets[allocation.assetId];
+          if (!asset || !currentPrices[asset.symbol]) continue;
+          
+          // For real price history, we'd query the database for historical prices
+          // For now, we'll calculate a synthetic price based on the current price
+          // but with randomization appropriate for the timeframe
+          const currentPrice = currentPrices[asset.symbol].current;
+          
+          // Volatility factor based on the asset type and time from now
+          const volatilityFactor = i / daysToGoBack * (asset.symbol === 'BTC' ? 0.15 : 0.2);
+          const daysSinceStart = daysToGoBack - i;
+          
+          // Calculate a relatively realistic price based on current price
+          // with more deviation the further back in time we go
+          const previousPrice = currentPrice * (1 - volatilityFactor + (Math.sin(daysSinceStart / 10) * volatilityFactor));
+          
+          // Store asset price
+          assetPrices[asset.symbol] = previousPrice;
+          
+          // Add to portfolio value
+          portfolioValue += allocation.amount * previousPrice;
+        }
+        
+        // Create data point
+        const dataPoint: any = {
+          date: date.getTime(),
+          formattedDate,
+          portfolioValue: parseFloat(portfolioValue.toFixed(2)),
+          assets: { ...assetPrices }
+        };
+        
+        historicalData.push(dataPoint);
+      }
+      
+      return res.json(historicalData);
+      
+    } catch (error) {
+      console.error("Error fetching historical price data:", error);
+      return res.status(500).json({ message: "Error fetching historical price data" });
+    }
+  });
+  
   // API route to get real-time price for a specific asset by symbol
   api.get("/prices/:symbol", async (req: Request, res: Response) => {
     try {
+      // Skip for 'history' parameter which is handled by a different endpoint
+      if (req.params.symbol === 'history') {
+        return res.status(400).json({ message: "Invalid symbol" });
+      }
+      
       const symbol = req.params.symbol;
       if (!symbol) {
         return res.status(400).json({ message: "Symbol is required" });

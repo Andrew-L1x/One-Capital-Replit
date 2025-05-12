@@ -140,25 +140,25 @@ export default function Dashboard() {
         
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="allocation">
-              <Wallet className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Allocation</span>
-              <span className="sm:hidden">Alloc</span>
-            </TabsTrigger>
-            <TabsTrigger value="move-assets">
-              <ArrowRightLeft className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Move Assets</span>
-              <span className="sm:hidden">Move</span>
-            </TabsTrigger>
             <TabsTrigger value="portfolio">
               <LineChart className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Portfolio</span>
               <span className="sm:hidden">Portfolio</span>
             </TabsTrigger>
+            <TabsTrigger value="allocation">
+              <Wallet className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Allocation</span>
+              <span className="sm:hidden">Alloc</span>
+            </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Rebalance</span>
               <span className="sm:hidden">Rebalance</span>
+            </TabsTrigger>
+            <TabsTrigger value="move-assets">
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Move Assets</span>
+              <span className="sm:hidden">Move</span>
             </TabsTrigger>
           </TabsList>
           

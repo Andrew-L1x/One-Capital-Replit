@@ -32,7 +32,18 @@ import { Vault, Asset } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<string>("portfolio");
+  // Store the active tab in session storage to persist it between page reloads
+  const getInitialTab = () => {
+    const savedTab = sessionStorage.getItem("dashboard-active-tab");
+    return savedTab || "portfolio";
+  };
+  const [activeTab, setActiveTab] = useState<string>(getInitialTab());
+
+  // When the active tab changes, save it to session storage
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    sessionStorage.setItem("dashboard-active-tab", value);
+  };
 
   // Check if user is authenticated
   const { data: user, isLoading: isLoadingUser, isError: isUserError } = useQuery({
@@ -127,7 +138,7 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-8">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="allocation">
               <Wallet className="h-4 w-4 mr-2" />

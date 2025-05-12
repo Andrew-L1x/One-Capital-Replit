@@ -33,8 +33,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import { Trash2, PlusCircle, DollarSign, PercentIcon, RefreshCw } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Trash2, PlusCircle, DollarSign, PercentIcon, RefreshCw, ArrowRightLeft } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 // Define the form schema
@@ -247,16 +247,42 @@ export default function PortfolioManager({
     setError(null);
     
     try {
-      // In a real application, we would save this data to the backend
-      console.log("Saving portfolio allocation:", data);
+      // Get the first vault (for demo purposes, we'll use the first vault)
+      const { data: vaults = [] } = await apiRequest("GET", "/api/vaults");
       
-      // Here you would use apiRequest to save the allocations to the backend
-      if (vaultId) {
-        // Save allocations to an existing vault
-        // For each allocation in data.allocations, create/update via API
-      } else {
-        // Create a new vault with these allocations
+      if (vaults.length === 0) {
+        throw new Error("No vaults found. Please create a vault first.");
       }
+      
+      const targetVaultId = vaultId || vaults[0].id;
+      
+      // Clear existing allocations for this vault
+      const { data: existingAllocations = [] } = await apiRequest("GET", `/api/vaults/${targetVaultId}/allocations`);
+      
+      // Delete existing allocations
+      for (const allocation of existingAllocations) {
+        await apiRequest("DELETE", `/api/allocations/${allocation.id}`);
+      }
+      
+      // Create new allocations
+      for (const allocation of data.allocations) {
+        await apiRequest("POST", `/api/vaults/${targetVaultId}/allocations`, {
+          assetId: allocation.assetId,
+          targetPercentage: allocation.percentage.toString(),
+        });
+      }
+      
+      // Invalidate cache for allocations
+      queryClient.invalidateQueries({
+        queryKey: [`/api/vaults/${targetVaultId}/allocations`]
+      });
+      
+      // Show success message
+      toast({
+        title: "Allocations Saved",
+        description: "Your portfolio allocations have been updated successfully.",
+        variant: "default"
+      });
       
       if (onSave) {
         onSave();
@@ -264,6 +290,12 @@ export default function PortfolioManager({
     } catch (err: any) {
       console.error("Error saving portfolio:", err);
       setError(err.message || "Failed to save portfolio allocation");
+      
+      toast({
+        title: "Error Saving Allocations",
+        description: err.message || "There was a problem saving your allocations. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -286,6 +318,145 @@ export default function PortfolioManager({
         {/* Historical Performance */}
         <HistoricalPerformance />
       </div>
+      
+      {/* Display allocation form for more advanced users */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Allocation Settings</CardTitle>
+          <CardDescription>Adjust your target allocations for each asset</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Show error message if allocation doesn't equal 100% */}
+              {totalPercentage !== 100 && (
+                <Alert className={totalPercentage > 100 ? "bg-red-50 border-red-200" : "bg-yellow-50 border-yellow-200"}>
+                  <AlertDescription>
+                    Total allocation: <strong>{totalPercentage}%</strong> 
+                    {totalPercentage > 100 ? " (over-allocated)" : " (under-allocated)"}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {/* List of allocations */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-8 gap-2 text-sm font-medium text-muted-foreground pb-2 border-b">
+                  <div className="col-span-3">Asset</div>
+                  <div className="col-span-3">Target %</div>
+                  <div className="col-span-2 text-right">Actions</div>
+                </div>
+                
+                {fields.map((field, index) => {
+                  const assetId = form.watch(`allocations.${index}.assetId`);
+                  const asset = assets.find(a => a.id === assetId);
+                  
+                  return (
+                    <div key={field.id} className="grid grid-cols-8 gap-2 items-center">
+                      <div className="col-span-3">
+                        <FormField
+                          control={form.control}
+                          name={`allocations.${index}.assetId`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <Select
+                                value={field.value.toString()}
+                                onValueChange={(val) => field.onChange(parseInt(val))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue>{asset?.symbol || "Select asset"}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {assets.map((asset) => (
+                                    <SelectItem key={asset.id} value={asset.id.toString()}>
+                                      {asset.symbol} - {asset.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="col-span-3">
+                        <FormField
+                          control={form.control}
+                          name={`allocations.${index}.percentage`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex items-center space-x-2">
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                  />
+                                </FormControl>
+                                <PercentIcon className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="col-span-2 flex justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          disabled={fields.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Button to add new allocation */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddAllocation}
+                disabled={assets.length === fields.length}
+                className="w-full"
+              >
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Asset
+              </Button>
+              
+              {/* Error message */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
+              {/* Submit button */}
+              <Button
+                type="submit"
+                disabled={isSubmitting || !form.formState.isDirty || totalPercentage !== 100}
+                className="w-full"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Save Allocations
+                  </>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

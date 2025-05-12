@@ -135,12 +135,18 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             // This ensures CurrentHoldings, PortfolioChart, and HistoricalPerformance all use the same data
             const targetPercentage = parseFloat(allocation.targetPercentage);
             
-            // Convert percentage to a token amount based on a standard portfolio size
-            // Use 100 as the base amount to make percentages match token amounts
-            const amount = 100 * (targetPercentage / 100);
+            // For data consistency across all components, we'll use the same calculation method
+            // Each component (Chart, Holdings, Performance) will access this same data source
             
-            const value = amount * currentPrice;
-            const previousValue = amount * previousPrice;
+            // Set a base portfolio value to make visualization meaningful (10,000 USD)
+            const basePortfolioValue = 10000;
+            
+            // Calculate token amount based on target allocation percentage
+            const amount = targetPercentage;
+            
+            // Calculate USD value based on current price and allocation
+            const value = (basePortfolioValue * (targetPercentage / 100));
+            const previousValue = (basePortfolioValue * (targetPercentage / 100)) * (previousPrice / currentPrice);
             
             totalValue += value;
             totalPreviousValue += previousValue;

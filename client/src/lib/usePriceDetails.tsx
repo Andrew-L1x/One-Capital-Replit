@@ -193,11 +193,12 @@ export function formatPercentage(percentage: number): string {
  */
 export function useHistoricalPerformance(timeRange: string = '30d') {
   const { isConnected } = useWallet();
+  const { assetAllocations } = require('./portfolioContext').usePortfolio();
   
   // Fetch historical price data from API
   const { 
-    data: historicalData = [], 
-    isLoading, 
+    data: rawHistoricalData = [], 
+    isLoading: isLoadingRawData, 
     error,
     refetch
   } = useQuery<any[]>({
@@ -206,8 +207,71 @@ export function useHistoricalPerformance(timeRange: string = '30d') {
     refetchInterval: 60000, // Refresh every minute
   });
   
+  // Process the historical data to ensure it matches the current allocation data
+  const [processedData, setProcessedData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    setIsLoading(true);
+    
+    if (rawHistoricalData.length > 0 && assetAllocations.length > 0) {
+      try {
+        // Create a map of allocations by symbol for quick lookup
+        const allocationMap = assetAllocations.reduce((map, allocation) => {
+          map[allocation.asset.symbol] = allocation;
+          return map;
+        }, {} as Record<string, any>);
+        
+        // Base portfolio value - should match the same base value in portfolioContext
+        const basePortfolioValue = 10000;
+        
+        // Process each historical data point to include current allocations
+        const processed = rawHistoricalData.map(dataPoint => {
+          // Start with the base data point
+          const result = { ...dataPoint };
+          
+          // Calculate the portfolio value based on the current allocations
+          let totalValue = 0;
+          const assetValues: Record<string, number> = {};
+          
+          // For each allocation, calculate its value at this historical point
+          Object.keys(dataPoint.prices || {}).forEach(symbol => {
+            if (allocationMap[symbol]) {
+              const allocation = allocationMap[symbol];
+              const price = dataPoint.prices[symbol];
+              const percentage = allocation.percentOfPortfolio;
+              
+              // Calculate value based on percentage allocation of base portfolio
+              const value = (basePortfolioValue * (percentage / 100));
+              totalValue += value;
+              
+              // Store the asset value for this data point
+              assetValues[symbol] = value;
+            }
+          });
+          
+          // Update the portfolio value and asset breakdown
+          result.portfolioValue = totalValue;
+          result.assets = assetValues;
+          
+          return result;
+        });
+        
+        setProcessedData(processed);
+      } catch (err) {
+        console.error("Error processing historical data:", err);
+        setProcessedData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setProcessedData([]);
+      setIsLoading(isLoadingRawData);
+    }
+  }, [rawHistoricalData, assetAllocations, isLoadingRawData]);
+  
   return {
-    historicalData,
+    historicalData: processedData,
     isLoading,
     error,
     refetch

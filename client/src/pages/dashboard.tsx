@@ -13,6 +13,7 @@ import { CurrentPortfolio } from "@/components/dashboard/CurrentPortfolio";
 import { CrossChainSwap } from "@/components/dashboard/CrossChainSwap";
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import { PortfolioBalance } from "@/components/dashboard/PortfolioBalance";
+import { DepositWithdrawForm } from "@/components/dashboard/DepositWithdrawForm";
 import PortfolioChart, { AssetAllocation } from "@/components/ui/portfolio-chart";
 import TakeProfitForm from "@/components/forms/take-profit-form";
 import { 
@@ -193,9 +194,24 @@ export default function Dashboard() {
             
             {/* Add Performance Metrics */}
             {vaults.length > 0 && (
-              <div className="mt-8">
-                <PerformanceMetrics />
-              </div>
+              <>
+                {/* Make sure the deposit/withdraw form is explicitly displayed here too */}
+                <div className="mt-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Deposit & Withdraw</CardTitle>
+                      <CardDescription>Manage your investments with easy deposits and withdrawals</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <DepositWithdrawForm />
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="mt-8">
+                  <PerformanceMetrics />
+                </div>
+              </>
             )}
             
             {/* Show message if no vaults exist */}

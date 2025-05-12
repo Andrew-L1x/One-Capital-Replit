@@ -16,12 +16,22 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWallet } from '@/lib/walletContext';
-import { formatPrice } from '@/lib/usePriceDetails';
+import { formatPrice, formatPercentage } from '@/lib/usePriceDetails';
 import { usePortfolio } from '@/lib/portfolioContext';
+import { ArrowUpIcon, ArrowDownIcon, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export function AssetAllocationTable() {
   const { isConnected } = useWallet();
-  const { portfolioValue, assetAllocations, isLoading } = usePortfolio();
+  const { portfolioValue, assetAllocations, priceDetails, isLoading } = usePortfolio();
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  // Update the timestamp when price details change
+  useEffect(() => {
+    if (Object.keys(priceDetails).length > 0) {
+      setLastUpdated(new Date());
+    }
+  }, [priceDetails]);
   
   // Empty state for when wallet is not connected
   if (!isConnected) {
@@ -79,9 +89,9 @@ export function AssetAllocationTable() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Asset Allocation</CardTitle>
+        <CardTitle>Cryptocurrency Allocation</CardTitle>
         <CardDescription>
-          Current allocation of assets across all vaults
+          Live allocation data with real-time prices
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -89,42 +99,63 @@ export function AssetAllocationTable() {
           <Table className="min-w-[300px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Token</TableHead>
+                <TableHead>Asset</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">% of Portfolio</TableHead>
+                <TableHead className="text-right">24h</TableHead>
+                <TableHead className="text-right">%</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assetAllocations.map(allocation => (
-                <TableRow key={allocation.asset.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span>{allocation.asset.name}</span>
-                      <span className="text-xs text-muted-foreground">{allocation.asset.symbol}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {allocation.amount.toLocaleString(undefined, { 
-                      maximumFractionDigits: 8,
-                      minimumFractionDigits: 2 
-                    })}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant="outline">
-                      {Math.round(allocation.percentOfPortfolio)}%
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {assetAllocations.map(allocation => {
+                const symbol = allocation.asset.symbol;
+                const priceChange = priceDetails[symbol]?.changePercentage24h || 0;
+                const priceChangeFormatted = formatPercentage(priceChange);
+                const isPriceUp = priceChange > 0;
+                const isPriceDown = priceChange < 0;
+                
+                return (
+                  <TableRow key={allocation.asset.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span className="font-semibold">{symbol}</span>
+                        <span className="text-xs text-muted-foreground">{allocation.asset.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {allocation.amount.toLocaleString(undefined, { 
+                        maximumFractionDigits: 3,
+                        minimumFractionDigits: 3 
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className={`${isPriceUp ? 'text-green-500' : ''} ${isPriceDown ? 'text-red-500' : ''}`}>
+                        {isPriceUp && '+'}{priceChangeFormatted}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="outline">
+                        {Math.round(allocation.percentOfPortfolio)}%
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
         
-        <div className="mt-4 pt-4 border-t flex justify-between items-center">
-          <span className="font-semibold">Total Portfolio Value:</span>
-          <span className="font-bold text-lg">
-            {formatPrice(portfolioValue)}
-          </span>
+        <div className="mt-4 pt-4 border-t flex flex-col space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">Total Portfolio Value:</span>
+            <span className="font-bold text-lg">
+              {formatPrice(portfolioValue)}
+            </span>
+          </div>
+          
+          <div className="flex items-center text-xs text-muted-foreground justify-end">
+            <Clock className="h-3 w-3 mr-1" />
+            Last updated: {lastUpdated.toLocaleTimeString()} • Auto-refreshes every 60 seconds
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -170,16 +170,8 @@ export default function Dashboard() {
             {/* Performance Overview Section */}
             <PerformanceMetrics />
             
-            {/* Cryptocurrency Allocation Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cryptocurrency Allocation</CardTitle>
-                <CardDescription>Live allocation data with real-time prices</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AssetAllocationTable />
-              </CardContent>
-            </Card>
+            {/* Directly use the AssetAllocationTable component which has its own card */}
+            <AssetAllocationTable />
           </TabsContent>
           
           {/* Move Assets Tab */}

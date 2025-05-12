@@ -289,22 +289,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("POST /auth/demo-login - Demo login bypass");
     
     try {
-      // Create a session for the demo user with ID 9
-      const demoUser = {
-        id: 9,
-        username: "demo",
-        email: "demo@example.com",
-        createdAt: new Date()
-      };
+      // Try to get demo user from database first for complete user data
+      let demoUser = await storage.getUserByEmail('demo@example.com');
       
+      // If demo user doesn't exist in database, use hardcoded fallback
+      if (!demoUser) {
+        demoUser = {
+          id: 9,
+          username: "demo",
+          email: "demo@example.com",
+          createdAt: new Date()
+        };
+        console.log("POST /auth/demo-login - Using hardcoded demo user (not found in database)");
+      } else {
+        console.log("POST /auth/demo-login - Using demo user from database", { userId: demoUser.id });
+      }
+      
+      // Create a session for the demo user
       req.login(demoUser, (err) => {
         if (err) {
           console.error("POST /auth/demo-login - Login error:", err);
           return res.status(500).json({ message: "Error logging in demo user" });
         }
         
-        console.log("POST /auth/demo-login - Demo login successful");
-        return res.json(demoUser);
+        // Ensure session is saved before responding
+        req.session.save((err) => {
+          if (err) {
+            console.error("POST /auth/demo-login - Session save error:", err);
+            return res.status(500).json({ message: "Error saving session" });
+          }
+          
+          console.log("POST /auth/demo-login - Demo login successful");
+          
+          // Remove password from response
+          const { password, ...safeUser } = demoUser;
+          return res.json(safeUser);
+        });
       });
     } catch (error) {
       console.error("POST /auth/demo-login - Error:", error);

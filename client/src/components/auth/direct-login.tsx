@@ -126,9 +126,20 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
       console.log("Attempting demo login");
       
       // Use the special demo-login endpoint that bypasses normal authentication
-      await apiRequest("/api/auth/demo-login", {
-        method: "POST"
+      const response = await fetch("/api/auth/demo-login", {
+        method: "POST",
+        credentials: "include", // Important: include cookies in the request
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
+      
+      if (!response.ok) {
+        throw new Error(`Demo login failed: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Demo login success:", data);
       
       // Update auth state
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -138,9 +149,8 @@ export default function DirectLogin({ onSuccess }: DirectLoginProps) {
         description: "You are now logged in with the demo account.",
       });
       
-      if (onSuccess) {
-        onSuccess();
-      }
+      // Force page redirect to dashboard after successful login
+      window.location.href = "/dashboard";
     } catch (err: any) {
       console.error("Demo login error:", err);
       setError(err.message || "Failed to login with demo account.");

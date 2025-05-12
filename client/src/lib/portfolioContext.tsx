@@ -131,8 +131,13 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             const currentPrice = priceDetails[asset.symbol].current;
             const previousPrice = priceDetails[asset.symbol].previous24h;
             
-            // Get allocation amount (in a real app, this would be the actual token amount)
-            const amount = allocation.amount || parseFloat(allocation.targetPercentage);
+            // Use the targetPercentage to calculate a consistent allocation amount
+            // This ensures CurrentHoldings, PortfolioChart, and HistoricalPerformance all use the same data
+            const targetPercentage = parseFloat(allocation.targetPercentage);
+            
+            // Convert percentage to a token amount based on a standard portfolio size
+            // Use 100 as the base amount to make percentages match token amounts
+            const amount = 100 * (targetPercentage / 100);
             
             const value = amount * currentPrice;
             const previousValue = amount * previousPrice;

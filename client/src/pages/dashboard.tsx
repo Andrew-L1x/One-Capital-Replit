@@ -206,19 +206,6 @@ export default function Dashboard() {
             {/* Add Performance Metrics */}
             {vaults.length > 0 && (
               <>
-                {/* Make sure the deposit/withdraw form is explicitly displayed here too */}
-                <div className="mt-8">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Deposit & Withdraw</CardTitle>
-                      <CardDescription>Manage your investments with easy deposits and withdrawals</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <DepositWithdrawForm />
-                    </CardContent>
-                  </Card>
-                </div>
-                
                 <div className="mt-8">
                   <PerformanceMetrics />
                 </div>

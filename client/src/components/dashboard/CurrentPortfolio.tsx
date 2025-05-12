@@ -48,7 +48,15 @@ export function CurrentPortfolio() {
       </div>
       
       {/* Deposit and Withdraw Section */}
-      <DepositWithdrawForm />
+      <Card>
+        <CardHeader>
+          <CardTitle>Deposit & Withdraw</CardTitle>
+          <CardDescription>Manage your investments with easy deposits and withdrawals</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DepositWithdrawForm />
+        </CardContent>
+      </Card>
     </div>
   );
 }

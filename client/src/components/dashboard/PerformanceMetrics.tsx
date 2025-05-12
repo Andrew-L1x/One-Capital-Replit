@@ -328,73 +328,7 @@ export function PerformanceMetrics() {
         </Card>
       </div>
       
-      {/* Cryptocurrency Allocation Table */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Cryptocurrency Allocation</CardTitle>
-          <CardDescription>
-            Live allocation data with real-time prices
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : assetAllocations.length > 0 ? (
-            <div className="overflow-x-auto max-w-full -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full min-w-[320px]">
-                <thead>
-                  <tr className="border-b">
-                    <th className="py-2 text-left font-medium text-muted-foreground">Asset</th>
-                    <th className="py-2 text-right font-medium text-muted-foreground">Amount</th>
-                    <th className="py-2 text-right font-medium text-muted-foreground">24h</th>
-                    <th className="py-2 text-right font-medium text-muted-foreground">%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assetAllocations.map((asset) => (
-                    <tr key={asset.id} className="border-b border-muted hover:bg-muted/50 transition-colors">
-                      <td className="py-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center">
-                          <span className="font-semibold">{asset.symbol}</span>
-                          <span className="sm:ml-2 text-muted-foreground text-xs">{asset.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-2 text-right">
-                        <span>{asset.amount.toFixed(3)}</span>
-                      </td>
-                      <td className="py-2 text-right">
-                        <span className={asset.priceChangePercentage24h >= 0 ? 'text-green-500' : 'text-red-500'}>
-                          {formatPercentage(asset.priceChangePercentage24h)}
-                        </span>
-                      </td>
-                      <td className="py-2 text-right">
-                        {asset.percentage.toFixed(2)}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t">
-                    <td colSpan={3} className="py-2 font-medium">Total</td>
-                    <td className="py-2 text-right font-bold">100%</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              No asset allocations found
-            </div>
-          )}
-          <div className="text-xs text-muted-foreground mt-4 text-right">
-            Last updated: {new Date().toLocaleTimeString()} • Auto-refreshes every 60 seconds
-          </div>
-        </CardContent>
-      </Card>
+      {/* Note: Allocation table has been consolidated into the AssetAllocationTable component */}
     </div>
   );
 }

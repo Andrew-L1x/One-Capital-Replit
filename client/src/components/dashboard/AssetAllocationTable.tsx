@@ -23,7 +23,14 @@ import { useState, useEffect } from 'react';
 
 export function AssetAllocationTable() {
   const { isConnected } = useWallet();
-  const { portfolioValue, assetAllocations, priceDetails, isLoading } = usePortfolio();
+  const { 
+    portfolioValue, 
+    assetAllocations, 
+    priceDetails, 
+    previousValue,
+    percentChange,
+    isLoading 
+  } = usePortfolio();
   const [lastUpdated, setLastUpdated] = useState(new Date());
   
   // Update the timestamp when price details change
@@ -87,31 +94,34 @@ export function AssetAllocationTable() {
   }
   
   return (
-    <Card>
+    <Card className="mt-6">
       <CardHeader>
         <CardTitle>Cryptocurrency Allocation</CardTitle>
         <CardDescription>
-          Live allocation data with real-time prices
+          Live allocation data with 24h price changes
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto max-w-full">
-          <Table className="min-w-[300px]">
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <Table className="w-full min-w-[320px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Asset</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">24h</TableHead>
-                <TableHead className="text-right">%</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">24h Change</TableHead>
+                <TableHead className="text-right">Allocation</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {assetAllocations.map(allocation => {
                 const symbol = allocation.asset.symbol;
-                const priceChange = priceDetails[symbol]?.changePercentage24h || 0;
+                const priceData = priceDetails[symbol];
+                const priceChange = priceData?.changePercentage24h || 0;
                 const priceChangeFormatted = formatPercentage(priceChange);
                 const isPriceUp = priceChange > 0;
                 const isPriceDown = priceChange < 0;
+                const currentPrice = priceData?.current || 0;
                 
                 return (
                   <TableRow key={allocation.asset.id}>
@@ -128,6 +138,9 @@ export function AssetAllocationTable() {
                       })}
                     </TableCell>
                     <TableCell className="text-right">
+                      {formatPrice(currentPrice)}
+                    </TableCell>
+                    <TableCell className="text-right">
                       <span className={`${isPriceUp ? 'text-green-500' : ''} ${isPriceDown ? 'text-red-500' : ''}`}>
                         {isPriceUp && '+'}{priceChangeFormatted}
                       </span>
@@ -141,14 +154,28 @@ export function AssetAllocationTable() {
                 );
               })}
             </TableBody>
+            <tfoot>
+              <tr className="border-t">
+                <td colSpan={4} className="py-2 font-medium">Total</td>
+                <td className="py-2 text-right font-bold">100%</td>
+              </tr>
+            </tfoot>
           </Table>
         </div>
         
         <div className="mt-4 pt-4 border-t flex flex-col space-y-2">
           <div className="flex justify-between items-center">
             <span className="font-semibold">Total Portfolio Value:</span>
-            <span className="font-bold text-lg">
+            <span className="font-bold text-lg flex items-center">
               {formatPrice(portfolioValue)}
+              <span className={`ml-2 text-sm ${percentChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {percentChange >= 0 ? (
+                  <ArrowUpIcon className="inline h-4 w-4 mr-1" />
+                ) : (
+                  <ArrowDownIcon className="inline h-4 w-4 mr-1" />
+                )}
+                {formatPercentage(percentChange)}
+              </span>
             </span>
           </div>
           

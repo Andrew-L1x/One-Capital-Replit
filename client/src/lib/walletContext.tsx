@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ethers } from 'ethers';
+import { useQuery } from '@tanstack/react-query';
 import { 
   connectWallet, 
   getL1XProvider, 
@@ -51,6 +52,22 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [currentChain, setCurrentChain] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check if the user is authenticated via backend
+  const { data: user } = useQuery<any>({
+    queryKey: ["/api/auth/me"],
+    enabled: true,
+    retry: false,
+    gcTime: 0,
+  });
+
+  // When user data changes, update the authenticated state
+  useEffect(() => {
+    if (user) {
+      setIsAuthenticated(true);
+    }
+  }, [user]);
 
   // Load wallet state from local storage on component mount
   useEffect(() => {
@@ -339,7 +356,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const value: WalletContextType = {
     walletType,
     walletAddress,
-    isConnected: walletType !== null && walletAddress !== null,
+    // Consider a user connected if they have a web3 wallet OR if they're authenticated via backend
+    isConnected: (walletType !== null && walletAddress !== null) || isAuthenticated,
     isConnecting,
     error,
     connectL1X,

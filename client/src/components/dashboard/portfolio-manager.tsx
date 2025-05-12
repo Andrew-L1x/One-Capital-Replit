@@ -248,7 +248,7 @@ export default function PortfolioManager({
     
     try {
       // Get the first vault (for demo purposes, we'll use the first vault)
-      const { data: vaults = [] } = await apiRequest("GET", "/api/vaults");
+      const vaults = await apiRequest("/api/vaults");
       
       if (vaults.length === 0) {
         throw new Error("No vaults found. Please create a vault first.");
@@ -257,24 +257,32 @@ export default function PortfolioManager({
       const targetVaultId = vaultId || vaults[0].id;
       
       // Clear existing allocations for this vault
-      const { data: existingAllocations = [] } = await apiRequest("GET", `/api/vaults/${targetVaultId}/allocations`);
+      const existingAllocations = await apiRequest(`/api/vaults/${targetVaultId}/allocations`);
       
       // Delete existing allocations
       for (const allocation of existingAllocations) {
-        await apiRequest("DELETE", `/api/allocations/${allocation.id}`);
+        await apiRequest(`/api/allocations/${allocation.id}`, { method: "DELETE" });
       }
       
       // Create new allocations
       for (const allocation of data.allocations) {
-        await apiRequest("POST", `/api/vaults/${targetVaultId}/allocations`, {
-          assetId: allocation.assetId,
-          targetPercentage: allocation.percentage.toString(),
+        await apiRequest(`/api/vaults/${targetVaultId}/allocations`, { 
+          method: "POST",
+          data: {
+            assetId: allocation.assetId,
+            targetPercentage: allocation.percentage.toString(),
+          }
         });
       }
       
       // Invalidate cache for allocations
       queryClient.invalidateQueries({
         queryKey: [`/api/vaults/${targetVaultId}/allocations`]
+      });
+      
+      // Invalidate the portfolio data as well to update all components
+      queryClient.invalidateQueries({
+        queryKey: ["/api/vaults"]
       });
       
       // Show success message

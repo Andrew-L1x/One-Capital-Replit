@@ -146,9 +146,9 @@ export default function Dashboard() {
               <span className="sm:hidden">Portfolio</span>
             </TabsTrigger>
             <TabsTrigger value="allocation">
-              <Wallet className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Allocation</span>
-              <span className="sm:hidden">Alloc</span>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Performance</span>
+              <span className="sm:hidden">Perf</span>
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
@@ -165,9 +165,21 @@ export default function Dashboard() {
           {/* Portfolio Balance Bar */}
           <PortfolioBalance />
           
-          {/* Portfolio Allocation Tab */}
+          {/* Performance Tab (formerly Allocation) */}
           <TabsContent value="allocation" className="space-y-8">
-            <PortfolioManager />
+            {/* Performance Overview Section */}
+            <PerformanceMetrics />
+            
+            {/* Cryptocurrency Allocation Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Cryptocurrency Allocation</CardTitle>
+                <CardDescription>Live allocation data with real-time prices</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AssetAllocationTable />
+              </CardContent>
+            </Card>
           </TabsContent>
           
           {/* Move Assets Tab */}
@@ -203,14 +215,7 @@ export default function Dashboard() {
             {/* Real-time current portfolio with chart and table */}
             <CurrentPortfolio />
             
-            {/* Add Performance Metrics */}
-            {vaults.length > 0 && (
-              <>
-                <div className="mt-8">
-                  <PerformanceMetrics />
-                </div>
-              </>
-            )}
+            {/* No additional sections needed here */}
             
             {/* Show message if no vaults exist */}
             {vaults.length === 0 && (

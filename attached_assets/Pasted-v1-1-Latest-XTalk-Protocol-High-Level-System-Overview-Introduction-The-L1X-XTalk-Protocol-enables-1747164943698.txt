@@ -1,0 +1,42 @@
+v1.1 (Latest)
+XTalk Protocol: High-Level System Overview
+Introduction
+The L1X XTalk Protocol enables secure and reliable communication between different blockchains, initially supporting EVM-compatible chains and the L1X mainnet. It uses a combination of off-chain XTalk Nodes and on-chain XTalk Smart Contracts to validate, achieve consensus on, and execute cross-chain messages.
+Core Components
+1. XTalk Node 
+An off-chain application that monitors, validates, and relays messages. It has three key validator roles:
+Listener Validator: Detects new cross-chain message requests initiated on a source EVM chain.
+Signer Validator: Cryptographically signs validated message details, contributing to a multi-signature consensus.
+Relayer Validator: Delivers the consensus-approved message and signatures to the destination EVM chain for execution.
+2. XTalk Smart Contracts 
+a. XTalkBeacon Contract (EVM Chains)
+Deployed on participating EVM chains:
+Source Chain Role: Allows users to register outgoing cross-chain messages and emits an event (XTalkMessageBroadcasted) to alert XTalk Nodes.
+Destination Chain Role: Receives messages from Relayer Validators. It verifies the aggregated signatures from Signer Validators and, if valid, executes the message by calling a predefined function on the target contract, delivering the payload.
+b. L1X Chain Contracts
+These contracts manage consensus and routing on the L1X mainnet:
+Source Registry (SourceRegistry): A directory that maps source chain IDs to specific L1X FlowContract addresses. This allows XTalk Nodes to determine the correct L1X contract for processing messages from a particular source chain.
+XTalk Consensus Contract (XTalkConsensusContract): The central hub for message validation and consensus:
+Listener Consensus: Collects votes from Listener Validators about new messages. When enough listeners agree, the message is considered ListenerFinalized.
+Signer Consensus: After listener consensus, it collects cryptographic signatures from Signer Validators for a specific message hash. When enough signers agree, the message is SignerFinalized, and their signatures are stored.
+Flow Contract (FlowContract): An intermediary processing contract on L1X:
+Stores Event Data: After listener consensus, it receives and stores the validated event details from the source chain.
+Provides Data for Signing: Generates a unique, deterministic hash for each message (based on its content and destination details) that Signer Validators must sign.
+Prepares Execution Payload: Constructs the complete transaction data (including the original message and collected signer signatures) that Relayer Validators use to execute the message on the destination chain.
+High-Level Message Lifecycle
+Initiation (Source EVM Chain): A user initiates a cross-chain message via the XTalkBeacon contract, which emits an XTalkMessageBroadcasted event.
+Listener Validation (L1X Chain):
+Listener Validators detect the event.
+They consult the SourceRegistry to find the appropriate L1X FlowContract for this message.
+They submit their observations as votes to the XTalkConsensusContract. Once consensus is reached, the message is ListenerFinalized.
+The XTalkConsensusContract then instructs the designated FlowContract to store the validated event data.
+Signer Validation (L1X Chain):
+Signer Validators fetch a specific hash for the message from the FlowContract.
+They sign this hash and submit their signatures to the XTalkConsensusContract.
+Once sufficient signatures are collected and verified, the message is SignerFinalized.
+Relaying & Execution (Destination EVM Chain):
+A Relayer Validator retrieves the message details and the collected Signer signatures.
+It uses the FlowContract to prepare the final transaction payload for the destination chain.
+The Relayer submits this payload to the XTalkBeacon contract on the destination chain.
+The destination XTalkBeacon verifies the multi-signature bundle against the message. If valid, it executes the message by calling the specified target contract with the original message payload.
+This multi-stage process, involving off-chain nodes and on-chain smart contracts with distinct consensus phases, ensures the secure and reliable transfer and execution of cross-chain messages.

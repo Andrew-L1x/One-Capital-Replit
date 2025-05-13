@@ -2,10 +2,12 @@
 //! 
 //! This module provides cross-chain liquidity and swap operations using
 //! L1X's XTalk protocol to communicate with other blockchains.
+//! Implements the v1.1 XTalk Protocol for secure cross-chain communication.
 
 use serde::{Deserialize, Serialize};
 use borsh::{BorshSerialize, BorshDeserialize};
 use l1x_sdk::prelude::*;
+use crate::xtalk::{XTalkMessageStatus, XTalkSwapRequest};
 
 /// Supported blockchains for cross-chain operations
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
@@ -21,16 +23,32 @@ pub enum Blockchain {
     
     /// Avalanche blockchain
     Avalanche,
+    
+    /// Arbitrum
+    Arbitrum,
+    
+    /// Optimism
+    Optimism,
+    
+    /// Base
+    Base,
+    
+    /// Polygon
+    Polygon,
 }
 
 impl Blockchain {
     /// Get the chain ID for use in XTalk communications
     pub fn chain_id(&self) -> u32 {
         match self {
-            Blockchain::L1X => 1776,      // L1X chain ID (example value)
+            Blockchain::L1X => 1776,      // L1X chain ID
             Blockchain::Ethereum => 1,    // Ethereum mainnet
             Blockchain::Solana => 1399811, // Solana (for XTalk)
             Blockchain::Avalanche => 43114, // Avalanche C-Chain
+            Blockchain::Arbitrum => 42161, // Arbitrum One
+            Blockchain::Optimism => 10,   // Optimism
+            Blockchain::Base => 8453,     // Base
+            Blockchain::Polygon => 137,   // Polygon PoS
         }
     }
     
@@ -41,7 +59,20 @@ impl Blockchain {
             "ethereum" | "eth" => Ok(Blockchain::Ethereum),
             "solana" | "sol" => Ok(Blockchain::Solana),
             "avalanche" | "avax" => Ok(Blockchain::Avalanche),
+            "arbitrum" | "arb" => Ok(Blockchain::Arbitrum),
+            "optimism" | "op" => Ok(Blockchain::Optimism),
+            "base" => Ok(Blockchain::Base),
+            "polygon" | "matic" => Ok(Blockchain::Polygon),
             _ => Err("Unsupported blockchain"),
+        }
+    }
+    
+    /// Check if blockchain is EVM-compatible
+    pub fn is_evm_compatible(&self) -> bool {
+        match self {
+            Blockchain::L1X => false,
+            Blockchain::Solana => false,
+            _ => true, // All others are EVM-compatible
         }
     }
 }
@@ -87,6 +118,12 @@ pub struct CrossChainSwapRequest {
     
     /// Transaction hash on target chain (if available)
     pub target_tx_hash: Option<String>,
+    
+    /// Associated XTalk message ID (if available)
+    pub xtalk_message_id: Option<String>,
+    
+    /// XTalk message status
+    pub xtalk_status: Option<XTalkMessageStatus>,
 }
 
 /// Status of a cross-chain swap
@@ -100,6 +137,21 @@ pub enum SwapStatus {
     
     /// Funds have been locked on the source chain
     SourceLocked,
+    
+    /// Message has been broadcasted via XTalk
+    XTalkBroadcasted,
+    
+    /// Message has been detected by XTalk Listener Validators
+    XTalkDetected,
+    
+    /// Message has achieved Listener consensus on L1X
+    ListenerFinalized,
+    
+    /// Message has achieved Signer consensus on L1X
+    SignerFinalized,
+    
+    /// Message is being relayed to the destination chain
+    Relaying,
     
     /// Swap is in progress on the target chain
     InProgress,

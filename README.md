@@ -1,29 +1,55 @@
 # One Capital Auto-Investing
 
-A decentralized application (dApp) for automated investment portfolio management on the Layer One X (L1X) blockchain.
+A cutting-edge decentralized application (dApp) for automated investment portfolio management on the Layer One X (L1X) blockchain, featuring secure cross-chain functionality via the XTalk Protocol.
 
 ## Project Overview
 
-One Capital Auto-Investing is a dApp that automates portfolio management with the following key features:
+One Capital Auto-Investing is a sophisticated dApp that automates portfolio management with the following key features:
 
 - Smart contract-based vaults for custodial and non-custodial investments
-- Automated portfolio rebalancing based on target allocations
+- Automated portfolio rebalancing based on target allocations with drift thresholds
 - Take-profit strategies with multiple trigger options (manual, time-based, percentage-gain)
-- Bridgeless swaps using L1X's X-Talk protocol
-- Web2/Web3 authentication options
+- Cross-chain asset management using L1X's XTalk Protocol v1.1
+- Real-time price feeds and portfolio performance metrics
+- Advanced Web2/Web3 authentication options including wallet connectivity
 
 ## Project Structure
 
 The project is structured into two main components:
 
-1. **Smart Contracts (Rust)**: Located in the `rust-contracts` directory
-   - Written in Rust targeting WebAssembly for the L1X Virtual Machine
-   - Implement core functionality for vaults, allocations, rebalancing, and take-profit logic
+1. **Smart Contracts**: Located in the `rust-contracts` and `client/src/solidity-contracts` directories
+   - **Rust Contracts**: Target WebAssembly for the L1X Virtual Machine
+     - Implement core functionality for vaults, allocations, rebalancing, and take-profit logic
+     - XTalk Protocol integration for cross-chain messaging and consensus
+   - **Solidity Contracts**: Ethereum interfaces for cross-chain operations
+     - XTalkBeacon implementation for EVM chains
+     - Cross-chain vault and asset management
 
 2. **Web Application (React)**: Located in the `client` directory
    - Frontend: React with Tailwind CSS
    - Backend: Node.js/Express with PostgreSQL
-   - Authentication: Support for both Web3 wallet and Firebase email/password
+   - Authentication: Multi-method auth with Web3 wallet, Firebase, and traditional email/password
+
+## XTalk Protocol v1.1 Integration
+
+The application implements the latest L1X XTalk Protocol (v1.1) for secure cross-chain communication:
+
+### Core Components
+1. **XTalk Node Integration**
+   - Support for Listener, Signer, and Relayer validator roles
+   - Multi-signature consensus for cross-chain message validation
+
+2. **XTalk Smart Contracts**
+   - **XTalkBeacon Contract**: Deployed on EVM chains for message broadcasting and execution
+   - **L1X Chain Contracts**:
+     - SourceRegistry: Maps source chains to Flow Contracts
+     - XTalkConsensusContract: Manages consensus for cross-chain messages
+     - FlowContract: Intermediate processing for cross-chain communication
+
+3. **Cross-Chain Asset Operations**
+   - Secure bridgeless asset transfers between EVM chains and L1X
+   - Cross-chain vault rebalancing with slippage protection
+   - Cross-chain take profit strategy execution
 
 ## Getting Started
 
@@ -71,6 +97,8 @@ The project is structured into two main components:
 
 ## Smart Contracts
 
+### Rust Contracts
+
 The Rust smart contracts are organized into the following modules:
 
 - **allocation**: Defines asset allocations and allocation sets
@@ -80,13 +108,43 @@ The Rust smart contracts are organized into the following modules:
 - **rebalance**: Handles rebalancing logic
 - **take_profit**: Implements take profit strategies
 - **wallet**: Provides wallet functionality
-- **xtalk**: Integrates with L1X's X-Talk protocol for bridgeless swaps
+- **xtalk**: Implements the XTalk Protocol v1.1 for cross-chain communication
+- **cross_chain**: Manages cross-chain operations using the XTalk Protocol
 
 To build and test the smart contracts:
 
 ```bash
 cd rust-contracts
 cargo build --target wasm32-unknown-unknown --release
+```
+
+### Solidity Contracts
+
+The Solidity contracts provide interfaces for EVM chain integration:
+
+- **ICrossChainBridge.sol**: XTalkBeacon implementation for EVM chains
+- **IOneCaptialVault.sol**: Cross-chain vault functionality for Ethereum
+- **IPriceFeedOracle.sol**: Price feed integration for asset valuation
+
+## Mathematical Models
+
+The platform implements sophisticated mathematical models for portfolio management:
+
+### Purchasing Assets
+```
+AssetAmount = (TotalInvestmentAmount × TargetPercentage) ÷ AssetPrice
+```
+
+### Rebalancing Assets
+Drift-based rebalancing is triggered when:
+```
+Drift = |CurrentPercentage - TargetPercentage| > DriftThreshold
+```
+
+### Take Profit Strategies
+Percentage-based take profit executes when:
+```
+PortfolioGainPercentage = (CurrentValue - BaselineValue) ÷ BaselineValue × 100 ≥ TargetProfitPercentage
 ```
 
 ## L1X Contract Development Notes
@@ -127,3 +185,15 @@ To run the One Capital Auto-Investing application:
 2. Access the application:
    - Backend API: http://localhost:5000
    - Frontend UI: http://localhost:5173
+
+## Cross-Chain Operations
+
+To perform cross-chain operations:
+
+1. Create a cross-chain vault that supports assets from multiple blockchains
+2. Register assets from different chains using the registerCrossChainAsset function
+3. Set allocations with the appropriate chain IDs
+4. Cross-chain operations will be executed securely through the XTalk Protocol
+   - Messages are broadcast from the source chain and validated by XTalk nodes
+   - Multiple validators achieve consensus before execution on destination chains
+   - The system monitors message status at each stage of the process

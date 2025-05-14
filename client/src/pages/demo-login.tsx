@@ -14,9 +14,16 @@ export default function DemoLoginPage() {
   const handleDemoLogin = async () => {
     setIsLoading(true);
     try {
-      const res = await apiRequest('POST', '/api/auth/demo-login', {
-        username: 'demo@example.com',
-        password: 'password123',
+      const res = await fetch('/api/auth/demo-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: 'demo@example.com',
+          password: 'password123',
+        }),
+        credentials: 'include',
       });
       
       // Check if login was successful

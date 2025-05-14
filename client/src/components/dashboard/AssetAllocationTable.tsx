@@ -20,9 +20,17 @@ import { formatPrice, formatPercentage } from '@/lib/usePriceDetails';
 import { usePortfolio } from '@/lib/portfolioContext';
 import { ArrowUpIcon, ArrowDownIcon, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 export function AssetAllocationTable() {
   const { isConnected } = useWallet();
+  const { data: user } = useQuery<any>({
+    queryKey: ['/api/auth/me'],
+  });
+  
+  // Consider authentication via either wallet or traditional login
+  const isAuthenticated = isConnected || !!user;
+  
   const { 
     portfolioValue, 
     assetAllocations, 
@@ -40,13 +48,13 @@ export function AssetAllocationTable() {
     }
   }, [priceDetails]);
   
-  // Empty state for when wallet is not connected
-  if (!isConnected) {
+  // Empty state for when user is not authenticated
+  if (!isAuthenticated) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Asset Allocation</CardTitle>
-          <CardDescription>Connect your wallet to view your asset allocations</CardDescription>
+          <CardDescription>Login or connect your wallet to view your asset allocations</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center p-4">

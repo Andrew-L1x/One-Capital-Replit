@@ -65,9 +65,18 @@ export function CurrentHoldings() {
     queryKey: ["/api/assets"],
   });
 
+  // Check if user is authenticated via API
+  const { data: user } = useQuery<any>({
+    queryKey: ['/api/auth/me'],
+  });
+  
+  // Consider user authenticated if they have wallet connected OR are logged in via traditional auth
+  const isAuthenticated = !!user;
+  
   // Fetch user's current holdings (in a real app, would come from API)
   const { data: vaults = [], isLoading: isLoadingVaults } = useQuery<Vault[]>({
     queryKey: ["/api/vaults"],
+    enabled: isAuthenticated,
   });
   
   // Get first available vault ID

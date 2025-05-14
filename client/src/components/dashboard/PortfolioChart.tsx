@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { useWallet } from '@/lib/walletContext';
 import { usePortfolio } from '@/lib/portfolioContext';
+import { useQuery } from '@tanstack/react-query';
 
 interface ChartData {
   name: string;

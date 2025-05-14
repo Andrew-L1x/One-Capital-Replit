@@ -1058,6 +1058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = (req.user as any).id;
+      const userEmail = (req.user as any).email;
       const vaultId = parseInt(req.params.vaultId);
       
       console.log(`GET /vaults/${vaultId}/allocations - User authenticated`, { userId });
@@ -1067,7 +1068,317 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid vault ID" });
       }
       
-      // Use real database storage
+      // Provide enhanced mock allocations for the demo user (for presentation purposes)
+      if (userEmail === "demo@example.com") {
+        console.log(`GET /vaults/${vaultId}/allocations - Providing mock presentation allocations for demo user`);
+        
+        // Mock presentation data based on vault ID
+        if (vaultId === 1) {
+          // Presentation Portfolio - High growth crypto assets
+          const presentationAllocations = [
+            { 
+              id: 1, 
+              vaultId: 1, 
+              assetId: 1, 
+              symbol: "BTC", 
+              name: "Bitcoin", 
+              targetPercentage: "40.00", 
+              currentValue: 23500.10, 
+              currentPercentage: 39.7,
+              currentAllocation: 0.361, 
+              averageCost: 21125.50, 
+              profit: 2374.60, 
+              profitPercentage: 11.24,
+              priceChange24h: 0.87,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: -0.3,
+              createdAt: new Date(2025, 4, 10),
+              updatedAt: new Date(2025, 4, 14)
+            },
+            { 
+              id: 2, 
+              vaultId: 1, 
+              assetId: 2, 
+              symbol: "ETH", 
+              name: "Ethereum", 
+              targetPercentage: "25.00", 
+              currentValue: 14687.56, 
+              currentPercentage: 25.8,
+              currentAllocation: 4.21, 
+              averageCost: 12250.25, 
+              profit: 2437.31, 
+              profitPercentage: 19.89,
+              priceChange24h: 1.22,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: 0.8,
+              createdAt: new Date(2025, 4, 10),
+              updatedAt: new Date(2025, 4, 14)
+            },
+            { 
+              id: 3, 
+              vaultId: 1, 
+              assetId: 3, 
+              symbol: "L1X", 
+              name: "Layer One X", 
+              targetPercentage: "15.00", 
+              currentValue: 8812.53, 
+              currentPercentage: 14.5,
+              currentAllocation: 307.25, 
+              averageCost: 7105.75, 
+              profit: 1706.78, 
+              profitPercentage: 24.02,
+              priceChange24h: 1.87,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: -0.5,
+              createdAt: new Date(2025, 4, 10),
+              updatedAt: new Date(2025, 4, 14)
+            },
+            { 
+              id: 4, 
+              vaultId: 1, 
+              assetId: 4, 
+              symbol: "SOL", 
+              name: "Solana", 
+              targetPercentage: "10.00", 
+              currentValue: 5875.02, 
+              currentPercentage: 10.2,
+              currentAllocation: 41.32, 
+              averageCost: 5300.15, 
+              profit: 574.87, 
+              profitPercentage: 10.85,
+              priceChange24h: 0.52,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: 0.2,
+              createdAt: new Date(2025, 4, 10),
+              updatedAt: new Date(2025, 4, 14)
+            },
+            { 
+              id: 5, 
+              vaultId: 1, 
+              assetId: 5, 
+              symbol: "AVAX", 
+              name: "Avalanche", 
+              targetPercentage: "5.00", 
+              currentValue: 2937.51, 
+              currentPercentage: 4.8,
+              currentAllocation: 83.75, 
+              averageCost: 3125.25, 
+              profit: -187.74, 
+              profitPercentage: -6.01,
+              priceChange24h: -0.74,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: -0.2,
+              createdAt: new Date(2025, 4, 10),
+              updatedAt: new Date(2025, 4, 14)
+            },
+            { 
+              id: 6, 
+              vaultId: 1, 
+              assetId: 6, 
+              symbol: "MATIC", 
+              name: "Polygon", 
+              targetPercentage: "5.00", 
+              currentValue: 2937.51, 
+              currentPercentage: 5.0,
+              currentAllocation: 3780.65, 
+              averageCost: 2775.35, 
+              profit: 162.16, 
+              profitPercentage: 5.84,
+              priceChange24h: 0.31,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: 0.0,
+              createdAt: new Date(2025, 4, 10),
+              updatedAt: new Date(2025, 4, 14)
+            }
+          ];
+          return res.json(presentationAllocations);
+        } 
+        else if (vaultId === 2) {
+          // L1X Protocol Fund - Focused on L1X ecosystem with cross-chain capabilities
+          const l1xFundAllocations = [
+            { 
+              id: 7, 
+              vaultId: 2, 
+              assetId: 3, 
+              symbol: "L1X", 
+              name: "Layer One X", 
+              targetPercentage: "50.00", 
+              currentValue: 21075.25, 
+              currentPercentage: 50.8,
+              currentAllocation: 735.50, 
+              averageCost: 19250.60, 
+              profit: 1824.65, 
+              profitPercentage: 9.48,
+              priceChange24h: 1.87,
+              lastRebalanced: new Date(2025, 4, 5),
+              driftFromTarget: 0.8,
+              createdAt: new Date(2025, 3, 15),
+              updatedAt: new Date(2025, 4, 5)
+            },
+            { 
+              id: 8, 
+              vaultId: 2, 
+              assetId: 2, 
+              symbol: "ETH", 
+              name: "Ethereum", 
+              targetPercentage: "20.00", 
+              currentValue: 8430.10, 
+              currentPercentage: 19.5,
+              currentAllocation: 2.41, 
+              averageCost: 7780.25, 
+              profit: 649.85, 
+              profitPercentage: 8.35,
+              priceChange24h: 1.22,
+              lastRebalanced: new Date(2025, 4, 5),
+              driftFromTarget: -0.5,
+              createdAt: new Date(2025, 3, 15),
+              updatedAt: new Date(2025, 4, 5)
+            },
+            { 
+              id: 9, 
+              vaultId: 2, 
+              assetId: 4, 
+              symbol: "SOL", 
+              name: "Solana", 
+              targetPercentage: "15.00", 
+              currentValue: 6322.57, 
+              currentPercentage: 14.8,
+              currentAllocation: 44.42, 
+              averageCost: 5875.42, 
+              profit: 447.15, 
+              profitPercentage: 7.61,
+              priceChange24h: 0.52,
+              lastRebalanced: new Date(2025, 4, 5),
+              driftFromTarget: -0.2,
+              createdAt: new Date(2025, 3, 15),
+              updatedAt: new Date(2025, 4, 5)
+            },
+            { 
+              id: 10, 
+              vaultId: 2, 
+              assetId: 7, 
+              symbol: "DOT", 
+              name: "Polkadot", 
+              targetPercentage: "10.00", 
+              currentValue: 4215.05, 
+              currentPercentage: 9.9,
+              currentAllocation: 558.75, 
+              averageCost: 3955.30, 
+              profit: 259.75, 
+              profitPercentage: 6.57,
+              priceChange24h: 0.23,
+              lastRebalanced: new Date(2025, 4, 5),
+              driftFromTarget: -0.1,
+              createdAt: new Date(2025, 3, 15),
+              updatedAt: new Date(2025, 4, 5)
+            },
+            { 
+              id: 11, 
+              vaultId: 2, 
+              assetId: 5, 
+              symbol: "AVAX", 
+              name: "Avalanche", 
+              targetPercentage: "5.00", 
+              currentValue: 2107.52, 
+              currentPercentage: 5.0,
+              currentAllocation: 60.10, 
+              averageCost: 1950.75, 
+              profit: 156.77, 
+              profitPercentage: 8.04,
+              priceChange24h: -0.74,
+              lastRebalanced: new Date(2025, 4, 5),
+              driftFromTarget: 0.0,
+              createdAt: new Date(2025, 3, 15),
+              updatedAt: new Date(2025, 4, 5)
+            }
+          ];
+          return res.json(l1xFundAllocations);
+        }
+        else if (vaultId === 3) {
+          // Stablecoin Yield - Focus on stablecoins and yield generation
+          const stablecoinAllocations = [
+            { 
+              id: 12, 
+              vaultId: 3, 
+              assetId: 8, 
+              symbol: "USDC", 
+              name: "USD Coin", 
+              targetPercentage: "40.00", 
+              currentValue: 16940.00, 
+              currentPercentage: 40.0,
+              currentAllocation: 16940.00, 
+              averageCost: 16800.00, 
+              profit: 140.00, 
+              profitPercentage: 0.83,
+              priceChange24h: 0.03,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: 0.0,
+              createdAt: new Date(2025, 2, 1),
+              updatedAt: new Date(2025, 4, 13)
+            },
+            { 
+              id: 13, 
+              vaultId: 3, 
+              assetId: 9, 
+              symbol: "USDT", 
+              name: "Tether", 
+              targetPercentage: "30.00", 
+              currentValue: 12705.00, 
+              currentPercentage: 30.0,
+              currentAllocation: 12705.00, 
+              averageCost: 12600.00, 
+              profit: 105.00, 
+              profitPercentage: 0.83,
+              priceChange24h: 0.05,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: 0.0,
+              createdAt: new Date(2025, 2, 1),
+              updatedAt: new Date(2025, 4, 13)
+            },
+            { 
+              id: 14, 
+              vaultId: 3, 
+              assetId: 10, 
+              symbol: "DAI", 
+              name: "Dai", 
+              targetPercentage: "20.00", 
+              currentValue: 8470.00, 
+              currentPercentage: 20.0,
+              currentAllocation: 8470.00, 
+              averageCost: 8400.00, 
+              profit: 70.00, 
+              profitPercentage: 0.83,
+              priceChange24h: 0.02,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: 0.0,
+              createdAt: new Date(2025, 2, 1),
+              updatedAt: new Date(2025, 4, 13)
+            },
+            { 
+              id: 15, 
+              vaultId: 3, 
+              assetId: 11, 
+              symbol: "FRAX", 
+              name: "Frax", 
+              targetPercentage: "10.00", 
+              currentValue: 4235.00, 
+              currentPercentage: 10.0,
+              currentAllocation: 4235.00, 
+              averageCost: 4200.00, 
+              profit: 35.00, 
+              profitPercentage: 0.83,
+              priceChange24h: 0.01,
+              lastRebalanced: new Date(2025, 4, 13),
+              driftFromTarget: 0.0,
+              createdAt: new Date(2025, 2, 1),
+              updatedAt: new Date(2025, 4, 13)
+            }
+          ];
+          return res.json(stablecoinAllocations);
+        }
+      }
+      
+      // Use real database storage for normal users
       const vault = await storage.getVault(vaultId);
       console.log(`GET /vaults/${vaultId}/allocations - Vault lookup result:`, { vault });
       

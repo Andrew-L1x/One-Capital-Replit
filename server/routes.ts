@@ -354,11 +354,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           };
           
-          return res.json({
-            user: mockDemoUser,
-            vaultData: mockVaultData,
-            message: "Demo login successful with mock presentation data"
-          });
+          // Just return the user object for direct login like the normal login endpoint
+          // This ensures it works with our existing frontend authentication flow
+          return res.json(mockDemoUser);
         });
       });
     } catch (error) {

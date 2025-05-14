@@ -176,14 +176,33 @@ export function CurrentHoldings() {
     },
   });
 
+  // Check if user is demo login
+  const isDemoUser = user && user.email === 'demo@example.com';
+  
   // Update form values when data is loaded
   useEffect(() => {
-    if (!isLoadingAllocations && !isLoadingAssets && allocations.length > 0) {
+    if (isDemoUser) {
+      console.log("Demo user detected in CurrentHoldings component - using demo data");
+      // For demo user, explicitly set mock holdings
+      const demoHoldings = [
+        { assetId: 1, amount: 0.361, percentage: 40 },
+        { assetId: 2, amount: 4.21, percentage: 25 },
+        { assetId: 3, amount: 307.25, percentage: 15 },
+        { assetId: 4, amount: 41.32, percentage: 10 },
+        { assetId: 5, amount: 83.75, percentage: 5 },
+        { assetId: 6, amount: 3765.82, percentage: 5 }
+      ];
+      
+      form.reset({
+        holdings: demoHoldings,
+      });
+    } else if (!isLoadingAllocations && !isLoadingAssets && allocations.length > 0) {
+      // For regular users, use the API data
       form.reset({
         holdings: getInitialHoldings(),
       });
     }
-  }, [isLoadingAllocations, isLoadingAssets, allocations.length, portfolioValue]);
+  }, [isDemoUser, isLoadingAllocations, isLoadingAssets, allocations.length, portfolioValue]);
 
   const onSubmit = async (data: HoldingsFormValues) => {
     setIsSubmitting(true);

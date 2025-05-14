@@ -79,9 +79,11 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   // Get the first vault ID as the active vault
   const activeVaultId = vaults.length > 0 ? vaults[0]?.id : null;
   
+  // Get allocation data from API - prevent prefix double slashes and ensure proper credentials
   const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
-    queryKey: [`/api/vaults/${activeVaultId}/allocations`],
-    enabled: !!activeVaultId && isAuthenticated, // Changed condition to include password-based auth
+    queryKey: [activeVaultId ? `/api/vaults/${activeVaultId}/allocations` : ''],
+    enabled: !!activeVaultId && isAuthenticated, // Consider both wallet and traditional auth
+    retry: 3, // Retry a few times in case of temporary auth issues
   });
   
   const [isLoading, setIsLoading] = useState(true);

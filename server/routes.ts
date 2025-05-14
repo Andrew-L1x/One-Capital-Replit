@@ -276,113 +276,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Demo login endpoint for direct login with demo user
+  // Demo login endpoint for direct login with demo user with presentation-ready mock data
   api.post("/auth/demo-login", async (req: Request, res: Response) => {
-    console.log("POST /auth/demo-login - Demo login bypass");
+    console.log("POST /auth/demo-login - Demo login with mock data for presentation");
     
     try {
-      // Try to get demo user from database first for complete user data
-      let demoUser = await storage.getUserByEmail('demo@example.com');
-      
-      // If demo user doesn't exist in database, create it with real data
-      if (!demoUser) {
-        console.log("POST /auth/demo-login - Demo user not found, creating it in database");
-        
-        // Hash the password for storage
-        const hashedPassword = await bcrypt.hash('password123', 10);
-        
-        // Create the demo user in the database
-        demoUser = await storage.createUser({
-          username: "demo",
-          email: "demo@example.com",
-          password: hashedPassword,
-        });
-        
-        console.log("POST /auth/demo-login - Demo user created in database", { userId: demoUser.id });
-        
-        // Create a starter portfolio for the demo user if it doesn't exist
-        const existingVaults = await storage.getVaultsByUserId(demoUser.id);
-        
-        if (existingVaults.length === 0) {
-          console.log("POST /auth/demo-login - Creating starter portfolio for demo user");
-          
-          // Create a demo portfolio (Growth Portfolio)
-          const demoVault = await storage.createVault({
-            userId: demoUser.id,
-            name: "Growth Portfolio",
-            description: "High growth crypto assets",
-            isCustodial: true,
-            driftThreshold: "5.00",
-            rebalanceFrequency: "weekly"
-          });
-          
-          // Get all available assets
-          const assets = await storage.getAllAssets();
-          
-          if (assets.length >= 6) {
-            // Create allocations for the demo vault with real assets
-            await storage.createAllocation({
-              vaultId: demoVault.id,
-              assetId: assets[0].id, // BTC
-              targetPercentage: "40.00"
-            });
-            
-            await storage.createAllocation({
-              vaultId: demoVault.id,
-              assetId: assets[1].id, // ETH
-              targetPercentage: "25.00"
-            });
-            
-            await storage.createAllocation({
-              vaultId: demoVault.id,
-              assetId: assets[2].id, // L1X
-              targetPercentage: "15.00"
-            });
-            
-            await storage.createAllocation({
-              vaultId: demoVault.id,
-              assetId: assets[3].id, // SOL
-              targetPercentage: "10.00"
-            });
-            
-            await storage.createAllocation({
-              vaultId: demoVault.id,
-              assetId: assets[4].id, // AVAX
-              targetPercentage: "5.00"
-            });
-            
-            await storage.createAllocation({
-              vaultId: demoVault.id,
-              assetId: assets[5].id, // MATIC
-              targetPercentage: "5.00"
-            });
-            
-            console.log("POST /auth/demo-login - Created allocations for demo portfolio");
-          }
+      // Create an enhanced mock demo user for presentation
+      const mockDemoUser = {
+        id: 9,
+        username: "demo",
+        email: "demo@example.com",
+        walletAddress: "0x8F36dE51Ef7921f44D172F55D06273332C453999", // Mock L1X wallet address
+        createdAt: new Date(2025, 4, 10), // May 10, 2025
+        lastLogin: new Date(), // Current time
+        subscriptionTier: "premium",
+        accountStatus: "active",
+        preferences: {
+          notifications: true,
+          theme: "dark",
+          currency: "USD"
         }
-      } else {
-        console.log("POST /auth/demo-login - Using existing demo user from database", { userId: demoUser.id });
-      }
+      };
       
-      // Create a session for the demo user
-      req.login(demoUser, (err) => {
+      console.log("POST /auth/demo-login - Using enhanced mock user for presentation");
+      
+      // Mock session creation - bypass actual database for presentation
+      req.login(mockDemoUser, (err) => {
         if (err) {
           console.error("POST /auth/demo-login - Login error:", err);
           return res.status(500).json({ message: "Error logging in demo user" });
         }
         
-        // Ensure session is saved before responding
+        // Save mock session
         req.session.save((err) => {
           if (err) {
             console.error("POST /auth/demo-login - Session save error:", err);
             return res.status(500).json({ message: "Error saving session" });
           }
           
-          console.log("POST /auth/demo-login - Demo login successful");
+          console.log("POST /auth/demo-login - Mock demo login successful for presentation");
           
-          // Remove password from response
-          const { password, ...safeUser } = demoUser;
-          return res.json(safeUser);
+          // Also add mock vault data in response for the presentation
+          const mockVaultData = {
+            id: 1,
+            name: "Presentation Portfolio",
+            totalValue: 58750.25,
+            description: "High growth crypto assets with presentation data",
+            createdAt: new Date(2025, 4, 10),
+            performanceMetrics: {
+              weeklyGrowth: 4.7,
+              monthlyGrowth: 12.3,
+              yearlyGrowth: 31.8,
+              allTimeHighValue: 62125.50,
+              allTimeLowValue: 32415.75
+            },
+            lastRebalanced: new Date(2025, 4, 13), // May 13, 2025
+            driftThreshold: 5.0,
+            rebalanceFrequency: "weekly",
+            allocations: [
+              { id: 1, assetId: 1, symbol: "BTC", name: "Bitcoin", targetPercentage: 40, currentValue: 23500.10, averageCost: 21125.50, profit: 11.24 },
+              { id: 2, assetId: 2, symbol: "ETH", name: "Ethereum", targetPercentage: 25, currentValue: 14687.56, averageCost: 12250.25, profit: 19.89 },
+              { id: 3, assetId: 3, symbol: "L1X", name: "Layer One X", targetPercentage: 15, currentValue: 8812.53, averageCost: 7105.75, profit: 24.02 },
+              { id: 4, assetId: 4, symbol: "SOL", name: "Solana", targetPercentage: 10, currentValue: 5875.02, averageCost: 5300.15, profit: 10.85 },
+              { id: 5, assetId: 5, symbol: "AVAX", name: "Avalanche", targetPercentage: 5, currentValue: 2937.51, averageCost: 3125.25, profit: -6.01 },
+              { id: 6, assetId: 6, symbol: "MATIC", name: "Polygon", targetPercentage: 5, currentValue: 2937.51, averageCost: 2775.35, profit: 5.84 }
+            ],
+            rebalanceHistory: [
+              { date: new Date(2025, 4, 1), trigger: "scheduled", driftPercentage: 7.2 },
+              { date: new Date(2025, 3, 15), trigger: "manual", driftPercentage: 4.5 },
+              { date: new Date(2025, 3, 1), trigger: "scheduled", driftPercentage: 6.8 }
+            ],
+            takeProfitSettings: {
+              enabled: true,
+              targetPercentage: 15,
+              rebalanceAfter: true,
+              lastTriggered: new Date(2025, 3, 5)
+            }
+          };
+          
+          return res.json({
+            user: mockDemoUser,
+            vaultData: mockVaultData,
+            message: "Demo login successful with mock presentation data"
+          });
         });
       });
     } catch (error) {
@@ -551,22 +527,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.json(demoUserWithoutPassword);
           });
         } else {
-          // Fall back to a hardcoded demo user
-          const hardcodedDemoUser = {
+          // Fall back to an enhanced mock demo user for presentation
+          const mockDemoUser = {
             id: 9,
             username: "demo",
             email: "demo@example.com",
-            createdAt: new Date().toISOString(),
+            walletAddress: "0x8F36dE51Ef7921f44D172F55D06273332C453999", // Mock L1X wallet address
+            createdAt: new Date(2025, 4, 10), // May 10, 2025
+            lastLogin: new Date(), // Current time
+            subscriptionTier: "premium",
+            accountStatus: "active",
+            preferences: {
+              notifications: true,
+              theme: "dark",
+              currency: "USD"
+            }
           };
           
-          console.log("GET /auth/me - Using hardcoded demo user");
-          req.login(hardcodedDemoUser, (err) => {
+          console.log("GET /auth/me - Using enhanced mock demo user for presentation");
+          req.login(mockDemoUser, (err) => {
             if (err) {
-              console.error("GET /auth/me - Error auto-login hardcoded demo user:", err);
+              console.error("GET /auth/me - Error auto-login mock demo user:", err);
               return res.status(401).json({ message: "Not authenticated" });
             }
-            console.log("GET /auth/me - Auto-logged in hardcoded demo user");
-            return res.json(hardcodedDemoUser);
+            console.log("GET /auth/me - Auto-logged in enhanced mock demo user for presentation");
+            return res.json({
+              ...mockDemoUser,
+              // Include enhanced demo information for presentation
+              presentation_data: {
+                totalPortfolios: 3,
+                activePortfolios: 2,
+                totalAllocatedAssets: 12,
+                totalValueUSD: 143250.75,
+                gainLossAllTime: 21.7,
+                daysActive: 42,
+                rebalancesTriggered: 8,
+                takeProfitsTriggered: 3
+              }
+            });
           });
         }
       } catch (error) {
@@ -799,10 +797,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userId = (req.user as any).id;
+      const userEmail = (req.user as any).email;
       
+      // Provide enhanced mock vaults for the demo user (for presentation purposes)
+      if (userEmail === "demo@example.com") {
+        console.log("Providing enhanced mock vaults for demo user presentation");
+        const presentationVaults = [
+          {
+            id: 1,
+            name: "Presentation Portfolio",
+            description: "High growth crypto assets with presentation data",
+            userId: userId,
+            isCustodial: true,
+            driftThreshold: "5.00",
+            rebalanceFrequency: "weekly",
+            lastRebalanced: new Date(2025, 4, 13), // May 13, 2025
+            createdAt: new Date(2025, 4, 10), // May 10, 2025
+            updatedAt: new Date(2025, 4, 13), // May 13, 2025
+            contractAddress: null,
+            performance: {
+              weeklyGrowth: 4.7,
+              monthlyGrowth: 12.3,
+              yearlyGrowth: 31.8,
+              allTimeHighValue: 62125.50,
+              allTimeLowValue: 32415.75
+            },
+            totalValue: 58750.25
+          },
+          {
+            id: 2,
+            name: "L1X Protocol Fund",
+            description: "Dedicated L1X ecosystem investing for cross-chain capabilities",
+            userId: userId,
+            isCustodial: false,
+            driftThreshold: "3.50",
+            rebalanceFrequency: "monthly",
+            lastRebalanced: new Date(2025, 4, 5), // May 5, 2025
+            createdAt: new Date(2025, 3, 15), // April 15, 2025
+            updatedAt: new Date(2025, 4, 5), // May 5, 2025
+            contractAddress: "0x3F8C1e3d2fC0CD4E3E89c771cb1A2586e8d3e581",
+            performance: {
+              weeklyGrowth: 2.3,
+              monthlyGrowth: 8.7,
+              yearlyGrowth: 24.5,
+              allTimeHighValue: 43250.75,
+              allTimeLowValue: 27840.50
+            },
+            totalValue: 42150.50
+          },
+          {
+            id: 3,
+            name: "Stablecoin Yield",
+            description: "Low volatility stablecoin portfolio for consistent yield",
+            userId: userId,
+            isCustodial: true,
+            driftThreshold: "1.00",
+            rebalanceFrequency: "daily",
+            lastRebalanced: new Date(2025, 4, 13), // May 13, 2025
+            createdAt: new Date(2025, 2, 1), // March 1, 2025
+            updatedAt: new Date(2025, 4, 13), // May 13, 2025
+            contractAddress: null,
+            performance: {
+              weeklyGrowth: 0.4,
+              monthlyGrowth: 1.5,
+              yearlyGrowth: 7.2,
+              allTimeHighValue: 42500.00,
+              allTimeLowValue: 40000.00
+            },
+            totalValue: 42350.00
+          }
+        ];
+        return res.json(presentationVaults);
+      } 
       // Only show test vaults for the test user (id: 1)
-      // For new users, return an empty array so they can create their own vaults
-      if (userId === 1) {
+      else if (userId === 1) {
         console.log("Providing test vaults for test user");
         const testVaults = [
           {

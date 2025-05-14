@@ -495,6 +495,21 @@ export default function Home() {
               
               <div className="bg-white dark:bg-black/40 rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg p-6">
                 <div className="w-full max-w-md mx-auto">
+                  {/* Demo Login Button */}
+                  <div className="mb-8 flex flex-col items-center">
+                    <h3 className="font-semibold text-xl mb-3">Try without an account</h3>
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700 text-white mb-2"
+                      onClick={() => setLocation('/demo-login')}
+                    >
+                      Demo Login (No Sign Up Required)
+                    </Button>
+                    <p className="text-sm text-muted-foreground text-center">
+                      Instantly access a pre-configured portfolio with mock data
+                    </p>
+                    <div className="w-full border-t border-slate-200 dark:border-slate-700 my-6" />
+                  </div>
+
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList className="grid w-full grid-cols-2">
                       <TabsTrigger value="web2">Email Login</TabsTrigger>

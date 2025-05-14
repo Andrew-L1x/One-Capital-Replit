@@ -61,7 +61,7 @@ export default function DemoLoginPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Demo Login</CardTitle>
           <CardDescription className="text-center">
-            Access the presentation version with enhanced mock data
+            Access a pre-populated portfolio with demo data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -88,7 +88,7 @@ export default function DemoLoginPage() {
                 Logging in...
               </>
             ) : (
-              "Enter Demo with Presentation Data"
+              "Enter Demo Portfolio Dashboard"
             )}
           </Button>
         </CardFooter>

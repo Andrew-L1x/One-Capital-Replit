@@ -50,20 +50,45 @@ export function PortfolioChart() {
     queryKey: ['/api/auth/me'],
   });
   
+  // Check if this is the demo user
+  const isDemoUser = user && user.email === 'demo@example.com';
+  
   // Log portfolio value and asset allocations for debugging
   console.log("Portfolio data:", { 
     portfolioValue, 
     assetCount: assetAllocations.length,
-    assetAllocations: assetAllocations
+    isDemoUser,
+    userEmail: user?.email
   });
   
   // Consider user authenticated if they have wallet connected OR are logged in via traditional auth
   const isAuthenticated = isConnected || !!user;
   
+  // Demo chart data for presentation
+  const demoChartData = [
+    { name: "Bitcoin", symbol: "BTC", value: 40, valueUSD: 23500.10, color: stringToColor("BTC") },
+    { name: "Ethereum", symbol: "ETH", value: 25, valueUSD: 14687.56, color: stringToColor("ETH") },
+    { name: "Layer One X", symbol: "L1X", value: 15, valueUSD: 8812.53, color: stringToColor("L1X") },
+    { name: "Solana", symbol: "SOL", value: 10, valueUSD: 5875.02, color: stringToColor("SOL") },
+    { name: "Avalanche", symbol: "AVAX", value: 5, valueUSD: 2937.51, color: stringToColor("AVAX") },
+    { name: "Polygon", symbol: "MATIC", value: 5, valueUSD: 2937.51, color: stringToColor("MATIC") }
+  ];
+  
   // Transform asset allocations into chart data
   const chartData = useMemo(() => {
+    // If this is a demo user, return the demo chart data
+    if (isDemoUser) {
+      console.log("Using demo chart data for demo user");
+      return demoChartData;
+    }
+    
     // Add logging to see what data we're receiving
     console.log("Transforming chart data from allocations:", assetAllocations);
+    
+    if (assetAllocations.length === 0) {
+      console.log("No asset allocations, returning empty chart data");
+      return [];
+    }
     
     return assetAllocations.map(allocation => {
       // Create chart entry for this allocation
@@ -78,7 +103,7 @@ export function PortfolioChart() {
       console.log(`Chart entry for ${allocation.asset.symbol}: value=${entry.value}%, valueUSD=${entry.valueUSD}`);
       return entry;
     });
-  }, [assetAllocations]);
+  }, [assetAllocations, isDemoUser]);
   
   // Empty state when not authenticated
   if (!isAuthenticated) {
@@ -110,64 +135,11 @@ export function PortfolioChart() {
     );
   }
   
-  // Empty state when no data is available
-  if (chartData.length === 0) {
-    console.log("Chart has no data, checking for demo data...");
+  // Empty state when no data is available (and not a demo user)
+  if (chartData.length === 0 && !isDemoUser) {
+    console.log("Chart has no data - showing empty state");
     
-    // FOR DEMO MODE: Check if we're in demo mode (user with email demo@example.com)
-    if (user && user.email === 'demo@example.com') {
-      console.log("Demo user detected - rendering demo data");
-      
-      // Create demo chart data for presentation
-      const demoChartData = [
-        { name: "Bitcoin", symbol: "BTC", value: 40, valueUSD: 23500.10, color: stringToColor("BTC") },
-        { name: "Ethereum", symbol: "ETH", value: 25, valueUSD: 14687.56, color: stringToColor("ETH") },
-        { name: "Layer One X", symbol: "L1X", value: 15, valueUSD: 8812.53, color: stringToColor("L1X") },
-        { name: "Solana", symbol: "SOL", value: 10, valueUSD: 5875.02, color: stringToColor("SOL") },
-        { name: "Avalanche", symbol: "AVAX", value: 5, valueUSD: 2937.51, color: stringToColor("AVAX") },
-        { name: "Polygon", symbol: "MATIC", value: 5, valueUSD: 2937.51, color: stringToColor("MATIC") }
-      ];
-      
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Portfolio Distribution</CardTitle>
-            <CardDescription>Asset allocation across your portfolio</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={demoChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${Math.round(percent * 100)}%`}
-                  >
-                    {demoChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend
-                    formatter={(value, entry, index) => {
-                      const item = demoChartData[index];
-                      return `${item.name} (${Math.round(item.value)}%)`;
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-    
-    // Regular empty state for non-demo users
+    // Create an empty/placeholder pie chart with a single 100% segment
     const emptyChartData = [
       {
         name: "Empty Portfolio",
@@ -209,6 +181,7 @@ export function PortfolioChart() {
     );
   }
   
+  // Regular chart with data
   return (
     <Card>
       <CardHeader>

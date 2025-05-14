@@ -83,8 +83,8 @@ export function CurrentHoldings() {
   const activeVaultId = vaults && vaults.length > 0 ? vaults[0].id : null;
   
   const { data: allocations = [], isLoading: isLoadingAllocations } = useQuery<Allocation[]>({
-    queryKey: ["/api/vaults", activeVaultId, "allocations"],
-    enabled: !!activeVaultId,
+    queryKey: [activeVaultId ? `/api/vaults/${activeVaultId}/allocations` : ''],
+    enabled: !!activeVaultId && isAuthenticated,
   });
 
   // Prepare initial form values based on current holdings

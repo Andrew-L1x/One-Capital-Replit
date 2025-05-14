@@ -155,10 +155,18 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             const name = allocation.name;
             const assetId = allocation.assetId;
             
-            // Use provided values from the detailed allocation
+            // Use provided values from the detailed allocation - ensure we have proper number types
             const targetPercentage = parseFloat(allocation.targetPercentage);
             const currentValue = parseFloat(allocation.currentValue.toString());
+            // For percentages, we need to ensure it's stored as a number (not string)
+            // and that it's in the correct range (0-100)
             const percentOfPortfolio = parseFloat(allocation.currentPercentage.toString());
+            
+            console.log(`Processing allocation ${allocation.symbol}: 
+              targetPercentage=${targetPercentage}, 
+              currentValue=${currentValue}, 
+              percentOfPortfolio=${percentOfPortfolio}`
+            );
             
             // Get token amount either from the allocation or default to percentage
             const amount = allocation.currentAllocation || targetPercentage;
@@ -172,6 +180,9 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
             const profitPercentage = parseFloat(allocation.profitPercentage || "0");
             const previousValue = currentValue / (1 + (profitPercentage / 100));
             totalPreviousValue += previousValue;
+            
+            // Log the allocation we're adding
+            console.log(`Adding allocation for ${symbol} with value ${currentValue} and percentage ${percentOfPortfolio}`);
             
             allocations.push({
               asset: {

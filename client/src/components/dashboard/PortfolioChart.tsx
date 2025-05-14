@@ -62,13 +62,22 @@ export function PortfolioChart() {
   
   // Transform asset allocations into chart data
   const chartData = useMemo(() => {
-    return assetAllocations.map(allocation => ({
-      name: allocation.asset.name,
-      symbol: allocation.asset.symbol,
-      value: allocation.percentOfPortfolio,
-      valueUSD: allocation.valueUSD,
-      color: stringToColor(allocation.asset.symbol)
-    }));
+    // Add logging to see what data we're receiving
+    console.log("Transforming chart data from allocations:", assetAllocations);
+    
+    return assetAllocations.map(allocation => {
+      // Create chart entry for this allocation
+      const entry = {
+        name: allocation.asset.name,
+        symbol: allocation.asset.symbol,
+        value: allocation.percentOfPortfolio,
+        valueUSD: allocation.valueUSD,
+        color: stringToColor(allocation.asset.symbol)
+      };
+      
+      console.log(`Chart entry for ${allocation.asset.symbol}: value=${entry.value}%, valueUSD=${entry.valueUSD}`);
+      return entry;
+    });
   }, [assetAllocations]);
   
   // Empty state when not authenticated

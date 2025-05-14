@@ -80,7 +80,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   const activeVaultId = vaults.length > 0 ? vaults[0]?.id : null;
   
   const { data: allocationsData = [], isLoading: isLoadingAllocations } = useQuery<any[]>({
-    queryKey: ['/api/vaults', activeVaultId, 'allocations'],
+    queryKey: [`/api/vaults/${activeVaultId}/allocations`],
     enabled: !!activeVaultId && isAuthenticated, // Changed condition to include password-based auth
   });
   

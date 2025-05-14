@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiRequest } from './queryClient';
 import { useWallet } from './walletContext';
-import { usePortfolio } from './portfolioContext';
 import { useQuery } from '@tanstack/react-query';
 
 interface PriceDetail {

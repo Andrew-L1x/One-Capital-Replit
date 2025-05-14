@@ -44,6 +44,14 @@ export function PortfolioChart() {
   const { isConnected } = useWallet();
   const { assetAllocations, isLoading } = usePortfolio();
   
+  // Check if user is authenticated via API
+  const { data: user } = useQuery<any>({
+    queryKey: ['/api/auth/me'],
+  });
+  
+  // Consider user authenticated if they have wallet connected OR are logged in via traditional auth
+  const isAuthenticated = isConnected || !!user;
+  
   // Transform asset allocations into chart data
   const chartData = useMemo(() => {
     return assetAllocations.map(allocation => ({
@@ -55,13 +63,13 @@ export function PortfolioChart() {
     }));
   }, [assetAllocations]);
   
-  // Empty state when wallet is not connected
-  if (!isConnected) {
+  // Empty state when not authenticated
+  if (!isAuthenticated) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Portfolio Distribution</CardTitle>
-          <CardDescription>Connect your wallet to view your portfolio distribution</CardDescription>
+          <CardDescription>Login or connect your wallet to view your portfolio distribution</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center items-center h-64">
           <p className="text-muted-foreground">No portfolio data available</p>

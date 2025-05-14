@@ -97,6 +97,17 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     // Combine loading states into a single state to reduce re-renders
     const dataLoading = pricesLoading || isLoadingVaults || isLoadingAssets || isLoadingAllocations;
     
+    // Add debug logging to see what data we're working with
+    console.log("PortfolioContext data status:", {
+      isAuthenticated,
+      dataLoading,
+      pricesLoaded: Object.keys(priceDetails).length > 0,
+      vaultsCount: vaults.length,
+      assetsCount: assets.length,
+      allocationsCount: allocationsData.length,
+      firstAllocation: allocationsData.length > 0 ? allocationsData[0] : null
+    });
+    
     // If data is still loading or we're not authenticated, don't proceed
     if (!isAuthenticated || dataLoading || Object.keys(priceDetails).length === 0) {
       return;
@@ -167,7 +178,8 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
                 id: assetId,
                 name: name,
                 symbol: symbol,
-                type: asset?.type || "crypto",
+                // Make sure we always have a type, defaulting to "crypto" if not provided
+                type: (asset?.type || "crypto"),
                 amount
               },
               amount,

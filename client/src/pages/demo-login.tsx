@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export default function DemoLoginPage() {
   const [location, setLocation] = useLocation();
@@ -28,6 +28,11 @@ export default function DemoLoginPage() {
       
       // Check if login was successful
       if (res.ok) {
+        // Clear any cached data to ensure fresh data is fetched with the demo session
+        queryClient.invalidateQueries();
+        queryClient.resetQueries();
+        
+        // Show success message
         toast({
           title: "Demo Login Successful",
           description: "You are now logged in with presentation data",

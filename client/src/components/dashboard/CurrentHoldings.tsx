@@ -33,6 +33,21 @@ import { useToast } from "@/hooks/use-toast";
 import { RefreshCw, Plus, DollarSign, Wallet, ArrowUpDown, Trash2 } from "lucide-react";
 import { usePortfolio } from "@/lib/portfolioContext";
 
+// Extended allocation type to handle the demo/mock data
+interface EnhancedAllocation extends Allocation {
+  symbol?: string;
+  name?: string;
+  currentValue?: number;
+  currentPercentage?: number;
+  currentAllocation?: number;
+  averageCost?: number;
+  profit?: number;
+  profitPercentage?: number;
+  priceChange24h?: number;
+  lastRebalanced?: Date;
+  driftFromTarget?: number;
+}
+
 // Define the schema for holdings form
 const holdingsSchema = z.object({
   holdings: z.array(
@@ -82,7 +97,7 @@ export function CurrentHoldings() {
   // Get first available vault ID
   const activeVaultId = vaults && vaults.length > 0 ? vaults[0].id : null;
   
-  const { data: allocations = [], isLoading: isLoadingAllocations } = useQuery<Allocation[]>({
+  const { data: allocations = [], isLoading: isLoadingAllocations } = useQuery<EnhancedAllocation[]>({
     queryKey: [activeVaultId ? `/api/vaults/${activeVaultId}/allocations` : ''],
     enabled: !!activeVaultId && isAuthenticated,
   });
@@ -98,18 +113,35 @@ export function CurrentHoldings() {
       }));
     }
 
-    return allocations.map((allocation: Allocation) => {
-      const asset = assets.find(a => a.id === allocation.assetId);
-      // Convert targetPercentage string to number
-      const percentage = parseFloat(allocation.targetPercentage.toString());
-      // Calculate the actual amount based on percentage of portfolio value
-      const amount = (percentage / 100) * (portfolioValue || 10000);
+    return allocations.map((allocation: EnhancedAllocation) => {
+      // Check if we have a detailed allocation (from demo or enhanced data)
+      const isDetailedAllocation = allocation.hasOwnProperty('currentValue') && 
+                                  allocation.hasOwnProperty('currentPercentage') && 
+                                  allocation.hasOwnProperty('currentAllocation');
       
-      return {
-        assetId: allocation.assetId,
-        amount: parseFloat(amount.toFixed(3)),
-        percentage: percentage,
-      };
+      if (isDetailedAllocation) {
+        // Use the enhanced allocation data fields directly
+        // Need to type cast since our types don't reflect the enhanced mock data structure
+        const enhancedAllocation = allocation as any;
+        return {
+          assetId: allocation.assetId,
+          amount: parseFloat(enhancedAllocation.currentAllocation?.toString() || "0"),
+          percentage: parseFloat(enhancedAllocation.currentPercentage?.toString() || "0"),
+        };
+      } else {
+        // Standard allocation that needs calculation
+        const asset = assets.find(a => a.id === allocation.assetId);
+        // Convert targetPercentage string to number
+        const percentage = parseFloat(allocation.targetPercentage.toString());
+        // Calculate the actual amount based on percentage of portfolio value
+        const amount = (percentage / 100) * (portfolioValue || 10000);
+        
+        return {
+          assetId: allocation.assetId,
+          amount: parseFloat(amount.toFixed(3)),
+          percentage: percentage,
+        };
+      }
     });
   };
 

@@ -128,8 +128,55 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       if (hasApiData) {
         // Use real data from API
         for (const allocation of allocationsData) {
+          // Try to find matching asset in assets list
           const asset = assets.find((a: any) => a.id === allocation.assetId);
-          if (asset && priceDetails[asset.symbol]) {
+          
+          // Check if special demo allocation format with additional properties
+          const isDetailedAllocation = allocation.hasOwnProperty('currentValue') && 
+                                      allocation.hasOwnProperty('currentPercentage') && 
+                                      allocation.hasOwnProperty('symbol') && 
+                                      allocation.hasOwnProperty('name');
+          
+          if (isDetailedAllocation) {
+            // This is a detailed mock allocation from the demo account
+            // Use the provided allocation data directly
+            const symbol = allocation.symbol;
+            const name = allocation.name;
+            const assetId = allocation.assetId;
+            
+            // Use provided values from the detailed allocation
+            const targetPercentage = parseFloat(allocation.targetPercentage);
+            const currentValue = parseFloat(allocation.currentValue.toString());
+            const percentOfPortfolio = parseFloat(allocation.currentPercentage.toString());
+            
+            // Get token amount either from the allocation or default to percentage
+            const amount = allocation.currentAllocation || targetPercentage;
+            
+            // Try to get price from priceDetails or use 1 as fallback
+            const currentPrice = priceDetails[symbol]?.current || 1;
+            
+            totalValue += currentValue;
+            
+            // For previous value, we can use either the provided value or calculate based on profit percentage
+            const profitPercentage = parseFloat(allocation.profitPercentage || "0");
+            const previousValue = currentValue / (1 + (profitPercentage / 100));
+            totalPreviousValue += previousValue;
+            
+            allocations.push({
+              asset: {
+                id: assetId,
+                name: name,
+                symbol: symbol,
+                type: asset?.type || "crypto",
+                amount
+              },
+              amount,
+              valueUSD: currentValue,
+              price: currentPrice,
+              percentOfPortfolio: percentOfPortfolio, 
+            });
+          } else if (asset && priceDetails[asset.symbol]) {
+            // Standard allocation (non-demo) with price data available
             const currentPrice = priceDetails[asset.symbol].current;
             const previousPrice = priceDetails[asset.symbol].previous24h;
             

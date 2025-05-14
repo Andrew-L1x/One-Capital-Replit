@@ -43,11 +43,18 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 export function PortfolioChart() {
   const { isConnected } = useWallet();
-  const { assetAllocations, isLoading } = usePortfolio();
+  const { assetAllocations, isLoading, portfolioValue } = usePortfolio();
   
   // Check if user is authenticated via API
   const { data: user } = useQuery<any>({
     queryKey: ['/api/auth/me'],
+  });
+  
+  // Log portfolio value and asset allocations for debugging
+  console.log("Portfolio data:", { 
+    portfolioValue, 
+    assetCount: assetAllocations.length,
+    assetAllocations: assetAllocations
   });
   
   // Consider user authenticated if they have wallet connected OR are logged in via traditional auth

@@ -293,11 +293,21 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       const result = calculatePortfolio();
       
       if (result) {
+        console.log("Portfolio calculation result:", { 
+          totalValue: result.totalValue,
+          totalPreviousValue: result.totalPreviousValue,
+          change: result.change,
+          allocationsCount: result.allocations.length,
+          allocations: result.allocations
+        });
+        
         // Use a single batch update to reduce render cycles
         setAssetAllocations(result.allocations);
         setPortfolioValue(result.totalValue);
         setPreviousValue(result.totalPreviousValue);
         setPercentChange(result.change);
+      } else {
+        console.log("Portfolio calculation returned no result");
       }
     } catch (error) {
       console.error("Error calculating portfolio values:", error);
@@ -320,6 +330,15 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     // Include current state values to prevent unnecessary updates
     isLoading
   ]);
+  
+  // Log the actual context values being passed to consumers
+  console.log("Portfolio context values:", {
+    portfolioValue,
+    previousValue, 
+    percentChange,
+    assetAllocationsCount: assetAllocations.length,
+    isLoading: isLoading || pricesLoading || isLoadingVaults || isLoadingAssets || isLoadingAllocations
+  });
   
   // Context value that will be provided to consumers
   const value = {

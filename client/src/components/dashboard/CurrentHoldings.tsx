@@ -73,7 +73,14 @@ export function CurrentHoldings() {
   const [showAssetSelector, setShowAssetSelector] = useState(false);
   const [selectedAssetId, setSelectedAssetId] = useState<number | null>(null);
   const { toast } = useToast();
-  const { portfolioValue, isLoading: isLoadingPortfolio } = usePortfolio();
+  const { portfolioValue, assetAllocations, isLoading: isLoadingPortfolio } = usePortfolio();
+  
+  // Add debug logging for holdings component
+  console.log("CurrentHoldings rendering with portfolio data:", {
+    portfolioValue,
+    assetAllocationsCount: assetAllocations.length,
+    assetAllocations
+  });
 
   // Fetch available assets
   const { data: assets = [], isLoading: isLoadingAssets } = useQuery<Asset[]>({
@@ -104,7 +111,24 @@ export function CurrentHoldings() {
 
   // Prepare initial form values based on current holdings
   const getInitialHoldings = () => {
+    console.log("Getting initial holdings with:", {
+      assetAllocationsFromContext: assetAllocations.length,
+      allocationsFromQuery: allocations.length,
+      loadingStatus: { isLoadingAllocations, isLoadingAssets, isLoadingPortfolio }
+    });
+    
+    // USE PORTFOLIO CONTEXT FIRST if it has data
+    if (assetAllocations.length > 0) {
+      console.log("Using asset allocations from portfolio context");
+      return assetAllocations.map(allocation => ({
+        assetId: allocation.asset.id,
+        amount: allocation.amount,
+        percentage: allocation.percentOfPortfolio
+      }));
+    }
+    
     if (isLoadingAllocations || isLoadingAssets || !allocations.length) {
+      console.log("No allocations data available, using placeholder values");
       // Default to 3 assets with equal distribution (33/33/34)
       return assets.slice(0, 3).map((asset, index) => ({
         assetId: asset.id,

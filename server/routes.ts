@@ -205,16 +205,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return done(null, testUser);
       }
       
-      // For development purposes, if the ID is 9 (our demo user), reconstruct the user object
-      if (id === 9) {
-        const demoUser = {
-          id: 9,
-          username: "demo",
-          email: "demo@example.com",
-          createdAt: new Date(),
-        };
-        return done(null, demoUser);
-      }
+      // No special case for demo user - always load from database for consistency
+      // This is removed in favor of always using the database lookup below
       
       // For other users, try to load from the database
       const user = await storage.getUser(id);
@@ -292,17 +284,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try to get demo user from database first for complete user data
       let demoUser = await storage.getUserByEmail('demo@example.com');
       
-      // If demo user doesn't exist in database, use hardcoded fallback
+      // If demo user doesn't exist in database, create it with real data
       if (!demoUser) {
-        demoUser = {
-          id: 9,
+        console.log("POST /auth/demo-login - Demo user not found, creating it in database");
+        
+        // Hash the password for storage
+        const hashedPassword = await bcrypt.hash('password123', 10);
+        
+        // Create the demo user in the database
+        demoUser = await storage.createUser({
           username: "demo",
           email: "demo@example.com",
-          createdAt: new Date()
-        };
-        console.log("POST /auth/demo-login - Using hardcoded demo user (not found in database)");
+          password: hashedPassword,
+        });
+        
+        console.log("POST /auth/demo-login - Demo user created in database", { userId: demoUser.id });
+        
+        // Create a starter portfolio for the demo user if it doesn't exist
+        const existingVaults = await storage.getVaultsByUserId(demoUser.id);
+        
+        if (existingVaults.length === 0) {
+          console.log("POST /auth/demo-login - Creating starter portfolio for demo user");
+          
+          // Create a demo portfolio (Growth Portfolio)
+          const demoVault = await storage.createVault({
+            userId: demoUser.id,
+            name: "Growth Portfolio",
+            description: "High growth crypto assets",
+            isCustodial: true,
+            driftThreshold: "5.00",
+            rebalanceFrequency: "weekly"
+          });
+          
+          // Get all available assets
+          const assets = await storage.getAllAssets();
+          
+          if (assets.length >= 6) {
+            // Create allocations for the demo vault with real assets
+            await storage.createAllocation({
+              vaultId: demoVault.id,
+              assetId: assets[0].id, // BTC
+              targetPercentage: "40.00"
+            });
+            
+            await storage.createAllocation({
+              vaultId: demoVault.id,
+              assetId: assets[1].id, // ETH
+              targetPercentage: "25.00"
+            });
+            
+            await storage.createAllocation({
+              vaultId: demoVault.id,
+              assetId: assets[2].id, // L1X
+              targetPercentage: "15.00"
+            });
+            
+            await storage.createAllocation({
+              vaultId: demoVault.id,
+              assetId: assets[3].id, // SOL
+              targetPercentage: "10.00"
+            });
+            
+            await storage.createAllocation({
+              vaultId: demoVault.id,
+              assetId: assets[4].id, // AVAX
+              targetPercentage: "5.00"
+            });
+            
+            await storage.createAllocation({
+              vaultId: demoVault.id,
+              assetId: assets[5].id, // MATIC
+              targetPercentage: "5.00"
+            });
+            
+            console.log("POST /auth/demo-login - Created allocations for demo portfolio");
+          }
+        }
       } else {
-        console.log("POST /auth/demo-login - Using demo user from database", { userId: demoUser.id });
+        console.log("POST /auth/demo-login - Using existing demo user from database", { userId: demoUser.id });
       }
       
       // Create a session for the demo user
@@ -358,22 +417,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.json(demoUserWithoutPassword);
           });
         } else {
-          // Use hardcoded demo user if not in database
-          const hardcodedDemoUser = {
-            id: 9,
+          // Create the demo user if it doesn't exist in the database
+          console.log("POST /auth/login - Demo user not found, creating in database");
+          
+          // Hash the password
+          const hashedPassword = await bcrypt.hash('password123', 10);
+          
+          // Create the demo user
+          const newDemoUser = await storage.createUser({
             username: "demo",
             email: "demo@example.com",
-            createdAt: new Date()
-          };
+            password: hashedPassword,
+          });
           
-          req.login(hardcodedDemoUser, (err) => {
+          // Create a starter portfolio just like in the demo login endpoint
+          // This code is similar to the demo-login endpoint
+          const demoVault = await storage.createVault({
+            userId: newDemoUser.id,
+            name: "Growth Portfolio",
+            description: "High growth crypto assets",
+            isCustodial: true,
+            driftThreshold: "5.00",
+            rebalanceFrequency: "weekly"
+          });
+          
+          // Get all available assets to create allocations
+          const assets = await storage.getAllAssets();
+          
+          if (assets.length >= 6) {
+            // Create allocations for the demo vault with real assets
+            const allocations = [
+              { assetId: assets[0].id, percentage: "40.00" }, // BTC
+              { assetId: assets[1].id, percentage: "25.00" }, // ETH
+              { assetId: assets[2].id, percentage: "15.00" }, // L1X
+              { assetId: assets[3].id, percentage: "10.00" }, // SOL
+              { assetId: assets[4].id, percentage: "5.00" },  // AVAX
+              { assetId: assets[5].id, percentage: "5.00" }   // MATIC
+            ];
+            
+            for (const alloc of allocations) {
+              await storage.createAllocation({
+                vaultId: demoVault.id,
+                assetId: alloc.assetId,
+                targetPercentage: alloc.percentage
+              });
+            }
+            
+            console.log("POST /auth/login - Created portfolio for demo user");
+          }
+          
+          req.login(newDemoUser, (err) => {
             if (err) {
-              console.error("POST /auth/login - Error logging in hardcoded demo user:", err);
+              console.error("POST /auth/login - Error logging in newly created demo user:", err);
               return next(err);
             }
             
-            console.log("POST /auth/login - Demo user login successful (hardcoded)");
-            return res.json(hardcodedDemoUser);
+            const { password, ...demoUserWithoutPassword } = newDemoUser;
+            console.log("POST /auth/login - Demo user login successful (newly created)");
+            return res.json(demoUserWithoutPassword);
           });
         }
         return; // Early return for demo user
